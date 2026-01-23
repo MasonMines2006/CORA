@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { AppState, Auth0Provider, useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router';
+import { fetchUserRole } from '../../services/AuthAPI';
 
 const domain = import.meta.env.VITE_AUTH0_DOMAIN;
 const clientId = import.meta.env.VITE_AUTH0_CLIENT_ID;
@@ -16,7 +17,10 @@ const Auth0ProviderWithHistory: React.FC<{ children: React.ReactNode }> = ({ chi
     <Auth0Provider
       domain={domain as string}
       clientId={clientId as string}
-      authorizationParams={{ redirect_uri: window.location.origin }}
+      authorizationParams={{
+        redirect_uri: `${window.location.origin}/callback`,
+        audience: 'https://api.cora.com',
+      }}
       onRedirectCallback={onRedirectCallback}
     >
       {children}
@@ -25,15 +29,44 @@ const Auth0ProviderWithHistory: React.FC<{ children: React.ReactNode }> = ({ chi
 };
 
 export const AuthenticationGuard: React.FC<{ component: React.ComponentType<object> }> = ({ component }) => {
-  const { isAuthenticated, isLoading } = useAuth0();
+  const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const Component = component;
   const navigate = useNavigate();
+
   useEffect(() => {
+    // Skip redirect on callback page - let Auth0 SDK process the authorization code
+    if (window.location.pathname === '/callback') {
+      return;
+    }
+
     if (!isLoading && !isAuthenticated) {
       localStorage.setItem('isReadOnlyMode', 'true');
+      localStorage.removeItem('userRole');
       navigate('/readonly', { replace: true });
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    const syncRole = async () => {
+      if (!isAuthenticated) {
+        return;
+      }
+      try {
+        const token = await getAccessTokenSilently({
+          authorizationParams: {
+            audience: 'https://api.cora.com',
+          },
+        });
+        const result = await fetchUserRole(token);
+        const role = result.role || 'student';
+        localStorage.setItem('userRole', role);
+      } catch (error) {
+        localStorage.setItem('userRole', 'student');
+      }
+    };
+    syncRole();
+  }, [isAuthenticated, getAccessTokenSilently]);
+
   return <Component />;
 };
 

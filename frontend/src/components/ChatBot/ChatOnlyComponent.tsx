@@ -92,7 +92,6 @@ const ChatContent: React.FC<ChatProps> = ({ chatMessages }) => {
       }
     } catch (error) {
       setIsDeleteChatLoading(false);
-      console.error('Error clearing chat history:', error);
       setClearHistoryData(false);
     }
   };
@@ -106,7 +105,7 @@ const ChatContent: React.FC<ChatProps> = ({ chatMessages }) => {
           modes: {
             'graph+vector+fulltext': {
               message:
-                'Welcome to the Neo4j Knowledge Graph Chat. You can ask questions related to documents which have been completely processed.',
+                ' Welcome to CORA: the Cognitive Operator Reactor Assistant, built off of the Neo4j Knowledge Graph Chat. You can ask questions related to class material which have been released.',
             },
           },
           user: 'chatbot',

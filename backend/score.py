@@ -6,7 +6,8 @@ import logging
 import os
 import time
 from datetime import datetime, timezone
-from typing import List
+from typing import List, Optional
+from pydantic import BaseModel
 
 import uvicorn
 from dotenv import load_dotenv
@@ -45,6 +46,7 @@ from src.shared.common_fn import formatted_time, get_value_from_env, get_remaini
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 from Secweb.XContentTypeOptions import XContentTypeOptions
 from Secweb.XFrameOptions import XFrame
+from src.auth import get_current_user, get_user_role, list_users, require_role, set_user_role
 
 load_dotenv(override=True)
 
@@ -1107,6 +1109,42 @@ async def get_schema_visualization(credentials: Neo4jCredentials = Depends(get_n
         return create_api_response("Failed", message=message, error=error_message)
     finally:
         gc.collect()
+
+
+# -----------------------
+# Authentication & Roles
+# -----------------------
+
+class SetUserRoleRequest(BaseModel):
+    email: str
+    role: str
+
+
+ALLOWED_ADMIN_ROLES = ["admin", "test_full"]
+ALLOWED_MANAGER_ROLES = ["admin", "ta", "test_full"]
+
+
+@app.get("/auth/me")
+async def auth_me(user=Depends(get_current_user)):
+    return create_api_response("Success", data={"email": user.get("email"), "role": user.get("role")})
+
+
+@app.post("/auth/login")
+async def auth_login(user=Depends(get_current_user)):
+    # Upsert happens inside get_current_user; just return the role/email
+    return create_api_response("Success", data={"email": user.get("email"), "role": user.get("role")})
+
+
+@app.get("/users")
+async def list_all_users(user=Depends(require_role(ALLOWED_MANAGER_ROLES))):
+    users = list_users()
+    return create_api_response("Success", data=users)
+
+
+@app.post("/users")
+async def set_user_role_endpoint(payload: SetUserRoleRequest, user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
+    updated_role = set_user_role(payload.email, payload.role)
+    return create_api_response("Success", data={"email": payload.email, "role": updated_role})
 
 
 
