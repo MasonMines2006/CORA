@@ -389,18 +389,19 @@ const Content: React.FC<ContentProps> = ({
               })
             );
           } else {
-            console.error('Unexpected error format:', error);
+            // Unknown error format
+            showErrorToast('An unknown error occurred');
           }
         } catch (parseError) {
           if (axios.isAxiosError(err)) {
             const axiosErrorMessage = err.response?.data?.message || err.message;
-            console.error('Axios error occurred:', axiosErrorMessage);
+            showErrorToast(axiosErrorMessage);
           } else {
-            console.error('An unexpected error occurred:', err.message);
+            showErrorToast('An unexpected error occurred');
           }
         }
       } else {
-        console.error('An unknown error occurred:', err);
+        showErrorToast('Unknown error occurred');
       }
     }
   };
@@ -635,7 +636,7 @@ const Content: React.FC<ContentProps> = ({
         modes: {
           'graph+vector+fulltext': {
             message:
-              ' Welcome to the Neo4j Knowledge Graph Chat. You can ask questions related to documents which have been completely processed.',
+              ' Welcome to CORA: the Cognitive Operator Reactor Assistant, built off of the Neo4j Knowledge Graph Chat. You can ask questions related to class material which have been released.',
           },
         },
         user: 'chatbot',
@@ -764,7 +765,6 @@ const Content: React.FC<ContentProps> = ({
         const error = JSON.parse(err.message);
         const { message } = error;
         showErrorToast(message);
-        console.log(err);
       }
     }
     setShowDeletePopUp(false);

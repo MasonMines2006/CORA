@@ -291,7 +291,6 @@ const PageLayout: React.FC = () => {
         } else {
           setErrorMessage(backendApiResponse?.data?.error);
           handleDisconnectButtonState(true);
-          console.log('from else cndition error is there');
         }
       } catch (error) {
         if (error instanceof Error) {
@@ -340,7 +339,7 @@ const PageLayout: React.FC = () => {
             modes: {
               'graph+vector+fulltext': {
                 message:
-                  ' Welcome to the Neo4j Knowledge Graph Chat. You can ask questions related to documents which have been completely processed.',
+                  ' Welcome to CORA: the Cognitive Operator Reactor Assistant, built off of the Neo4j Knowledge Graph Chat. You can ask questions related to class material which have been released.',
               },
             },
             user: 'chatbot',
@@ -351,7 +350,6 @@ const PageLayout: React.FC = () => {
       }
     } catch (error) {
       setIsDeleteChatLoading(false);
-      console.log(error);
       setClearHistoryData(false);
     }
   }, []);
@@ -539,7 +537,6 @@ const PageLayout: React.FC = () => {
             if (target === 'visualizegraphbtn' && action === 'next' && !isRightExpanded) {
               toggleRightDrawer();
             }
-            console.log(`Action ${action} was performed in spotlight ${target}`);
           }}
         />
       ) : (isAuthenticated || SKIP_AUTH) && isFirstTimeUser ? (
@@ -554,7 +551,6 @@ const PageLayout: React.FC = () => {
             if (target === 'visualizegraphbtn' && action === 'next' && !isRightExpanded) {
               toggleRightDrawer();
             }
-            console.log(`Action ${action} was performed in spotlight ${target}`);
           }}
         />
       ) : null}
