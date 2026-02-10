@@ -42,7 +42,7 @@ export const AuthenticationGuard: React.FC<{ component: React.ComponentType<obje
     if (!isLoading && !isAuthenticated) {
       localStorage.setItem('isReadOnlyMode', 'true');
       localStorage.removeItem('userRole');
-      navigate('/readonly', { replace: true });
+      navigate('/', { replace: true });
     }
   }, [isLoading, isAuthenticated, navigate]);
 
