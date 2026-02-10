@@ -68,15 +68,16 @@ def get_bearer_token(request: Request) -> str:
     return auth_header.split(" ", 1)[1]
 
 
-# --- User directory (separate Neo4j DB) ---
+# --- User directory (using main knowledge graph) ---
 
 def get_user_graph() -> Neo4jGraph:
-    uri = get_value_from_env("USER_DB_URI", default_value=None, data_type=str)
-    user = get_value_from_env("USER_DB_USERNAME", default_value=None, data_type=str)
-    password = get_value_from_env("USER_DB_PASSWORD", default_value=None, data_type=str)
-    database = get_value_from_env("USER_DB_DATABASE", default_value="users", data_type=str)
+    # Use main knowledge graph instead of separate user DB
+    uri = get_value_from_env("NEO4J_URI", default_value=None, data_type=str)
+    user = get_value_from_env("NEO4J_USERNAME", default_value=None, data_type=str)
+    password = get_value_from_env("NEO4J_PASSWORD", default_value=None, data_type=str)
+    database = get_value_from_env("NEO4J_DATABASE", default_value="neo4j", data_type=str)
     if not all([uri, user, password]):
-        raise RuntimeError("User DB credentials are missing")
+        raise RuntimeError("Neo4j credentials are missing")
     return Neo4jGraph(url=uri, username=user, password=password, database=database, refresh_schema=False, sanitize=True)
 
 

@@ -6,26 +6,50 @@ import Home from './Home';
 import { SKIP_AUTH } from './utils/Constants.ts';
 
 const RoleRoutedHome = () => {
-  const [role, setRole] = useState<string | null>(localStorage.getItem('userRole'));
+  const [role, setRole] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    // Poll for role changes
+    const checkRole = () => {
+      const currentRole = localStorage.getItem('userRole');
+      if (currentRole) {
+        setRole(currentRole);
+        setIsLoading(false);
+      }
+    };
+
+    // Check immediately
+    checkRole();
+
+    // Set up polling interval (check every 200ms for up to 5 seconds)
+    const pollInterval = setInterval(checkRole, 200);
+    const timeoutId = setTimeout(() => {
+      clearInterval(pollInterval);
+      setIsLoading(false);
+      // Default to student if no role after timeout
+      if (!localStorage.getItem('userRole')) {
+        setRole('student');
+      }
+    }, 5000);
+
+    // Listen for storage changes
     const handler = (event: StorageEvent) => {
       if (event.key === 'userRole') {
         setRole(event.newValue);
+        setIsLoading(false);
       }
     };
     window.addEventListener('storage', handler);
-    return () => window.removeEventListener('storage', handler);
+
+    return () => {
+      clearInterval(pollInterval);
+      clearTimeout(timeoutId);
+      window.removeEventListener('storage', handler);
+    };
   }, []);
 
-  useEffect(() => {
-    if (!role) {
-      const timeout = setTimeout(() => setRole(localStorage.getItem('userRole')), 200);
-      return () => clearTimeout(timeout);
-    }
-  }, [role]);
-
-  if (!role) {
+  if (isLoading) {
     return <div className='p-6'>Loading your workspace…</div>;
   }
 
@@ -41,6 +65,10 @@ const App = () => {
   return (
     <Routes>
       <Route path='/' element={SKIP_AUTH ? <Home /> : <AuthenticationGuard component={RoleRoutedHome} />}></Route>
+      <Route
+        path='/callback'
+        element={SKIP_AUTH ? <Home /> : <AuthenticationGuard component={RoleRoutedHome} />}
+      ></Route>
       <Route path='/readonly' element={<Home />}></Route>
       <Route path='/chat-only' element={<ChatOnlyComponent />}></Route>
     </Routes>
