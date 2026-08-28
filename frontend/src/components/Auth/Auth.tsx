@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AppState, Auth0Provider, useAuth0 } from '@auth0/auth0-react';
 import { useNavigate } from 'react-router';
 import { fetchUserRole } from '../../services/AuthAPI';
@@ -10,7 +10,7 @@ const Auth0ProviderWithHistory: React.FC<{ children: React.ReactNode }> = ({ chi
 
   function onRedirectCallback(appState?: AppState) {
     localStorage.removeItem('isReadOnlyMode');
-    navigate(appState?.returnTo || window.location.pathname, { state: appState });
+    navigate(appState?.returnTo || '/app', { state: appState, replace: true });
   }
 
   return (
@@ -32,6 +32,7 @@ export const AuthenticationGuard: React.FC<{ component: React.ComponentType<obje
   const { isAuthenticated, isLoading, getAccessTokenSilently } = useAuth0();
   const Component = component;
   const navigate = useNavigate();
+  const [roleResolved, setRoleResolved] = useState(false);
 
   useEffect(() => {
     // Skip redirect on callback page - let Auth0 SDK process the authorization code
@@ -60,13 +61,48 @@ export const AuthenticationGuard: React.FC<{ component: React.ComponentType<obje
         const result = await fetchUserRole(token);
         const role = result.role || 'student';
         localStorage.setItem('userRole', role);
+
+        if (role === 'student') {
+          navigate('/student', { replace: true });
+        } else {
+          setRoleResolved(true);
+        }
       } catch (error) {
         localStorage.setItem('userRole', 'student');
+        navigate('/student', { replace: true });
       }
     };
     syncRole();
-  }, [isAuthenticated, getAccessTokenSilently]);
+  }, [isAuthenticated, getAccessTokenSilently, navigate]);
 
+  if (isLoading || !roleResolved) {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-white px-6 text-center text-sm text-slate-500'>
+        Signing you in…
+      </div>
+    );
+  }
+  return <Component />;
+};
+
+export const StudentGuard: React.FC<{ component: React.ComponentType<object> }> = ({ component }) => {
+  const { isAuthenticated, isLoading } = useAuth0();
+  const navigate = useNavigate();
+  const Component = component;
+
+  useEffect(() => {
+    if (!isLoading && !isAuthenticated) {
+      navigate('/', { replace: true });
+    }
+  }, [isLoading, isAuthenticated, navigate]);
+
+  if (isLoading || !isAuthenticated) {
+    return (
+      <div className='flex min-h-screen items-center justify-center bg-white px-6 text-center text-sm text-slate-500'>
+        Loading…
+      </div>
+    );
+  }
   return <Component />;
 };
 
