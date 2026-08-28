@@ -1,8 +1,26 @@
 import { NvlOptions } from '@neo4j-nvl/base';
+import type { Node, Relationship } from '@neo4j-nvl/base';
 import { GraphType, OptionType, PatternOption } from '../types';
 import { getDateTime, getDescriptionForChatMode } from './Utils';
 import chatbotmessages from '../assets/ChatbotMessages.json';
 import schemaExamples from '../assets/newSchema.json';
+
+export const landingDemoNodes: Node[] = [
+  { id: 'cora', caption: 'Cora', size: 38, color: '#C8102E' },
+  { id: 'graph', caption: 'Knowledge Graph', size: 30, color: '#ef4444' },
+  { id: 'doc', caption: 'Documents', size: 26, color: '#f87171' },
+  { id: 'entity', caption: 'Entities', size: 26, color: '#fca5a5' },
+  { id: 'rel', caption: 'Relationships', size: 26, color: '#fecaca' },
+  { id: 'chat', caption: 'Chat', size: 26, color: '#fee2e2' },
+];
+
+export const landingDemoRels: Relationship[] = [
+  { id: 'r1', from: 'cora', to: 'graph', caption: 'builds' },
+  { id: 'r2', from: 'graph', to: 'doc', caption: 'from' },
+  { id: 'r3', from: 'graph', to: 'entity', caption: 'extracts' },
+  { id: 'r4', from: 'graph', to: 'rel', caption: 'links' },
+  { id: 'r5', from: 'chat', to: 'graph', caption: 'queries' },
+];
 export const APP_SOURCES =
   import.meta.env.VITE_REACT_APP_SOURCES && import.meta.env.VITE_REACT_APP_SOURCES !== ''
     ? (import.meta.env.VITE_REACT_APP_SOURCES?.split(',') as string[])
