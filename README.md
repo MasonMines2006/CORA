@@ -36,6 +36,10 @@ This application allows you to upload files from various sources (local machine,
    uvicorn score:app --reload
    ```
 
+> **User profiles (PostgreSQL):**
+> Set `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` in your backend `.env`.
+> When using docker-compose, defaults are provided automatically.
+
 ## Key Features
 
 ### **Knowledge Graph Creation**
@@ -170,6 +174,9 @@ For development, you can run the backend and frontend independently.
    pip install -r requirements.txt
    uvicorn score:app --reload
    ```
+
+> **User profiles (PostgreSQL):**
+> Set `POSTGRES_HOST`, `POSTGRES_PORT`, `POSTGRES_DB`, `POSTGRES_USER`, and `POSTGRES_PASSWORD` in your backend `.env`.
 
 ---
 
