@@ -166,7 +166,13 @@ def get_learning_graph() -> Neo4jGraph:
         password=password,
         database=database,
         refresh_schema=False,
-        sanitize=True,
+        # sanitize=True silently DELETES any list in a result holding more than
+        # 128 elements. It exists to strip embedding vectors from responses, but
+        # every query in this module returns explicit scalar projections and
+        # never a raw node, so it protects nothing here -- it only truncated the
+        # course map's nodes and relationships into an empty graph, with a 200
+        # and no error. See tests/test_learning_network_live.py.
+        sanitize=False,
     )
 
 
@@ -343,6 +349,10 @@ WITH entity, count(DISTINCT chunk) AS chunk_count,
      count(DISTINCT document) AS document_count,
      COUNT { (entity)--() } AS connectivity
 WHERE connectivity >= $min_connectivity
+// ORDER BY / LIMIT are sub-clauses of WITH and must come before its WHERE, so
+// filtering first needs a second WITH to order and truncate on. Collapsing
+// these two into one clause is a Cypher syntax error, not a style choice.
+WITH entity, chunk_count, document_count, connectivity
 ORDER BY connectivity DESC, chunk_count DESC
 LIMIT $limit
 WITH collect(entity) AS selected
