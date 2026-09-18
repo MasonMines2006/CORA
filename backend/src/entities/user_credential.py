@@ -1,6 +1,7 @@
+import os
 from pydantic import BaseModel, Field, validator
 from typing import Optional
-from fastapi import Form, HTTPException
+from fastapi import Depends, Form, HTTPException
 
 class Neo4jCredentials(BaseModel):
     """
@@ -56,3 +57,18 @@ async def get_neo4j_credentials(
         database=database,
         email=email
     )
+
+
+async def get_server_neo4j_credentials(
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials),
+) -> Neo4jCredentials:
+    """Use submitted credentials when present, otherwise use server settings."""
+    resolved = Neo4jCredentials(
+        uri=credentials.uri or os.getenv("NEO4J_URI"),
+        userName=credentials.userName or os.getenv("NEO4J_USERNAME"),
+        password=credentials.password or os.getenv("NEO4J_PASSWORD"),
+        database=credentials.database or os.getenv("NEO4J_DATABASE", "neo4j"),
+        email=credentials.email,
+    )
+    resolved.validate_required()
+    return resolved

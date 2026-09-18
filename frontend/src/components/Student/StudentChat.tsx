@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { useAuth0 } from '@auth0/auth0-react';
 import { useMessageContext } from '../../context/UserMessages';
 import { useCredentials } from '../../context/UserCredentials';
 import Chatbot from '../ChatBot/Chatbot';
@@ -22,13 +23,28 @@ interface StudentChatProps {
 const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPromptConsumed }) => {
   const { clearHistoryData, messages, setMessages, setClearHistoryData, isDeleteChatLoading } = useMessageContext();
   const { setUserCredentials, setConnectionStatus, connectionStatus, setShowDisconnectButton } = useCredentials();
+  const { isAuthenticated } = useAuth0();
   const [pendingPrompt, setPendingPrompt] = useState<string>('');
+  const [connectionError, setConnectionError] = useState(false);
   const [openConnection, setOpenConnection] = useState<connectionState>({
     openPopUp: false,
     chunksExists: false,
     vectorIndexMisMatch: false,
     chunksExistsWithDifferentDimension: false,
   });
+
+  /**
+   * The manual Neo4j credentials dialog posts to /connect, which is Auth0-only. A guest can
+   * neither authenticate there nor is expected to know database credentials, so guests get an
+   * honest error instead of a dialog that is guaranteed to 401.
+   */
+  const handleConnectionFailure = useCallback(() => {
+    if (isAuthenticated) {
+      setOpenConnection((prev) => ({ ...prev, openPopUp: true }));
+      return;
+    }
+    setConnectionError(true);
+  }, [isAuthenticated]);
 
   const initialiseConnection = useCallback(async () => {
     try {
@@ -47,8 +63,9 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
         setUserCredentials(credentials);
         setConnectionStatus(true);
         setShowDisconnectButton(true);
+        setConnectionError(false);
       } else {
-        setOpenConnection((prev) => ({ ...prev, openPopUp: true }));
+        handleConnectionFailure();
       }
     } catch {
       // Fall back to URL params
@@ -68,12 +85,13 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
           email: '',
         });
         setConnectionStatus(true);
+        setConnectionError(false);
         window.history.replaceState({}, document.title, window.location.pathname);
       } else {
-        setOpenConnection((prev) => ({ ...prev, openPopUp: true }));
+        handleConnectionFailure();
       }
     }
-  }, [setUserCredentials, setConnectionStatus, setShowDisconnectButton]);
+  }, [setUserCredentials, setConnectionStatus, setShowDisconnectButton, handleConnectionFailure]);
 
   useEffect(() => {
     initialiseConnection();
@@ -82,6 +100,7 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
   const handleConnectionSuccess = () => {
     setConnectionStatus(true);
     setShowDisconnectButton(true);
+    setConnectionError(false);
     setOpenConnection((prev) => ({ ...prev, openPopUp: false }));
   };
 
@@ -131,6 +150,18 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
         onSuccess={handleConnectionSuccess}
         isChatOnly={true}
       />
+
+      {connectionError && (
+        <div className='mx-auto mt-6 w-full max-w-2xl px-6'>
+          <div className='rounded-2xl border border-red-100 bg-red-50 p-4 text-center'>
+            <p className='text-sm font-semibold text-slate-900'>Chat is unavailable right now</p>
+            <p className='mt-1 text-xs leading-relaxed text-slate-500'>
+              We could not reach the CORA knowledge base. Please try again in a moment - the Learn tab still works
+              offline from cached lessons.
+            </p>
+          </div>
+        </div>
+      )}
 
       {showEmptyState && connectionStatus && (
         <div className='mx-auto w-full max-w-2xl px-6 pt-12 text-center'>
