@@ -64,6 +64,8 @@ const Chatbot: FC<ChatbotProps> = (props) => {
     connectionStatus,
     isChatOnly,
     isDeleteChatLoading,
+    pendingMessage,
+    onPendingMessageConsumed,
   } = props;
   const [inputMessage, setInputMessage] = useState('');
   const [loading, setLoading] = useState<boolean>(isLoading);
@@ -190,9 +192,17 @@ const Chatbot: FC<ChatbotProps> = (props) => {
     requestAnimationFrame(animate);
   };
 
-  const handleSubmit = async (e: { preventDefault: () => void }) => {
+  useEffect(() => {
+    if (pendingMessage?.trim()) {
+      handleSubmit({ preventDefault: () => {} }, pendingMessage);
+      onPendingMessageConsumed?.();
+    }
+  }, [pendingMessage]);
+
+  const handleSubmit = async (e: { preventDefault: () => void }, overrideMessage?: string) => {
     e.preventDefault();
-    if (!inputMessage.trim()) {
+    const messageToSend = overrideMessage ?? inputMessage;
+    if (!messageToSend.trim()) {
       return;
     }
     if (userCredentials && shouldShowTokenTracking(userCredentials.email)) {
@@ -210,7 +220,7 @@ const Chatbot: FC<ChatbotProps> = (props) => {
       currentMode: chatModes[0],
       modes: {},
     };
-    userMessage.modes[chatModes[0]] = { message: inputMessage };
+    userMessage.modes[chatModes[0]] = { message: messageToSend };
     setListMessages([...listMessages, userMessage]);
     const chatbotMessageId = Date.now() + 1;
     const chatbotMessage: Messages = {
@@ -226,7 +236,7 @@ const Chatbot: FC<ChatbotProps> = (props) => {
     try {
       const apiCalls = chatModes.map((mode) =>
         chatBotAPI(
-          inputMessage,
+          messageToSend,
           sessionId,
           model,
           mode,

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "tsc && vite build",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "lint": "eslint --ext .ts --ext .tsx . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
@@ -41,6 +43,9 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.12",
+    "@testing-library/dom": "9.3.4",
+    "@testing-library/jest-dom": "6.4.8",
+    "@testing-library/react": "14.3.1",
     "@types/node": "^22.13.10",
     "@types/react": "^18.2.15",
     "@types/react-dom": "^18.2.7",
@@ -52,12 +57,14 @@
     "eslint-plugin-react-hooks": "^5.1.0",
     "eslint-plugin-react-refresh": "^0.4.20",
     "husky": "^9.1.7",
+    "jsdom": "22.1.0",
     "lint-staged": "^15.5.0",
     "postcss": "^8.5.3",
     "prettier": "^3.7.4",
     "react-dropzone": "^14.3.8",
     "tailwindcss": "^4.1.5",
     "typescript": "^5.7.3",
-    "vite": "^4.5.3"
+    "vite": "^4.5.3",
+    "vitest": "0.34.6"
   }
 }

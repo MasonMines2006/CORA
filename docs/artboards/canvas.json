@@ -1,0 +1,66 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-09-18T08:20:00Z" },
+  "title": "CORA Student UI Redesign",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Home.dc.html": { "x": 0, "y": 0, "w": 1280, "h": 900, "title": "Home — what do I do next?" },
+    "Concept.dc.html": { "x": 1360, "y": 0, "w": 1280, "h": 900, "title": "Concept hub — five modes, one concept", "is_interactive": true },
+    "Explore.dc.html": { "x": 0, "y": 1300, "w": 1280, "h": 900, "title": "Graph — search, filter, inspect" },
+    "Flashcards.dc.html": { "x": 1360, "y": 1300, "w": 1280, "h": 900, "title": "Spaced review — the missing tool" },
+    "MobileHome.dc.html": { "x": 0, "y": 2600, "w": 390, "h": 844, "title": "Phone — the QR entry point" }
+  },
+  "order": [
+    "Home.dc.html",
+    "Concept.dc.html",
+    "Explore.dc.html",
+    "Flashcards.dc.html",
+    "MobileHome.dc.html"
+  ],
+  "notes": {
+    "row1": {
+      "x": 0,
+      "y": -300,
+      "text": "1 — Make the concept the unit of navigation",
+      "kind": "title1",
+      "maxW": 2640
+    },
+    "row2": {
+      "x": 0,
+      "y": 1020,
+      "text": "2 — Fix the two surfaces that are dead for guests",
+      "kind": "title1",
+      "maxW": 2640
+    },
+    "row3": {
+      "x": 0,
+      "y": 2320,
+      "text": "3 — Design the phone first",
+      "kind": "title1",
+      "maxW": 2640
+    },
+    "why1": {
+      "x": 2720,
+      "y": 0,
+      "w": 360,
+      "text": "Today: four peer tabs (Chat, Explore, Learn, Assess), and concepts are buried inside one of them.\n\nProposed: you pick a concept, then Learn / Practice / Cards / Graph / Sources are modes on it. The graph stops being a separate tab and starts driving navigation — which is the whole point of building on one.",
+      "color": "red"
+    },
+    "why2": {
+      "x": 2720,
+      "y": 1300,
+      "w": 360,
+      "text": "Verified today: a guest gets 401 on /chat_bot, /graph_query and /connect. Explore silently falls back to a fake 6-node graph with no labels; Chat can't answer at all.\n\nSo the graph screen needs real data + search + filters, and the noisy extracted types (Institution, Document) should be off by default.",
+      "color": "orange"
+    },
+    "why3": {
+      "x": 2720,
+      "y": 2600,
+      "w": 360,
+      "text": "Attendees scan a QR code, so the phone is the primary target, not an afterthought.\n\nTop tabs become a bottom bar, cards get 44px touch targets, and the concept list is one column with mastery inline.",
+      "color": "teal"
+    }
+  },
+  "designSystems": []
+}

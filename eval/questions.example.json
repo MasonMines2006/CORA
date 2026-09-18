@@ -1,0 +1,26 @@
+[
+  {
+    "id": "ne235-hw3-01",
+    "question": "A control rod is fully withdrawn from the PULSTAR core. What is the immediate effect on reactivity?",
+    "options": {
+      "A": "Reactivity decreases because neutron absorption increases",
+      "B": "Reactivity increases because neutron absorption decreases",
+      "C": "Reactivity is unchanged because control rods do not affect reactivity",
+      "D": "Reactivity oscillates until the rod is reinserted"
+    },
+    "answer": "B",
+    "gold_source": "Theory Manual - NE235.pdf"
+  },
+  {
+    "id": "gfe-theory-014",
+    "question": "During a reactor startup on the 1/M plot, as the reactor approaches criticality, the value of 1/M approaches which of the following?",
+    "options": {
+      "A": "Zero",
+      "B": "One",
+      "C": "Infinity",
+      "D": "The initial count rate"
+    },
+    "answer": "A",
+    "gold_source": null
+  }
+]

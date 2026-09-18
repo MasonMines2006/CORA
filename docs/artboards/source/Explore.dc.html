@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CORA — Graph explorer</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    a { color: #b91c1c; } a:hover { color: #991b1b; }
+  </style>
+</helmet>
+
+<div style="width: 1280px; height: 900px; box-sizing: border-box; background: #f8f7f6; display: flex; flex-direction: column;">
+
+  <div style="height: 64px; flex-shrink: 0; box-sizing: border-box; padding: 0 48px; background: #ffffff; border-bottom: 1px solid #e7e5e4; display: flex; align-items: center; gap: 40px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 28px; height: 28px; border-radius: 8px; background: #dc2626; color: #ffffff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 700; font-size: 15px;">C</div>
+      <div style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 700; font-size: 17px; color: #0f172a; letter-spacing: -0.01em;">Cora</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 4px; flex-grow: 1;">
+      <a href="Home.dc.html" style="text-decoration: none; padding: 7px 14px; border-radius: 8px; color: #475569; font-size: 14px; font-weight: 500;">Home</a>
+      <a href="Concept.dc.html" style="text-decoration: none; padding: 7px 14px; border-radius: 8px; color: #475569; font-size: 14px; font-weight: 500;">Concepts</a>
+      <a href="Explore.dc.html" style="text-decoration: none; padding: 7px 14px; border-radius: 8px; background: #fef2f2; color: #b91c1c; font-size: 14px; font-weight: 600;">Graph</a>
+      <a href="Flashcards.dc.html" style="text-decoration: none; padding: 7px 14px; border-radius: 8px; color: #475569; font-size: 14px; font-weight: 500;">Review</a>
+    </div>
+    <button type="button" style="border: 1px solid #e7e5e4; background: #ffffff; border-radius: 999px; padding: 7px 15px; font-size: 13px; font-weight: 600; color: #0f172a; cursor: pointer; font-family: inherit;">Sign in</button>
+  </div>
+
+  <div style="flex-grow: 1; min-height: 0; display: flex;">
+
+    <!-- filters -->
+    <div style="width: 232px; flex-shrink: 0; box-sizing: border-box; background: #ffffff; border-right: 1px solid #e7e5e4; padding: 22px 20px; display: flex; flex-direction: column; gap: 22px;">
+      <div>
+        <label for="graph-search" style="display: block; font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;">Search</label>
+        <div style="display: flex; align-items: center; gap: 8px; margin-top: 9px; border: 1px solid #e7e5e4; border-radius: 10px; padding: 9px 11px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#94a3b8" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path></svg>
+          <input id="graph-search" type="text" value="reactivity" style="border: none; outline: none; font-size: 13.5px; color: #0f172a; width: 100%; font-family: inherit; padding: 0; background: transparent;">
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;">Concept type</div>
+        <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 10px;">
+          <label style="display: flex; align-items: center; gap: 9px; padding: 6px 0; cursor: pointer;"><input type="checkbox" checked style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 13.5px; color: #334155; flex-grow: 1;">Concept</span><span style="font-size: 11.5px; color: #94a3b8;">612</span></label>
+          <label style="display: flex; align-items: center; gap: 9px; padding: 6px 0; cursor: pointer;"><input type="checkbox" checked style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 13.5px; color: #334155; flex-grow: 1;">Component</span><span style="font-size: 11.5px; color: #94a3b8;">188</span></label>
+          <label style="display: flex; align-items: center; gap: 9px; padding: 6px 0; cursor: pointer;"><input type="checkbox" checked style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 13.5px; color: #334155; flex-grow: 1;">Measurement</span><span style="font-size: 11.5px; color: #94a3b8;">143</span></label>
+          <label style="display: flex; align-items: center; gap: 9px; padding: 6px 0; cursor: pointer;"><input type="checkbox" style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 13.5px; color: #94a3b8; flex-grow: 1;">Institution</span><span style="font-size: 11.5px; color: #cbd5e1;">31</span></label>
+          <label style="display: flex; align-items: center; gap: 9px; padding: 6px 0; cursor: pointer;"><input type="checkbox" style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 13.5px; color: #94a3b8; flex-grow: 1;">Document</span><span style="font-size: 11.5px; color: #cbd5e1;">53</span></label>
+        </div>
+        <div style="margin-top: 8px; background: #fffbeb; border: 1px solid #fde68a; border-radius: 9px; padding: 9px 11px;">
+          <div style="font-size: 11.5px; color: #92400e; line-height: 1.5;">Institution and Document are extraction noise. Off by default.</div>
+        </div>
+      </div>
+
+      <div>
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;">Source document</div>
+        <div style="display: flex; flex-direction: column; gap: 3px; margin-top: 10px;">
+          <label style="display: flex; align-items: center; gap: 9px; padding: 5px 0; cursor: pointer;"><input type="checkbox" checked style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 12.5px; color: #334155;">Theory Manual</span></label>
+          <label style="display: flex; align-items: center; gap: 9px; padding: 5px 0; cursor: pointer;"><input type="checkbox" checked style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 12.5px; color: #334155;">PULSTAR Tech Specs</span></label>
+          <label style="display: flex; align-items: center; gap: 9px; padding: 5px 0; cursor: pointer;"><input type="checkbox" checked style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 12.5px; color: #334155;">Labs 0&ndash;6</span></label>
+          <label style="display: flex; align-items: center; gap: 9px; padding: 5px 0; cursor: pointer;"><input type="checkbox" style="accent-color: #dc2626; width: 15px; height: 15px;"><span style="font-size: 12.5px; color: #94a3b8;">Homework &amp; quizzes</span></label>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1;"></div>
+      <div style="font-size: 11.5px; color: #94a3b8; line-height: 1.5;">Showing 43 of 1,797 concepts</div>
+    </div>
+
+    <!-- canvas -->
+    <div style="flex-grow: 1; min-width: 0; box-sizing: border-box; padding: 22px; display: flex; flex-direction: column;">
+      <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 14px;">
+        <h1 style="margin: 0; font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 700; color: #0f172a; letter-spacing: -0.015em;">Course graph</h1>
+        <div style="flex-grow: 1;"></div>
+        <div style="display: flex; gap: 3px; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 9px; padding: 3px;">
+          <button type="button" style="border: none; background: #0f172a; color: #ffffff; border-radius: 7px; padding: 6px 13px; font-size: 12.5px; font-weight: 600; cursor: pointer; font-family: inherit;">Neighbourhood</button>
+          <button type="button" style="border: none; background: transparent; color: #64748b; border-radius: 7px; padding: 6px 13px; font-size: 12.5px; font-weight: 500; cursor: pointer; font-family: inherit;">Whole course</button>
+        </div>
+      </div>
+
+      <div style="flex-grow: 1; border-radius: 14px; background: #ffffff; border: 1px solid #e7e5e4; position: relative; overflow: hidden;">
+        <svg width="100%" height="100%" viewBox="0 0 700 620" aria-label="Knowledge graph of reactivity and related concepts">
+          <line x1="350" y1="300" x2="180" y2="160" stroke="#d6d3d1" stroke-width="1.5"></line>
+          <line x1="350" y1="300" x2="540" y2="150" stroke="#d6d3d1" stroke-width="1.5"></line>
+          <line x1="350" y1="300" x2="150" y2="440" stroke="#d6d3d1" stroke-width="1.5"></line>
+          <line x1="350" y1="300" x2="560" y2="420" stroke="#d6d3d1" stroke-width="1.5"></line>
+          <line x1="350" y1="300" x2="330" y2="500" stroke="#d6d3d1" stroke-width="1.5"></line>
+          <line x1="180" y1="160" x2="540" y2="150" stroke="#e7e5e4" stroke-width="1.2"></line>
+          <line x1="150" y1="440" x2="330" y2="500" stroke="#e7e5e4" stroke-width="1.2"></line>
+          <line x1="560" y1="420" x2="330" y2="500" stroke="#e7e5e4" stroke-width="1.2"></line>
+          <line x1="540" y1="150" x2="620" y2="270" stroke="#e7e5e4" stroke-width="1.2"></line>
+          <circle cx="350" cy="300" r="46" fill="#dc2626" stroke="#ffffff" stroke-width="3"></circle>
+          <text x="350" y="305" text-anchor="middle" fill="#ffffff" font-size="14" font-weight="700" font-family="Space Grotesk, sans-serif">Reactivity</text>
+          <circle cx="180" cy="160" r="34" fill="#0f766e"></circle>
+          <text x="180" y="165" text-anchor="middle" fill="#ffffff" font-size="12" font-weight="600" font-family="sans-serif">Keff</text>
+          <circle cx="540" cy="150" r="34" fill="#475569"></circle>
+          <text x="540" y="155" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600" font-family="sans-serif">Xenon</text>
+          <circle cx="150" cy="440" r="36" fill="#475569"></circle>
+          <text x="150" y="438" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600" font-family="sans-serif">Control</text>
+          <text x="150" y="450" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600" font-family="sans-serif">Rods</text>
+          <circle cx="560" cy="420" r="36" fill="#475569"></circle>
+          <text x="560" y="418" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600" font-family="sans-serif">Reactor</text>
+          <text x="560" y="430" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600" font-family="sans-serif">Period</text>
+          <circle cx="330" cy="500" r="32" fill="#475569"></circle>
+          <text x="330" y="498" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600" font-family="sans-serif">Modera-</text>
+          <text x="330" y="510" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600" font-family="sans-serif">tor</text>
+          <circle cx="620" cy="270" r="26" fill="#94a3b8"></circle>
+          <text x="620" y="274" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="600" font-family="sans-serif">Samarium</text>
+        </svg>
+
+        <div style="position: absolute; left: 16px; bottom: 16px; display: flex; align-items: center; gap: 16px; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 999px; padding: 8px 15px; font-size: 11.5px; color: #64748b;">
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 999px; background: #dc2626;"></span>Selected</span>
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 999px; background: #0f766e;"></span>Mastered</span>
+          <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 999px; background: #475569;"></span>Not started</span>
+          <span>node size = passage count</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- inspector -->
+    <div style="width: 300px; flex-shrink: 0; box-sizing: border-box; background: #ffffff; border-left: 1px solid #e7e5e4; padding: 22px 20px; display: flex; flex-direction: column; gap: 16px;">
+      <div>
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #dc2626;">Selected concept</div>
+        <div style="font-family: 'Space Grotesk', sans-serif; font-size: 23px; font-weight: 700; color: #0f172a; margin-top: 7px; letter-spacing: -0.015em;">Reactivity</div>
+        <div style="font-size: 12.5px; color: #64748b; margin-top: 5px;">Concept &middot; 16 passages &middot; 3 documents</div>
+      </div>
+
+      <div style="display: flex; gap: 8px;">
+        <a href="Concept.dc.html" style="text-decoration: none; flex-grow: 1; text-align: center; background: #dc2626; color: #ffffff; border-radius: 9px; padding: 10px; font-size: 13px; font-weight: 600;">Learn this</a>
+        <a href="Concept.dc.html" style="text-decoration: none; flex-grow: 1; text-align: center; border: 1px solid #e7e5e4; color: #0f172a; border-radius: 9px; padding: 10px; font-size: 13px; font-weight: 600;">Practice</a>
+      </div>
+
+      <div style="border-top: 1px solid #f1f0ef; padding-top: 14px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;">Your mastery</div>
+        <div style="display: flex; align-items: baseline; gap: 8px; margin-top: 7px;">
+          <div style="font-family: 'Space Grotesk', sans-serif; font-size: 25px; font-weight: 700; color: #b45309;">60%</div>
+          <div style="font-size: 12.5px; color: #64748b;">3 of 5 correct</div>
+        </div>
+        <div style="height: 5px; border-radius: 999px; background: #f1f0ef; margin-top: 9px; overflow: hidden;"><div style="height: 5px; width: 60%; background: #b45309; border-radius: 999px;"></div></div>
+      </div>
+
+      <div style="border-top: 1px solid #f1f0ef; padding-top: 14px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;">Relationships</div>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 10px;">
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><span style="color: #0f766e; font-weight: 600; font-size: 10.5px; letter-spacing: 0.03em;">RELATED_TO</span><span style="color: #334155;">Keff</span></div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><span style="color: #0f766e; font-weight: 600; font-size: 10.5px; letter-spacing: 0.03em;">AFFECTED_BY</span><span style="color: #334155;">Moderator</span></div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><span style="color: #0f766e; font-weight: 600; font-size: 10.5px; letter-spacing: 0.03em;">CONTROLLED_BY</span><span style="color: #334155;">Control Rods</span></div>
+          <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px;"><span style="color: #0f766e; font-weight: 600; font-size: 10.5px; letter-spacing: 0.03em;">GOVERNS</span><span style="color: #334155;">Reactor Period</span></div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px solid #f1f0ef; padding-top: 14px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;">Top passage</div>
+        <p style="margin: 9px 0 0; font-size: 12.5px; line-height: 1.6; color: #475569;">&ldquo;Reactivity is a measure of how far a reactor is from criticality&hellip;&rdquo;</p>
+        <div style="font-size: 11.5px; color: #94a3b8; margin-top: 7px;">Theory Manual &mdash; NE235.pdf</div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1280,"height":900}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

@@ -51,16 +51,16 @@ def execute_query(driver, query,document_names,doc_limit=None):
     tuple: Contains records, summary of the execution, and keys of the records.
     """
     try:
-        if document_names:
-            logging.info(f"Executing query for documents: {document_names}")
-            records, summary, keys = driver.execute_query(query, document_names=document_names)
-        else:
-            logging.info(f"Executing query with a document limit of {doc_limit}")
-            records, summary, keys = driver.execute_query(query, doc_limit=doc_limit)
+        logging.info(f"Executing query for documents: {document_names}")
+        records, summary, keys = driver.execute_query(
+            query,
+            document_names=document_names or [],
+        )
         return records, summary, keys
     except Exception as e:
         error_message = f"graph_query module: Failed to execute the query. Error: {str(e)}"
         logging.error(error_message, exc_info=True)
+        raise RuntimeError(error_message) from e
 
 
 def process_node(node):
@@ -206,10 +206,17 @@ def get_graph_results(credentials, document_names):
     Returns:
     dict: Contains the session ID, user-defined messages with nodes and relationships, and the user module identifier.
     """
+    driver = None
     try:
         logging.info(f"Starting graph query process")
-        driver = get_graphDB_driver(credentials)  
-        document_names= list(map(str, json.loads(document_names)))
+        driver = get_graphDB_driver(credentials)
+        if driver is None:
+            raise RuntimeError("Neo4j connection could not be created")
+        document_names = (
+            list(map(str, json.loads(document_names)))
+            if document_names
+            else []
+        )
         query = GRAPH_QUERY.format(graph_chunk_limit=GRAPH_CHUNK_LIMIT)
         records, summary , keys = execute_query(driver, query.strip(), document_names)
         document_nodes = extract_node_elements(records)
@@ -229,7 +236,8 @@ def get_graph_results(credentials, document_names):
         raise Exception(f"graph_query module: An error occurred in get_graph_results. Please check the logs for more details.") from e
     finally:
         logging.info("Closing connection for graph_query api")
-        driver.close()
+        if driver is not None:
+            driver.close()
 
 
 def get_chunktext_results(credentials, document_name, page_no):

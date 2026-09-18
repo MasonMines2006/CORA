@@ -1,12 +1,39 @@
 version: "3"
 
 services:
+  neo4j:
+    image: neo4j:5.23
+    container_name: neo4j-dev
+    ports:
+      - "7474:7474"
+      - "7687:7687"
+    environment:
+      - NEO4J_AUTH=neo4j/password
+      - NEO4J_PLUGINS=["apoc"]
+      - NEO4J_apoc_export_file_enabled=true
+      - NEO4J_apoc_import_file_enabled=true
+    volumes:
+      - neo4j_data:/data
+    networks:
+      - net
+    healthcheck:
+      test: ["CMD", "neo4j", "status"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
   backend:
     build:
       context: ./backend
       dockerfile: Dockerfile.dev
+    depends_on:
+      neo4j:
+        condition: service_healthy
+      postgres:
+        condition: service_started
     volumes:
       - ./backend:/code
+      - ./data:/data:ro
     env_file:
       - backend/.env
     environment:
@@ -16,16 +43,31 @@ services:
       - UPDATE_GRAPH_CHUNKS_PROCESSED=${UPDATE_GRAPH_CHUNKS_PROCESSED-20}
       - ENTITY_EMBEDDING=${ENTITY_EMBEDDING-False}
       - GCS_FILE_CACHE=${GCS_FILE_CACHE-False}
-      - LLM_MODEL_CONFIG_OPENAI_GPT_4O=${LLM_MODEL_CONFIG_OPENAI_GPT_4O}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DIFFBOT_API_KEY=${DIFFBOT_API_KEY}
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL}
-      - MAX_TOKEN_CHUNK_SIZE=${MAX_TOKEN_CHUNK_SIZE}
+      - NEO4J_URI=bolt://neo4j:7687
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=${POSTGRES_PORT-5432}
+      - POSTGRES_DB=${POSTGRES_DB-cora_users}
+      - POSTGRES_USER=${POSTGRES_USER-cora}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-cora}
     container_name: backend-dev
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
       - "8000:8000"
+    networks:
+      - net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-dev
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB-cora_users}
+      - POSTGRES_USER=${POSTGRES_USER-cora}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-cora}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - net
 
@@ -48,3 +90,7 @@ services:
 
 networks:
   net:
+
+volumes:
+  postgres_data:
+  neo4j_data:

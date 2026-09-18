@@ -1,18 +1,6 @@
 import logging
 from langchain_core.documents import Document
 import os
-from langchain_openai import ChatOpenAI, AzureChatOpenAI
-from langchain_google_vertexai import ChatVertexAI
-from langchain_groq import ChatGroq
-from langchain_google_vertexai import HarmBlockThreshold, HarmCategory
-from langchain_experimental.graph_transformers.diffbot import DiffbotGraphTransformer
-from langchain_experimental.graph_transformers import LLMGraphTransformer
-from langchain_anthropic import ChatAnthropic
-from langchain_fireworks import ChatFireworks
-from langchain_aws import ChatBedrock
-from langchain_community.chat_models import ChatOllama
-import boto3
-import google.auth
 from src.shared.constants import ADDITIONAL_INSTRUCTIONS
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 import re
@@ -36,6 +24,9 @@ def get_llm(model: str):
     callback_manager = CallbackManager([callback_handler])
     try:
         if "GEMINI" in model:
+            import google.auth
+            from langchain_google_vertexai import ChatVertexAI, HarmBlockThreshold, HarmCategory
+
             model_name = env_value
             credentials, project_id = google.auth.default()
             llm = ChatVertexAI(
@@ -54,6 +45,8 @@ def get_llm(model: str):
             
             )
         elif "OPENAI" in model:
+            from langchain_openai import ChatOpenAI
+
             model_name, api_key = env_value.split(",")
             if "MINI" in model:
                 llm= ChatOpenAI(
@@ -70,6 +63,8 @@ def get_llm(model: str):
                 )
 
         elif "AZURE" in model:
+            from langchain_openai import AzureChatOpenAI
+
             model_name, api_endpoint, api_key, api_version = env_value.split(",")
             llm = AzureChatOpenAI(
                 api_key=api_key,
@@ -83,20 +78,29 @@ def get_llm(model: str):
             )
 
         elif "ANTHROPIC" in model:
+            from langchain_anthropic import ChatAnthropic
+
             model_name, api_key = env_value.split(",")
             llm = ChatAnthropic(
                 api_key=api_key, model=model_name, temperature=0, timeout=None,callbacks=callback_manager, 
             )
 
         elif "FIREWORKS" in model:
+            from langchain_fireworks import ChatFireworks
+
             model_name, api_key = env_value.split(",")
             llm = ChatFireworks(api_key=api_key, model=model_name,callbacks=callback_manager)
 
         elif "GROQ" in model:
+            from langchain_groq import ChatGroq
+
             model_name, base_url, api_key = env_value.split(",")
             llm = ChatGroq(api_key=api_key, model_name=model_name, temperature=0,callbacks=callback_manager)
 
         elif "BEDROCK" in model:
+            import boto3
+            from langchain_aws import ChatBedrock
+
             model_name, aws_access_key, aws_secret_key, region_name = env_value.split(",")
             bedrock_client = boto3.client(
                 service_name="bedrock-runtime",
@@ -110,10 +114,14 @@ def get_llm(model: str):
             )
 
         elif "OLLAMA" in model:
+            from langchain_community.chat_models import ChatOllama
+
             model_name, base_url = env_value.split(",")
             llm = ChatOllama(base_url=base_url, model=model_name,callbacks=callback_manager)
 
         elif "DIFFBOT" in model:
+            from langchain_experimental.graph_transformers.diffbot import DiffbotGraphTransformer
+
             #model_name = "diffbot"
             model_name, api_key = env_value.split(",")
             llm = DiffbotGraphTransformer(
@@ -123,6 +131,8 @@ def get_llm(model: str):
             callback_handler = None
         
         else: 
+            from langchain_openai import ChatOpenAI
+
             model_name, api_endpoint, api_key = env_value.split(",")
             llm = ChatOpenAI(
                 api_key=api_key,
@@ -188,6 +198,9 @@ def get_chunk_id_as_doc_metadata(chunkId_chunkDoc_list):
 async def get_graph_document_list(
     llm, combined_chunk_document_list, allowedNodes, allowedRelationship,callback_handler, additional_instructions=None
 ):
+    from langchain_experimental.graph_transformers import LLMGraphTransformer
+    from langchain_experimental.graph_transformers.diffbot import DiffbotGraphTransformer
+
     if additional_instructions:
         additional_instructions = sanitize_additional_instruction(additional_instructions)
     graph_document_list = []
@@ -197,19 +210,26 @@ async def get_graph_document_list(
             llm_transformer = llm
         else:
             supported_models = ["ChatOpenAI", "ChatVertexAI", "AzureChatOpenAI","ChatAnthropic"]
-            if hasattr(llm, "get_name") and llm.get_name() in supported_models:
+            supports_tool_calling = hasattr(llm, "get_name") and llm.get_name() in supported_models
+            if supports_tool_calling:
                 node_properties = False
                 relationship_properties = False
             else:
                 node_properties = ["description"]
                 relationship_properties = ["description"]
+            # Models with native tool/function calling must use the structured-output path.
+            # The prompt-only path (ignore_tool_usage=True) silently returns ZERO entities
+            # when ADDITIONAL_INSTRUCTIONS is appended: the extra text pushes the model off
+            # the exact JSON shape the unstructured parser expects, and the parse failure is
+            # swallowed rather than raised. Tool calling constrains the output schema instead,
+            # so the instructions can be honored without breaking parsing.
             llm_transformer = LLMGraphTransformer(
                 llm=llm,
                 node_properties=node_properties,
                 relationship_properties=relationship_properties,
                 allowed_nodes=allowedNodes,
                 allowed_relationships=allowedRelationship,
-                ignore_tool_usage=True,
+                ignore_tool_usage=not supports_tool_calling,
                 additional_instructions=ADDITIONAL_INSTRUCTIONS+ (additional_instructions if additional_instructions else "")
             )
         

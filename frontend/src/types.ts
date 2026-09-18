@@ -265,6 +265,8 @@ export type ChatbotProps = {
   connectionStatus: boolean;
   isChatOnly?: boolean;
   isDeleteChatLoading: boolean;
+  pendingMessage?: string;
+  onPendingMessageConsumed?: () => void;
 };
 export interface WikipediaModalTypes extends Omit<S3ModalProps, ''> {}
 

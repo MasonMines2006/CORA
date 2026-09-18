@@ -5,6 +5,8 @@ services:
     build:
       context: ./backend
       dockerfile: Dockerfile
+    depends_on:
+      - postgres
     volumes:
       - ./backend:/code
     env_file:
@@ -16,24 +18,30 @@ services:
       - UPDATE_GRAPH_CHUNKS_PROCESSED=${UPDATE_GRAPH_CHUNKS_PROCESSED-20}
       - ENTITY_EMBEDDING=${ENTITY_EMBEDDING-False}
       - GCS_FILE_CACHE=${GCS_FILE_CACHE-False}
-      - LLM_MODEL_CONFIG_OPENAI_GPT_4O=${LLM_MODEL_CONFIG_OPENAI_GPT_4O}
-#      - LLM_MODEL_CONFIG_ANTHROPIC_CLAUDE_4_5_SONNET=${LLM_MODEL_CONFIG_ANTHROPIC_CLAUDE_4_5_SONNET-}
-#      - LLM_MODEL_CONFIG_FIREWORKS_LLAMA_V3_70B=${LLM_MODEL_CONFIG_FIREWORKS_LLAMA_V3_70B-}
-#      - LLM_MODEL_CONFIG_AZURE_AI_GPT_4O=${LLM_MODEL_CONFIG_AZURE_AI_GPT_4O-}
-#      - LLM_MODEL_CONFIG_AZURE_AI_GPT_35=${LLM_MODEL_CONFIG_AZURE_AI_GPT_35-}
-#      - LLM_MODEL_CONFIG_GROQ_LLAMA3_70B=${LLM_MODEL_CONFIG_GROQ_LLAMA3_70B-}
-#      - LLM_MODEL_CONFIG_BEDROCK_CLAUDE_3_5_SONNET=${LLM_MODEL_CONFIG_BEDROCK_CLAUDE_3_5_SONNET-}
-#     - LLM_MODEL_CONFIG_FIREWORKS_QWEN_72B=${LLM_MODEL_CONFIG_FIREWORKS_QWEN_72B-}
-      # - LLM_MODEL_CONFIG_OLLAMA_LLAMA3=${LLM_MODEL_CONFIG_OLLAMA_LLAMA3-}
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - DIFFBOT_API_KEY=${DIFFBOT_API_KEY}
-      - EMBEDDING_MODEL=${EMBEDDING_MODEL}
-      - MAX_TOKEN_CHUNK_SIZE=${MAX_TOKEN_CHUNK_SIZE}
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PORT=${POSTGRES_PORT-5432}
+      - POSTGRES_DB=${POSTGRES_DB-cora_users}
+      - POSTGRES_USER=${POSTGRES_USER-cora}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-cora}
     container_name: backend
     extra_hosts:
       - host.docker.internal:host-gateway
     ports:
       - "8000:8000"
+    networks:
+      - net
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      - POSTGRES_DB=${POSTGRES_DB-cora_users}
+      - POSTGRES_USER=${POSTGRES_USER-cora}
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-cora}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
     networks:
       - net
 
@@ -56,3 +64,6 @@ services:
 
 networks:
   net:
+
+volumes:
+  postgres_data:

@@ -428,26 +428,6 @@ export const capitalizeWithPlus = (s: string) => {
 };
 export const capitalizeWithUnderscore = (s: string) => capitalize(s).split('_').join(' ');
 
-export const getDescriptionForChatMode = (mode: string): string => {
-  switch (mode.toLowerCase()) {
-    case chatModeLables.vector:
-      return 'Utilizes vector indexing on text chunks to enable semantic similarity search.';
-    case chatModeLables.graph:
-      return 'Leverages text-to-cypher translation to query a database and retrieve relevant data, ensuring a highly targeted and contextually accurate response.';
-    case chatModeLables['graph+vector']:
-      return 'Combines vector indexing on text chunks with graph connections, enhancing search results with contextual relevance by considering relationships between concepts.';
-    case chatModeLables.fulltext:
-      return 'Employs a fulltext index on text chunks for rapid keyword-based search, efficiently identifying documents containing specific words or phrases.';
-    case chatModeLables['graph+vector+fulltext']:
-      return 'Merges vector indexing, graph connections, and fulltext indexing for a comprehensive search approach, combining semantic similarity, contextual relevance, and keyword-based search for optimal results.';
-    case chatModeLables['entity search+vector']:
-      return 'Combines entity node vector indexing with graph connections for accurate entity-based search, providing the most relevant response.';
-    case chatModeLables['global search+vector+fulltext']:
-      return 'Use vector and full-text indexing on community nodes to provide accurate, context-aware answers globally.';
-    default:
-      return 'Chat mode description not available'; // Fallback description
-  }
-};
 export const getLogo = (mode: string): Record<string, string> => {
   if (mode === 'light') {
     return {

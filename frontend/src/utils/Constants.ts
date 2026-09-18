@@ -1,8 +1,26 @@
 import { NvlOptions } from '@neo4j-nvl/base';
+import type { Node, Relationship } from '@neo4j-nvl/base';
 import { GraphType, OptionType, PatternOption } from '../types';
-import { getDateTime, getDescriptionForChatMode } from './Utils';
+import { getDateTime } from './Utils';
 import chatbotmessages from '../assets/ChatbotMessages.json';
 import schemaExamples from '../assets/newSchema.json';
+
+export const landingDemoNodes: Node[] = [
+  { id: 'cora', caption: 'Cora', size: 38, color: '#C8102E' },
+  { id: 'graph', caption: 'Knowledge Graph', size: 30, color: '#ef4444' },
+  { id: 'doc', caption: 'Documents', size: 26, color: '#f87171' },
+  { id: 'entity', caption: 'Entities', size: 26, color: '#fca5a5' },
+  { id: 'rel', caption: 'Relationships', size: 26, color: '#fecaca' },
+  { id: 'chat', caption: 'Chat', size: 26, color: '#fee2e2' },
+];
+
+export const landingDemoRels: Relationship[] = [
+  { id: 'r1', from: 'cora', to: 'graph', caption: 'builds' },
+  { id: 'r2', from: 'graph', to: 'doc', caption: 'from' },
+  { id: 'r3', from: 'graph', to: 'entity', caption: 'extracts' },
+  { id: 'r4', from: 'graph', to: 'rel', caption: 'links' },
+  { id: 'r5', from: 'chat', to: 'graph', caption: 'queries' },
+];
 export const APP_SOURCES =
   import.meta.env.VITE_REACT_APP_SOURCES && import.meta.env.VITE_REACT_APP_SOURCES !== ''
     ? (import.meta.env.VITE_REACT_APP_SOURCES?.split(',') as string[])
@@ -56,6 +74,32 @@ export const chatModeReadableLables: Record<string, string> = {
   selected: 'Selected',
   global_vector: 'global search+vector+fulltext',
 };
+// Defined here rather than in Utils.ts on purpose. `chatModes` below calls this at
+// module-evaluation time whenever VITE_CHAT_MODES is set, and Utils.ts imports from
+// this file — so importing it from there formed a cycle that threw
+// "Cannot access 'getDescriptionForChatMode' before initialization" and rendered a
+// blank app. It only reads chatModeLables, which already lives in this file.
+export const getDescriptionForChatMode = (mode: string): string => {
+  switch (mode.toLowerCase()) {
+    case chatModeLables.vector:
+      return 'Utilizes vector indexing on text chunks to enable semantic similarity search.';
+    case chatModeLables.graph:
+      return 'Leverages text-to-cypher translation to query a database and retrieve relevant data, ensuring a highly targeted and contextually accurate response.';
+    case chatModeLables['graph+vector']:
+      return 'Combines vector indexing on text chunks with graph connections, enhancing search results with contextual relevance by considering relationships between concepts.';
+    case chatModeLables.fulltext:
+      return 'Employs a fulltext index on text chunks for rapid keyword-based search, efficiently identifying documents containing specific words or phrases.';
+    case chatModeLables['graph+vector+fulltext']:
+      return 'Merges vector indexing, graph connections, and fulltext indexing for a comprehensive search approach, combining semantic similarity, contextual relevance, and keyword-based search for optimal results.';
+    case chatModeLables['entity search+vector']:
+      return 'Combines entity node vector indexing with graph connections for accurate entity-based search, providing the most relevant response.';
+    case chatModeLables['global search+vector+fulltext']:
+      return 'Use vector and full-text indexing on community nodes to provide accurate, context-aware answers globally.';
+    default:
+      return 'Chat mode description not available'; // Fallback description
+  }
+};
+
 export const chatModes = import.meta.env?.VITE_CHAT_MODES?.trim()
   ? import.meta.env.VITE_CHAT_MODES?.split(',').map((mode: string) => ({
       mode: mode.trim(),

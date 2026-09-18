@@ -1,20 +1,16 @@
+from __future__ import annotations
+
 import hashlib
 import os
 import json
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from src.entities.user_credential import Neo4jCredentials
-from transformers import AutoTokenizer, AutoModel
-from langchain_huggingface import HuggingFaceEmbeddings
 from threading import Lock
 import logging
 from urllib.parse import urlparse,parse_qs
 from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
-from langchain_google_vertexai import VertexAIEmbeddings
-from langchain_openai import OpenAIEmbeddings
-from langchain_neo4j import Neo4jGraph
 from neo4j.exceptions import TransientError
-from langchain_community.graphs.graph_document import GraphDocument
 from typing import List
 import re
 import os
@@ -22,8 +18,11 @@ import time
 from pathlib import Path
 from urllib.parse import urlparse
 import boto3
-from langchain_community.embeddings import BedrockEmbeddings
 from langchain_core.callbacks import BaseCallbackHandler
+
+if TYPE_CHECKING:
+    from langchain_community.graphs.graph_document import GraphDocument
+    from langchain_neo4j import Neo4jGraph
 
 MODEL_NAME = "sentence-transformers/all-MiniLM-L6-v2"
 MODEL_PATH = "./local_model"
@@ -35,6 +34,10 @@ def ensure_sentence_transformer_model_downloaded():
        logging.info(f"Model already downloaded at: {MODEL_PATH}")
        return
    else:
+       # These packages load PyTorch, so keep them optional for deployments
+       # configured to use OpenAI, Vertex AI, or Bedrock embeddings.
+       from transformers import AutoModel, AutoTokenizer
+
        logging.info(f"Downloading model to: {MODEL_PATH}")
        tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
        model = AutoModel.from_pretrained(MODEL_NAME)
@@ -55,6 +58,8 @@ def get_local_sentence_transformer_embedding():
            return _embedding_instance
        # Ensure model is present before instantiating
        ensure_sentence_transformer_model_downloaded()
+       from langchain_huggingface import HuggingFaceEmbeddings
+
        _embedding_instance = HuggingFaceEmbeddings(model_name=MODEL_PATH)
        logging.info("Embedding model initialized.")
        return _embedding_instance
@@ -111,6 +116,8 @@ def get_chunk_and_graphDocument(graph_document_list, chunkId_chunkDoc_list):
   return lst_chunk_chunkId_document  
                  
 def create_graph_database_connection(credentials):
+  from langchain_neo4j import Neo4jGraph
+
   enable_user_agent = get_value_from_env("ENABLE_USER_AGENT", "False" ,"bool")
   if enable_user_agent:
     graph = Neo4jGraph(url=credentials.uri, database=credentials.database, username=credentials.userName, password=credentials.password, refresh_schema=False, sanitize=True,driver_config={'user_agent':get_value_from_env("USER_AGENT","LLM-Graph-Builder")}) 
@@ -121,10 +128,14 @@ def create_graph_database_connection(credentials):
 
 def load_embedding_model(embedding_model_name: str):
     if embedding_model_name == "openai":
+        from langchain_openai import OpenAIEmbeddings
+
         embeddings = OpenAIEmbeddings()
         dimension = 1536
         logging.info(f"Embedding: Using OpenAI Embeddings , Dimension:{dimension}")
     elif embedding_model_name == "vertexai":        
+        from langchain_google_vertexai import VertexAIEmbeddings
+
         embeddings = VertexAIEmbeddings(
             model="gemini-embedding-001"
         )
@@ -244,6 +255,8 @@ def get_bedrock_embeddings():
                aws_access_key_id=aws_access_key.strip(),
                aws_secret_access_key=aws_secret_key.strip(),
            )
+       from langchain_community.embeddings import BedrockEmbeddings
+
        bedrock_embeddings = BedrockEmbeddings(
            model_id=model_name.strip(),
            client=bedrock_client
