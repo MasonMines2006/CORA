@@ -94,19 +94,21 @@ Added `backend/tests/__init__.py` so `unittest discover` can find the suite.
 4. **Make the scoped "Ask CORA" affordances interactive.** Visual only today.
 5. **Persisted lesson position**, which restores the beat bar and the "Step N of 4" line.
 
-### Smaller things found during QA, not fixed
+### Smaller things found during QA — all now fixed
 
-- **Home promises 50 concepts, the Concepts tab lists 18.** `/learning/dashboard` reports
-  `total_concepts: 50` and Home offers "Browse all 50 concepts", but `/learning/concepts`
-  defaults to `limit=18` (max 50). Pick one number.
-- **18 separate `/learning/mastery/{id}` requests on load** — one per concept. A batch
-  endpoint or a mastery map on `/concepts` would remove the N+1.
-- **`StudentReview` gets a concept ID but not its name**, so the heading falls back to
-  "Course" when opened from some paths (carried over from Codex's note).
-- **Log noise:** an unset `LEARNING_MIN_CONCEPT_CONNECTIVITY` logs "Invalid ...; falling
-  back to 2" on every call. Unset should be quiet; only a malformed value should warn.
-- **`StudentExplore` passes a ref to a function component** (`InteractiveNvlWrapper`),
-  which React warns about in the test output.
+- **Home promised 50 concepts, the Concepts tab listed 18.** Both screens now read
+  `/learning/dashboard`, so they cannot disagree. The rail reads "0 of 50 started".
+- **19 requests to draw one concept list** (`/learning/concepts` plus one
+  `/learning/mastery/{id}` per concept). The dashboard already joins mastery to every
+  concept, so it is one request now — measured in the running app.
+- **Review was titled "Course review"** when opened on a concept, because the component
+  skipped the fetch that carries the name. Verified: it now reads "Reactivity review".
+- **An unset `LEARNING_MIN_CONCEPT_CONNECTIVITY` warned on every request.** Blank and
+  unset take the default silently; only a malformed value warns.
+- **The frontend suite logged a ref warning on every run** — from the test's own NVL
+  mock, not from `StudentExplore`. The mock forwards refs now.
+
+Verification after these: 47 backend tests, 10 frontend tests, `tsc` and `eslint` clean.
 
 ## 1. Current state: everything works locally
 
