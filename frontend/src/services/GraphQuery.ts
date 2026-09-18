@@ -8,7 +8,12 @@ export const graphQueryAPI = async (
   try {
     const formData = new FormData();
     formData.append('query_type', query_type ?? 'entities');
-    formData.append('document_names', JSON.stringify(document_names));
+    // The backend does `json.loads(document_names)` on this field. `JSON.stringify(undefined)`
+    // returns the JS value `undefined`, which FormData then serialises as the literal text
+    // "undefined" - invalid JSON, so the request 200s with a "Failed" body. Always send a
+    // real JSON array, and drop any undefined entries the caller may have passed.
+    const documentNames = (document_names ?? []).filter((name): name is string => Boolean(name));
+    formData.append('document_names', JSON.stringify(documentNames));
 
     const response = await api.post(`/graph_query`, formData, {
       headers: {

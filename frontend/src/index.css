@@ -1,6 +1,28 @@
+/* Cascade layer order, declared before any @import so it wins.
+   @neo4j-ndl/base ships its own compiled Tailwind preflight as PLAIN, UNLAYERED
+   CSS. Unlayered CSS beats every @layer regardless of specificity, so while NDL
+   was imported from Home.tsx its `*{border-width:0}` and `button{...}` resets
+   silently killed Tailwind's `border`, `shadow-*`, `p-*` and `bg-*` utilities
+   app-wide -- every card rendered borderless and shadowless with no error.
+   Importing it into a named layer BELOW utilities restores normal precedence. */
+@layer ndl, theme, base, components, utilities;
+
 @import 'tailwindcss';
+@import '@neo4j-ndl/base/lib/neo4j-ds-styles.css' layer(ndl);
 
 @config '../tailwind.config.js';
+
+/* Tailwind v4 generates shadow utilities from these `--shadow-*` theme variables.
+   The NDL preset sets v3-style `theme.boxShadow`, which REPLACES Tailwind's scale
+   with six NDL names -- so `shadow-sm` / `shadow-lg`, which this project's design
+   tokens call for, generated no CSS at all and every card rendered flat. Declaring
+   them here restores the standard scale; NDL's own shadows are untouched. */
+@theme {
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+  --shadow-xl: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+}
 
 @layer base {
   *,
