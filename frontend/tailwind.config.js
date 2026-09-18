@@ -8,6 +8,13 @@ export default {
       colors: {
         red: colors.red,
         slate: colors.slate,
+        // Assess marks correct answers green. Only the colors listed here are
+        // generated, so omitting emerald made bg-emerald-50/border-emerald-300
+        // silently produce no CSS at all.
+        emerald: colors.emerald,
+        amber: colors.amber,
+        teal: colors.teal,
+        stone: colors.stone,
         white: colors.white,
         black: colors.black,
         gray: colors.gray,
