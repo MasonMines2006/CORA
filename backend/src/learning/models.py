@@ -43,6 +43,17 @@ class LearningDashboard(BaseModel):
     concepts: list[ConceptProgress] = Field(default_factory=list)
 
 
+class SourcePassage(BaseModel):
+    id: str
+    source: str
+    text: str
+
+
+class ConceptSources(BaseModel):
+    concept: Concept
+    passages: list[SourcePassage] = Field(default_factory=list)
+
+
 class LessonBeat(BaseModel):
     key: Literal["core_idea", "how_it_works", "pulstar_application", "quick_check"]
     title: str

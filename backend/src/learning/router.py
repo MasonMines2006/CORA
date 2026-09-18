@@ -8,7 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_learner
 from src.learning.generation import generate_lesson, generate_quiz
-from src.learning.graph import get_concept, get_learning_graph, get_source_context, list_concepts
+from src.learning.graph import (
+    get_concept,
+    get_learning_graph,
+    get_source_context,
+    get_source_passages,
+    list_concepts,
+)
 from src.learning.models import (
     GeneratedLesson,
     GeneratedQuiz,
@@ -22,6 +28,8 @@ from src.learning.models import (
     QuizGradeResponse,
     QuizQuestion,
     QuizResponse,
+    ConceptSources,
+    SourcePassage,
 )
 from src.learning.service import build_dashboard, mastery_from_row
 from src.user_store import (
@@ -82,6 +90,24 @@ async def mastery(concept_id: str, learner: dict = Depends(get_learner)):
     learner_id = _learner_id(learner)
     row = await asyncio.to_thread(get_mastery, learner_id, concept_id)
     return mastery_from_row(concept_id, row)
+
+
+@router.get("/sources/{concept_id}", response_model=ConceptSources)
+async def sources(concept_id: str, learner: dict = Depends(get_learner)):
+    """Expose the exact course passages used to ground a concept."""
+    _learner_id(learner)
+    graph = get_learning_graph()
+    concept = await asyncio.to_thread(get_concept, graph, concept_id)
+    if not concept:
+        raise HTTPException(status_code=404, detail="Concept was not found in completed course material")
+    rows = await asyncio.to_thread(get_source_passages, graph, concept_id)
+    return ConceptSources(
+        concept=concept,
+        passages=[
+            SourcePassage(id=f"{concept_id}:{index}", **row)
+            for index, row in enumerate(rows)
+        ],
+    )
 
 
 @router.get("/lesson/{concept_id}", response_model=LessonResponse)
