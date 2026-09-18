@@ -9,15 +9,13 @@ import ErrorBoundary from '../UI/ErrroBoundary';
 import StudentChat from './StudentChat';
 import StudentExplore from './StudentExplore';
 import StudentLearn from './StudentLearn';
-import StudentAssess from './StudentAssess';
 import StudentHome from './StudentHome';
 
-type Tab = 'home' | 'learn' | 'assess' | 'explore' | 'chat';
+type Tab = 'home' | 'learn' | 'explore' | 'chat';
 
 const tabs: { key: Tab; label: string }[] = [
   { key: 'home', label: 'Home' },
   { key: 'learn', label: 'Study' },
-  { key: 'assess', label: 'Practice' },
   { key: 'explore', label: 'Graph' },
   { key: 'chat', label: 'Chat' },
 ];
@@ -115,7 +113,6 @@ const StudentLayout: React.FC = () => {
             }}
           />
         )}
-        {activeTab === 'assess' && <StudentAssess />}
       </main>
     </div>
   );

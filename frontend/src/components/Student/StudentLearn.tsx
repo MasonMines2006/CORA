@@ -14,6 +14,8 @@ import {
   LearningLesson,
   LearningMastery,
 } from '../../API/Index';
+import StudentAssess from './StudentAssess';
+import StudentStudyTools from './StudentStudyTools';
 
 interface StudentLearnProps {
   onNavigateToChat?: (prompt?: string) => void;
@@ -192,6 +194,7 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
   const [loadingLesson, setLoadingLesson] = useState(false);
   const [conceptsError, setConceptsError] = useState('');
   const [lessonError, setLessonError] = useState('');
+  const [mode, setMode] = useState<'lesson' | 'practice' | 'cards' | 'sources'>('lesson');
   const lessonPaneRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -266,6 +269,7 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
       return;
     }
     setSelectedConceptId(conceptId);
+    setMode('lesson');
     setLoadingLesson(true);
     setLessonError('');
     setLesson(null);
@@ -399,7 +403,32 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
 
         {/* ------------------------------ Right pane ----------------------------- */}
         <section className='box-border min-w-0' ref={lessonPaneRef}>
-          {showPicker && (
+          {selectedConceptId && (
+            <nav
+              className='mb-4 flex gap-1 overflow-x-auto rounded-full border border-slate-200 bg-slate-50 p-1'
+              aria-label='Concept study modes'
+            >
+              {(
+                [
+                  ['lesson', 'Lesson'],
+                  ['practice', 'Practice'],
+                  ['cards', 'Cards'],
+                  ['sources', 'Sources'],
+                ] as const
+              ).map(([key, label]) => (
+                <button
+                  key={key}
+                  type='button'
+                  onClick={() => setMode(key)}
+                  className={`min-h-10 flex-1 whitespace-nowrap rounded-full px-4 py-2 text-sm font-semibold ${mode === key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                >
+                  {label}
+                </button>
+              ))}
+            </nav>
+          )}
+
+          {mode === 'lesson' && showPicker && (
             <div className='box-border rounded-2xl bg-white p-5 sm:p-7' style={CARD_SURFACE}>
               <p className='text-xs font-semibold uppercase tracking-wider text-red-500'>Start here</p>
               <h3 className='mt-2 text-2xl font-bold tracking-tight text-slate-900'>Pick a concept</h3>
@@ -450,7 +479,7 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
             </div>
           )}
 
-          {loadingLesson && (
+          {mode === 'lesson' && loadingLesson && (
             <div className='box-border min-h-80 animate-pulse rounded-2xl bg-white p-6' style={CARD_SURFACE}>
               <div className='h-3 w-28 rounded bg-red-100' />
               <div className='mt-5 h-7 w-2/3 rounded bg-slate-100' />
@@ -462,7 +491,7 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
             </div>
           )}
 
-          {lessonError && (
+          {mode === 'lesson' && lessonError && (
             <div
               className='box-border rounded-2xl bg-red-50 p-6'
               style={{ boxSizing: 'border-box', ...hairline(TOKEN.red200) }}
@@ -480,7 +509,7 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
             </div>
           )}
 
-          {lesson && currentBeat && (
+          {mode === 'lesson' && lesson && currentBeat && (
             <div className='box-border rounded-2xl bg-white p-5 sm:p-7' style={CARD_SURFACE}>
               <div className='flex flex-wrap items-center justify-between gap-3'>
                 <div className='min-w-0'>
@@ -620,6 +649,18 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
                 <p className='mt-5 text-xs leading-relaxed text-slate-400'>Sources: {lesson.sources.join(', ')}</p>
               )}
             </div>
+          )}
+
+          {mode === 'practice' && selectedConceptId && (
+            <StudentAssess key={selectedConceptId} initialConceptId={selectedConceptId} embedded />
+          )}
+          {(mode === 'cards' || mode === 'sources') && selectedConceptId && (
+            <StudentStudyTools
+              key={`${selectedConceptId}:${mode}`}
+              conceptId={selectedConceptId}
+              conceptName={concepts.find((concept) => concept.id === selectedConceptId)?.name ?? 'Concept'}
+              mode={mode}
+            />
           )}
         </section>
       </div>

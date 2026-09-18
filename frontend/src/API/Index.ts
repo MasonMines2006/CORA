@@ -179,6 +179,17 @@ export interface LearningDashboard {
   concepts: LearningConceptProgress[];
 }
 
+export interface LearningSourcePassage {
+  id: string;
+  source: string;
+  text: string;
+}
+
+export interface LearningSources {
+  concept: LearningConcept;
+  passages: LearningSourcePassage[];
+}
+
 export interface LessonBeat {
   key: 'core_idea' | 'how_it_works' | 'pulstar_application' | 'quick_check';
   title: string;
@@ -239,6 +250,11 @@ export const getLearningConcepts = async (signal?: AbortSignal): Promise<Learnin
 
 export const getLearningDashboard = async (signal?: AbortSignal): Promise<LearningDashboard> => {
   const response = await api.get<LearningDashboard>('/learning/dashboard', { signal });
+  return response.data;
+};
+
+export const getLearningSources = async (conceptId: string, signal?: AbortSignal): Promise<LearningSources> => {
+  const response = await api.get<LearningSources>(`/learning/sources/${encodeURIComponent(conceptId)}`, { signal });
   return response.data;
 };
 
