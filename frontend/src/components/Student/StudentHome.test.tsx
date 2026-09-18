@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { getLearningDashboard } from '../../API/Index';
 import StudentHome from './StudentHome';
 
 const dashboard = {
@@ -29,10 +30,14 @@ const dashboard = {
 };
 
 vi.mock('../../API/Index', () => ({
-  getLearningDashboard: vi.fn().mockResolvedValue(dashboard),
+  getLearningDashboard: vi.fn(),
 }));
 
 describe('StudentHome', () => {
+  beforeEach(() => {
+    vi.mocked(getLearningDashboard).mockReset().mockResolvedValue(dashboard);
+  });
+
   it('shows real progress and opens the recommended concept', async () => {
     const onOpenConcept = vi.fn();
     render(<StudentHome onOpenConcept={onOpenConcept} onOpenExplore={vi.fn()} />);
@@ -46,7 +51,6 @@ describe('StudentHome', () => {
   });
 
   it('offers a retry when dashboard loading fails', async () => {
-    const { getLearningDashboard } = await import('../../API/Index');
     vi.mocked(getLearningDashboard).mockRejectedValueOnce(new Error('offline')).mockResolvedValueOnce(dashboard);
 
     render(<StudentHome onOpenConcept={vi.fn()} onOpenExplore={vi.fn()} />);

@@ -9,29 +9,48 @@ import ErrorBoundary from '../UI/ErrroBoundary';
 import StudentChat from './StudentChat';
 import StudentExplore from './StudentExplore';
 import StudentLearn from './StudentLearn';
+import StudentAssess from './StudentAssess';
+import StudentHome from './StudentHome';
 
-type Tab = 'chat' | 'explore' | 'learn';
+type Tab = 'home' | 'learn' | 'assess' | 'explore' | 'chat';
 
 const tabs: { key: Tab; label: string }[] = [
+  { key: 'home', label: 'Home' },
+  { key: 'learn', label: 'Study' },
+  { key: 'assess', label: 'Practice' },
+  { key: 'explore', label: 'Graph' },
   { key: 'chat', label: 'Chat' },
-  { key: 'explore', label: 'Explore' },
-  { key: 'learn', label: 'Learn' },
 ];
 
 const StudentLayout: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('chat');
+  const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
+  // Guests arrive through the public QR code, so start them in the mode that
+  // works without an authenticated Chat connection.
+  const [activeTab, setActiveTab] = useState<Tab>('home');
+  const [hasOpenedChat, setHasOpenedChat] = useState(false);
   const [chatPrompt, setChatPrompt] = useState('');
-  const { logout } = useAuth0();
+  const [selectedConceptId, setSelectedConceptId] = useState('');
 
-  const handleLogout = () => {
+  const handleAccountAction = () => {
+    if (!isAuthenticated) {
+      loginWithRedirect({ appState: { returnTo: '/student' } });
+      return;
+    }
     localStorage.removeItem('userRole');
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
 
+  const selectTab = (tab: Tab) => {
+    if (tab === 'chat') {
+      setHasOpenedChat(true);
+    }
+    setActiveTab(tab);
+  };
+
   return (
-    <div className='flex min-h-screen flex-col bg-white text-slate-900'>
+    <div className='box-border flex min-h-screen flex-col bg-white text-slate-900'>
       <header className='sticky top-0 z-50 border-b border-slate-100 bg-white/80 backdrop-blur-lg'>
-        <div className='mx-auto flex max-w-5xl items-center justify-between px-6 py-3'>
+        <div className='box-border mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6'>
           <div className='flex items-center gap-3'>
             <div className='flex h-9 w-9 items-center justify-center rounded-xl bg-red-600'>
               <span className='text-sm font-semibold text-white'>C</span>
@@ -39,12 +58,15 @@ const StudentLayout: React.FC = () => {
             <span className='text-lg font-semibold tracking-tight text-slate-900'>Cora</span>
           </div>
 
-          <nav className='flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 p-1'>
+          <nav
+            className='order-3 flex w-full items-center gap-1 overflow-x-auto rounded-full border border-slate-200 bg-slate-50 p-1 sm:order-none sm:w-auto'
+            aria-label='Student modes'
+          >
             {tabs.map((tab) => (
               <button
                 key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                onClick={() => selectTab(tab.key)}
+                className={`flex-1 whitespace-nowrap rounded-full px-4 py-1.5 text-sm font-medium transition-colors sm:flex-none ${
                   activeTab === tab.key ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-700'
                 }`}
               >
@@ -54,31 +76,46 @@ const StudentLayout: React.FC = () => {
           </nav>
 
           <button
-            onClick={handleLogout}
+            onClick={handleAccountAction}
             className='rounded-full border border-slate-200 px-4 py-1.5 text-sm font-medium text-slate-600 transition-colors hover:border-slate-300 hover:text-slate-900'
           >
-            Sign out
+            {isAuthenticated ? 'Sign out' : 'Sign in'}
           </button>
         </div>
       </header>
 
       <main className='flex-1'>
-        <div className={activeTab === 'chat' ? '' : 'hidden'}>
-          <StudentChat externalPrompt={chatPrompt} onExternalPromptConsumed={() => setChatPrompt('')} />
-        </div>
+        {activeTab === 'home' && (
+          <StudentHome
+            onOpenConcept={(conceptId) => {
+              setSelectedConceptId(conceptId);
+              setActiveTab('learn');
+            }}
+            onOpenExplore={() => setActiveTab('explore')}
+          />
+        )}
+        {hasOpenedChat && (
+          <div className={activeTab === 'chat' ? '' : 'hidden'}>
+            <StudentChat externalPrompt={chatPrompt} onExternalPromptConsumed={() => setChatPrompt('')} />
+          </div>
+        )}
         <div className={activeTab === 'explore' ? '' : 'hidden'}>
           <StudentExplore />
         </div>
         {activeTab === 'learn' && (
           <StudentLearn
+            key={selectedConceptId || 'study'}
+            initialConceptId={selectedConceptId}
             onNavigateToChat={(prompt) => {
               if (prompt) {
                 setChatPrompt(prompt);
               }
+              setHasOpenedChat(true);
               setActiveTab('chat');
             }}
           />
         )}
+        {activeTab === 'assess' && <StudentAssess />}
       </main>
     </div>
   );
