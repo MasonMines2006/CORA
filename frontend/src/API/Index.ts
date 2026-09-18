@@ -190,6 +190,24 @@ export interface LearningSources {
   passages: LearningSourcePassage[];
 }
 
+export interface LearningNetworkNode {
+  id: string;
+  name: string;
+  labels: string[];
+}
+
+export interface LearningNetworkRelationship {
+  id: string;
+  from_id: string;
+  to_id: string;
+  type: string;
+}
+
+export interface LearningNetwork {
+  nodes: LearningNetworkNode[];
+  relationships: LearningNetworkRelationship[];
+}
+
 export interface LessonBeat {
   key: 'core_idea' | 'how_it_works' | 'pulstar_application' | 'quick_check';
   title: string;
@@ -255,6 +273,11 @@ export const getLearningDashboard = async (signal?: AbortSignal): Promise<Learni
 
 export const getLearningSources = async (conceptId: string, signal?: AbortSignal): Promise<LearningSources> => {
   const response = await api.get<LearningSources>(`/learning/sources/${encodeURIComponent(conceptId)}`, { signal });
+  return response.data;
+};
+
+export const getLearningNetwork = async (signal?: AbortSignal): Promise<LearningNetwork> => {
+  const response = await api.get<LearningNetwork>('/learning/network', { signal });
   return response.data;
 };
 
