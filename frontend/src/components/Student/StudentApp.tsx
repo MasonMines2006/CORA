@@ -44,6 +44,16 @@ const StudentLayout: React.FC = () => {
   const [hasOpenedChat, setHasOpenedChat] = useState(false);
   const [chatPrompt, setChatPrompt] = useState('');
   const [selectedConceptId, setSelectedConceptId] = useState('');
+  const [conceptMode, setConceptMode] = useState<'lesson' | 'practice'>('lesson');
+
+  // Opening a concept is always "which concept, in which mode", so the course
+  // map's Learn and Practice buttons land in the right place rather than both
+  // dropping you on the lesson.
+  const openConcept = (conceptId: string, mode: 'lesson' | 'practice') => {
+    setSelectedConceptId(conceptId);
+    setConceptMode(mode);
+    setActiveTab('learn');
+  };
 
   const handleAccountAction = () => {
     if (!isAuthenticated) {
@@ -114,10 +124,7 @@ const StudentLayout: React.FC = () => {
       <main className='flex-1 pb-[74px] lg:pb-0'>
         {activeTab === 'home' && (
           <StudentHome
-            onOpenConcept={(conceptId) => {
-              setSelectedConceptId(conceptId);
-              setActiveTab('learn');
-            }}
+            onOpenConcept={(conceptId) => openConcept(conceptId, 'lesson')}
             onOpenExplore={() => setActiveTab('explore')}
             onOpenReview={() => setActiveTab('review')}
           />
@@ -128,12 +135,16 @@ const StudentLayout: React.FC = () => {
           </div>
         )}
         <div className={activeTab === 'explore' ? '' : 'hidden'}>
-          <StudentExplore />
+          <StudentExplore
+            onOpenConcept={(conceptId) => openConcept(conceptId, 'lesson')}
+            onPracticeConcept={(conceptId) => openConcept(conceptId, 'practice')}
+          />
         </div>
         {activeTab === 'learn' && (
           <StudentLearn
-            key={selectedConceptId || 'study'}
+            key={`${selectedConceptId || 'study'}-${conceptMode}`}
             initialConceptId={selectedConceptId}
+            initialMode={conceptMode}
             onNavigateToChat={(prompt) => {
               if (prompt) {
                 setChatPrompt(prompt);

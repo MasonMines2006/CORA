@@ -16,9 +16,13 @@ import {
 import StudentAssess from './StudentAssess';
 import StudentStudyTools from './StudentStudyTools';
 
+type LearnMode = 'lesson' | 'practice' | 'cards' | 'sources';
+
 interface StudentLearnProps {
   onNavigateToChat?: (prompt?: string) => void;
   initialConceptId?: string;
+  /** Which mode to open in. The course map's Practice button opens 'practice'. */
+  initialMode?: LearnMode;
 }
 
 /*
@@ -180,7 +184,7 @@ const MasteryBar = ({ tone }: { tone: MasteryTone }) => (
 
 const STARTER_CARD_COUNT = 6;
 
-const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialConceptId }) => {
+const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialConceptId, initialMode }) => {
   const [concepts, setConcepts] = useState<LearningConcept[]>([]);
   const [masteryByConcept, setMasteryByConcept] = useState<Record<string, LearningMastery>>({});
   const [filter, setFilter] = useState('');
@@ -193,7 +197,7 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
   const [loadingLesson, setLoadingLesson] = useState(false);
   const [conceptsError, setConceptsError] = useState('');
   const [lessonError, setLessonError] = useState('');
-  const [mode, setMode] = useState<'lesson' | 'practice' | 'cards' | 'sources'>('lesson');
+  const [mode, setMode] = useState<LearnMode>(initialMode ?? 'lesson');
   const lessonPaneRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {

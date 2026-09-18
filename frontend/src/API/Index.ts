@@ -194,6 +194,13 @@ export interface LearningNetworkNode {
   id: string;
   name: string;
   labels: string[];
+  /** Passage count. The course map sizes each node by this. */
+  chunk_count: number;
+  document_count: number;
+  /** Source filenames, used by the document filter. */
+  sources: string[];
+  /** Always present, including "not started" — the map colours by it. */
+  mastery: LearningMastery | null;
 }
 
 export interface LearningNetworkRelationship {
