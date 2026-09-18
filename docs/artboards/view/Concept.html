@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>CORA — Concept hub</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body { margin: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
+    a { color: #b91c1c; } a:hover { color: #991b1b; }
+  </style>
+</head>
+<body>
+
+
+<div style="width: 1280px; height: 900px; box-sizing: border-box; background: #f8f7f6; display: flex; flex-direction: column;">
+
+  <!-- top bar -->
+  <div style="height: 64px; flex-shrink: 0; box-sizing: border-box; padding: 0 48px; background: #ffffff; border-bottom: 1px solid #e7e5e4; display: flex; align-items: center; gap: 40px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <div style="width: 28px; height: 28px; border-radius: 8px; background: #dc2626; color: #ffffff; display: flex; align-items: center; justify-content: center; font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 700; font-size: 15px;">C</div>
+      <div style="font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-weight: 700; font-size: 17px; color: #0f172a; letter-spacing: -0.01em;">Cora</div>
+    </div>
+    <div style="display: flex; align-items: center; gap: 4px; flex-grow: 1;">
+      <a href="Home.dc.html" style="text-decoration: none; padding: 7px 14px; border-radius: 8px; color: #475569; font-size: 14px; font-weight: 500;">Home</a>
+      <a href="Concept.dc.html" style="text-decoration: none; padding: 7px 14px; border-radius: 8px; background: #fef2f2; color: #b91c1c; font-size: 14px; font-weight: 600;">Concepts</a>
+      <a href="Explore.dc.html" style="text-decoration: none; padding: 7px 14px; border-radius: 8px; color: #475569; font-size: 14px; font-weight: 500;">Graph</a>
+      <a href="Flashcards.dc.html" style="text-decoration: none; padding: 7px 14px; border-radius: 8px; color: #475569; font-size: 14px; font-weight: 500;">Review</a>
+    </div>
+    <button type="button" style="border: 1px solid #e7e5e4; background: #ffffff; border-radius: 999px; padding: 7px 15px; font-size: 13px; font-weight: 600; color: #0f172a; cursor: pointer; font-family: inherit;">Sign in</button>
+  </div>
+
+  <!-- concept header -->
+  <div style="flex-shrink: 0; box-sizing: border-box; padding: 26px 48px 0; background: #ffffff; border-bottom: 1px solid #e7e5e4;">
+    <div style="display: flex; align-items: flex-start; gap: 24px;">
+      <div style="flex-grow: 1;">
+        <div style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; color: #94a3b8;">
+          <a href="Home.dc.html" style="text-decoration: none; color: #64748b;">All concepts</a>
+          <span>/</span>
+          <span style="color: #64748b;">Reactor physics</span>
+        </div>
+        <div style="display: flex; align-items: center; gap: 14px; margin-top: 7px;">
+          <h1 style="margin: 0; font-family: 'Space Grotesk', ui-sans-serif, sans-serif; font-size: 34px; font-weight: 700; color: #0f172a; letter-spacing: -0.02em;">Reactivity</h1>
+          <span style="background: #fffbeb; color: #b45309; border: 1px solid #fde68a; border-radius: 999px; padding: 4px 11px; font-size: 11.5px; font-weight: 700; letter-spacing: 0.04em; text-transform: uppercase;">In progress</span>
+        </div>
+        <div style="font-size: 13.5px; color: #64748b; margin-top: 7px;">Appears in 16 passages across 3 documents &middot; linked to 8 other concepts</div>
+      </div>
+
+      <div style="flex-shrink: 0; text-align: right;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #94a3b8;">Mastery</div>
+        <div style="font-family: 'Space Grotesk', sans-serif; font-size: 30px; font-weight: 700; color: #b45309; line-height: 1.1; margin-top: 4px;">60%</div>
+        <div style="font-size: 12px; color: #64748b;">3 of 5 correct &middot; medium</div>
+      </div>
+    </div>
+
+    <!-- mode tabs -->
+    <div style="display: flex; gap: 2px; margin-top: 20px;">
+      <button type="button" data-mode-tab="learn" onclick="setMode('learn')" style="border: none; border-radius: 9px 9px 0 0; padding: 11px 19px; font-size: 14px; cursor: pointer; font-family: inherit; background: transparent; color: #64748b; font-weight: 500; border-bottom: 2px solid transparent;">Learn</button>
+      <button type="button" data-mode-tab="practice" onclick="setMode('practice')" style="border: none; border-radius: 9px 9px 0 0; padding: 11px 19px; font-size: 14px; cursor: pointer; font-family: inherit; background: transparent; color: #64748b; font-weight: 500; border-bottom: 2px solid transparent;">Practice</button>
+      <button type="button" data-mode-tab="cards" onclick="setMode('cards')" style="border: none; border-radius: 9px 9px 0 0; padding: 11px 19px; font-size: 14px; cursor: pointer; font-family: inherit; background: transparent; color: #64748b; font-weight: 500; border-bottom: 2px solid transparent;">Cards</button>
+      <button type="button" data-mode-tab="graph" onclick="setMode('graph')" style="border: none; border-radius: 9px 9px 0 0; padding: 11px 19px; font-size: 14px; cursor: pointer; font-family: inherit; background: transparent; color: #64748b; font-weight: 500; border-bottom: 2px solid transparent;">Graph</button>
+      <button type="button" data-mode-tab="sources" onclick="setMode('sources')" style="border: none; border-radius: 9px 9px 0 0; padding: 11px 19px; font-size: 14px; cursor: pointer; font-family: inherit; background: transparent; color: #64748b; font-weight: 500; border-bottom: 2px solid transparent;">Sources</button>
+    </div>
+  </div>
+
+  <!-- body -->
+  <div style="flex-grow: 1; min-height: 0; box-sizing: border-box; padding: 28px 48px; display: flex; gap: 32px;">
+
+    <!-- content -->
+    <div style="flex-grow: 1; min-width: 0; display: flex; flex-direction: column;">
+
+      <div data-mode-panel="learn" style="display: none; flex-grow: 1; min-height: 0; flex-direction: column;">
+        <div style="box-sizing: border-box; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 30px 32px; display: flex; flex-direction: column; height: 100%;">
+          <div style="display: flex; align-items: center; gap: 12px;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #dc2626;">Step 3 of 4</div>
+            <div style="display: flex; gap: 5px; flex-grow: 1;">
+              <div style="height: 3px; flex-grow: 1; border-radius: 999px; background: #dc2626;"></div>
+              <div style="height: 3px; flex-grow: 1; border-radius: 999px; background: #dc2626;"></div>
+              <div style="height: 3px; flex-grow: 1; border-radius: 999px; background: #dc2626;"></div>
+              <div style="height: 3px; flex-grow: 1; border-radius: 999px; background: #e7e5e4;"></div>
+            </div>
+          </div>
+
+          <h2 style="margin: 16px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 25px; font-weight: 700; color: #0f172a; letter-spacing: -0.015em;">PULSTAR application</h2>
+
+          <p style="margin: 14px 0 0; font-size: 16px; line-height: 1.68; color: #334155;">In the PULSTAR reactor, reactivity is managed through control rods and other parameters. A one-degree increase in coolant temperature can make the reactor subcritical by <strong style="color: #0f172a;">3.9&nbsp;pcm</strong>, while withdrawing control rods by the same amount can make it supercritical. This is how reactivity changes are used to hold or adjust the reactor's critical state.</p>
+
+          <div style="margin-top: 18px; border-left: 3px solid #0f766e; background: #f0fdfa; border-radius: 0 11px 11px 0; padding: 14px 16px;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0f766e;">From the source</div>
+            <p style="margin: 7px 0 0; font-size: 13.5px; line-height: 1.6; color: #334155; font-style: italic;">&ldquo;&hellip;a one degree increase in coolant temperature on the PULSTAR when it is critical would cause the reactor to be subcritical by a reactivity of 3.9 pcm&hellip;&rdquo;</p>
+            <div style="font-size: 12px; color: #64748b; margin-top: 8px;">Theory Manual &mdash; NE235.pdf &middot; passage 142</div>
+          </div>
+
+          <div style="flex-grow: 1;"></div>
+
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 22px; padding-top: 18px; border-top: 1px solid #f1f0ef;">
+            <button type="button" style="border: 1px solid #e7e5e4; background: #ffffff; border-radius: 999px; padding: 10px 18px; font-size: 13.5px; font-weight: 600; color: #0f172a; cursor: pointer; font-family: inherit;">&larr; Previous</button>
+            <div style="flex-grow: 1;"></div>
+            <button type="button" onclick="setMode('practice')" style="border: 1px solid #e7e5e4; background: #ffffff; border-radius: 999px; padding: 10px 18px; font-size: 13.5px; font-weight: 600; color: #0f172a; cursor: pointer; font-family: inherit;">Skip to quick check</button>
+            <button type="button" style="border: none; background: #dc2626; color: #ffffff; border-radius: 999px; padding: 10px 22px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit;">Next &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <div data-mode-panel="practice" style="display: none; flex-grow: 1; min-height: 0; flex-direction: column;">
+        <div style="box-sizing: border-box; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 30px 32px; display: flex; flex-direction: column; height: 100%;">
+          <div style="display: flex; align-items: center; justify-content: space-between;">
+            <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #dc2626;">Question 1 of 3</div>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="background: #fffbeb; color: #b45309; border-radius: 999px; padding: 4px 11px; font-size: 11.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.04em;">Medium</span>
+              <span style="font-size: 12px; color: #64748b;">difficulty set by your mastery</span>
+            </div>
+          </div>
+
+          <h2 style="margin: 16px 0 0; font-family: 'Space Grotesk', sans-serif; font-size: 22px; font-weight: 700; color: #0f172a; line-height: 1.35; letter-spacing: -0.01em;">How does a change in moderator temperature affect reactor reactivity?</h2>
+
+          <div style="display: flex; flex-direction: column; gap: 9px; margin-top: 20px;">
+            <button type="button" style="box-sizing: border-box; width: 100%; text-align: left; padding: 14px 16px; border: 1px solid #e7e5e4; border-radius: 12px; background: #ffffff; color: #475569; font-size: 14.5px; cursor: pointer; font-family: inherit;">A decrease in moderator temperature always adds positive reactivity.</button>
+            <button type="button" style="box-sizing: border-box; width: 100%; text-align: left; padding: 14px 16px; border: 1px solid #e7e5e4; border-radius: 12px; background: #ffffff; color: #475569; font-size: 14.5px; cursor: pointer; font-family: inherit;">An increase in moderator temperature always adds negative reactivity.</button>
+            <button type="button" style="box-sizing: border-box; width: 100%; text-align: left; padding: 14px 16px; border: 1px solid #6ee7b7; border-radius: 12px; background: #ecfdf5; color: #065f46; font-size: 14.5px; font-weight: 600; cursor: pointer; font-family: inherit;">A change in moderator temperature can add either positive or negative reactivity depending on the reference temperature.</button>
+            <button type="button" style="box-sizing: border-box; width: 100%; text-align: left; padding: 14px 16px; border: 1px solid #e7e5e4; border-radius: 12px; background: #ffffff; color: #475569; font-size: 14.5px; cursor: pointer; font-family: inherit;">Moderator temperature changes do not affect reactivity.</button>
+          </div>
+
+          <div style="margin-top: 18px; background: #ecfdf5; border-radius: 12px; padding: 15px 17px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#059669" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"></path></svg>
+              <span style="font-size: 14px; font-weight: 700; color: #065f46;">Correct</span>
+            </div>
+            <p style="margin: 8px 0 0; font-size: 13.5px; line-height: 1.6; color: #334155;">The Theory Manual states that a change in moderator temperature can add either positive or negative reactivity depending on the direction of change relative to a reference temperature.</p>
+            <a href="Concept.dc.html" style="display: inline-block; margin-top: 9px; font-size: 12.5px; font-weight: 600; color: #0f766e; text-decoration: none;">Read the passage &rarr;</a>
+          </div>
+
+          <div style="flex-grow: 1;"></div>
+          <div style="display: flex; align-items: center; gap: 12px; margin-top: 20px; padding-top: 18px; border-top: 1px solid #f1f0ef;">
+            <div style="font-size: 13px; color: #64748b;">Mastery will update when you finish all 3.</div>
+            <div style="flex-grow: 1;"></div>
+            <button type="button" style="border: none; background: #dc2626; color: #ffffff; border-radius: 999px; padding: 10px 22px; font-size: 13.5px; font-weight: 600; cursor: pointer; font-family: inherit;">Next question &rarr;</button>
+          </div>
+        </div>
+      </div>
+
+      <div data-mode-panel="cards" style="display: none; flex-grow: 1; min-height: 0; flex-direction: column;">
+        <div style="box-sizing: border-box; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 30px 32px; display: flex; flex-direction: column; height: 100%; align-items: center; justify-content: center; gap: 18px;">
+          <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #0f766e;">Card 2 of 7 &middot; Reactivity</div>
+          <div style="box-sizing: border-box; width: 460px; min-height: 210px; border: 1px solid #e7e5e4; border-radius: 16px; background: #f8f7f6; padding: 28px; display: flex; align-items: center; justify-content: center; text-align: center;">
+            <div style="font-family: 'Space Grotesk', sans-serif; font-size: 21px; font-weight: 600; color: #0f172a; line-height: 1.45;">What is the reactivity of a critical reactor?</div>
+          </div>
+          <button type="button" style="border: 1px solid #e7e5e4; background: #ffffff; border-radius: 999px; padding: 10px 22px; font-size: 13.5px; font-weight: 600; color: #0f172a; cursor: pointer; font-family: inherit;">Show answer</button>
+          <div style="display: flex; gap: 9px; margin-top: 4px;">
+            <button type="button" style="border: 1px solid #fecaca; background: #fef2f2; color: #b91c1c; border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Again</button>
+            <button type="button" style="border: 1px solid #fde68a; background: #fffbeb; color: #b45309; border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Hard</button>
+            <button type="button" style="border: 1px solid #a7f3d0; background: #ecfdf5; color: #065f46; border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Good</button>
+            <button type="button" style="border: 1px solid #e7e5e4; background: #ffffff; color: #475569; border-radius: 999px; padding: 9px 20px; font-size: 13px; font-weight: 600; cursor: pointer; font-family: inherit;">Easy</button>
+          </div>
+          <div style="font-size: 12.5px; color: #94a3b8;">Cards are generated from the same passages as the lesson.</div>
+        </div>
+      </div>
+
+      <div data-mode-panel="graph" style="display: none; flex-grow: 1; min-height: 0; flex-direction: column;">
+        <div style="box-sizing: border-box; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 24px; display: flex; flex-direction: column; height: 100%;">
+          <div style="font-size: 14px; font-weight: 600; color: #0f172a;">Reactivity in the course graph</div>
+          <div style="font-size: 12.5px; color: #64748b; margin-top: 4px;">Only the neighbourhood of this concept &mdash; not all 1,797 nodes.</div>
+          <div style="flex-grow: 1; margin-top: 14px; border-radius: 12px; background: #f8f7f6; position: relative;">
+            <svg width="100%" height="100%" viewBox="0 0 660 380" aria-label="Concept neighbourhood graph">
+              <line x1="330" y1="190" x2="150" y2="90" stroke="#cbd5e1" stroke-width="1.5"></line>
+              <line x1="330" y1="190" x2="530" y2="95" stroke="#cbd5e1" stroke-width="1.5"></line>
+              <line x1="330" y1="190" x2="140" y2="290" stroke="#cbd5e1" stroke-width="1.5"></line>
+              <line x1="330" y1="190" x2="520" y2="295" stroke="#cbd5e1" stroke-width="1.5"></line>
+              <line x1="330" y1="190" x2="335" y2="330" stroke="#cbd5e1" stroke-width="1.5"></line>
+              <circle cx="330" cy="190" r="42" fill="#dc2626"></circle>
+              <text x="330" y="188" text-anchor="middle" fill="#ffffff" font-size="13" font-weight="700" font-family="Space Grotesk, sans-serif">Reactivity</text>
+              <text x="330" y="204" text-anchor="middle" fill="#fecaca" font-size="11" font-family="sans-serif">60%</text>
+              <circle cx="150" cy="90" r="30" fill="#0f766e"></circle>
+              <text x="150" y="94" text-anchor="middle" fill="#ffffff" font-size="11" font-weight="600" font-family="sans-serif">Keff</text>
+              <circle cx="530" cy="95" r="30" fill="#94a3b8"></circle>
+              <text x="530" y="99" text-anchor="middle" fill="#ffffff" font-size="10" font-weight="600" font-family="sans-serif">Xenon</text>
+              <circle cx="140" cy="290" r="30" fill="#94a3b8"></circle>
+              <text x="140" y="294" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="600" font-family="sans-serif">Control Rods</text>
+              <circle cx="520" cy="295" r="30" fill="#94a3b8"></circle>
+              <text x="520" y="292" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="600" font-family="sans-serif">Reactor</text>
+              <text x="520" y="303" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="600" font-family="sans-serif">Period</text>
+              <circle cx="335" cy="330" r="26" fill="#94a3b8"></circle>
+              <text x="335" y="334" text-anchor="middle" fill="#ffffff" font-size="9" font-weight="600" font-family="sans-serif">Moderator</text>
+            </svg>
+          </div>
+          <div style="display: flex; align-items: center; gap: 18px; margin-top: 12px; font-size: 12px; color: #64748b;">
+            <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 999px; background: #dc2626;"></span>This concept</span>
+            <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 999px; background: #0f766e;"></span>Mastered</span>
+            <span style="display: flex; align-items: center; gap: 6px;"><span style="width: 9px; height: 9px; border-radius: 999px; background: #94a3b8;"></span>Not started</span>
+          </div>
+        </div>
+      </div>
+
+      <div data-mode-panel="sources" style="display: none; flex-grow: 1; min-height: 0; flex-direction: column;">
+        <div style="box-sizing: border-box; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 16px; padding: 26px 30px; display: flex; flex-direction: column; height: 100%; gap: 12px;">
+          <div style="font-size: 14px; font-weight: 600; color: #0f172a;">The passages this concept was built from</div>
+          <div style="box-sizing: border-box; border: 1px solid #e7e5e4; border-radius: 12px; padding: 15px 17px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 13px; font-weight: 700; color: #0f172a;">Theory Manual &mdash; NE235.pdf</div>
+              <div style="font-size: 11.5px; color: #94a3b8;">9 passages</div>
+            </div>
+            <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: #475569;">Reactivity, denoted &rho;, is calculated as &rho; = (K<sub>eff</sub> &minus; 1) / K<sub>eff</sub>. When &rho; is zero the reactor is critical&hellip;</p>
+          </div>
+          <div style="box-sizing: border-box; border: 1px solid #e7e5e4; border-radius: 12px; padding: 15px 17px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 13px; font-weight: 700; color: #0f172a;">PULSTAR Technical Specifications.pdf</div>
+              <div style="font-size: 11.5px; color: #94a3b8;">4 passages</div>
+            </div>
+            <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: #475569;">&hellip;a one degree increase in coolant temperature would cause the reactor to be subcritical by 3.9 pcm&hellip;</p>
+          </div>
+          <div style="box-sizing: border-box; border: 1px solid #e7e5e4; border-radius: 12px; padding: 15px 17px;">
+            <div style="display: flex; align-items: center; justify-content: space-between;">
+              <div style="font-size: 13px; font-weight: 700; color: #0f172a;">Lab#2 &mdash; Reactor Startup Lab.pdf</div>
+              <div style="font-size: 11.5px; color: #94a3b8;">3 passages</div>
+            </div>
+            <p style="margin: 8px 0 0; font-size: 13px; line-height: 1.6; color: #475569;">Record the reactivity worth of each control rod position during the approach to critical&hellip;</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- right rail -->
+    <div style="width: 276px; flex-shrink: 0; display: flex; flex-direction: column; gap: 14px;">
+      <div style="box-sizing: border-box; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 14px; padding: 17px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #0f766e;">Linked concepts</div>
+        <div style="display: flex; flex-direction: column; gap: 7px; margin-top: 12px;">
+          <a href="Concept.dc.html" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 9px 11px; border-radius: 9px; background: #f8f7f6;"><span style="font-size: 13px; font-weight: 600; color: #0f172a;">Keff</span><span style="font-size: 11.5px; font-weight: 700; color: #059669;">100%</span></a>
+          <a href="Concept.dc.html" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 9px 11px; border-radius: 9px; background: #f8f7f6;"><span style="font-size: 13px; font-weight: 600; color: #0f172a;">Control Rods</span><span style="font-size: 11.5px; font-weight: 700; color: #b45309;">33%</span></a>
+          <a href="Concept.dc.html" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 9px 11px; border-radius: 9px; background: #f8f7f6;"><span style="font-size: 13px; font-weight: 600; color: #0f172a;">Reactor Period</span><span style="font-size: 11.5px; color: #94a3b8;">&mdash;</span></a>
+          <a href="Concept.dc.html" style="text-decoration: none; display: flex; align-items: center; justify-content: space-between; padding: 9px 11px; border-radius: 9px; background: #f8f7f6;"><span style="font-size: 13px; font-weight: 600; color: #0f172a;">Xenon</span><span style="font-size: 11.5px; color: #94a3b8;">&mdash;</span></a>
+        </div>
+      </div>
+
+      <div style="box-sizing: border-box; background: #ffffff; border: 1px solid #e7e5e4; border-radius: 14px; padding: 17px;">
+        <div style="font-size: 11px; font-weight: 700; letter-spacing: 0.09em; text-transform: uppercase; color: #dc2626;">Ask about this</div>
+        <p style="margin: 9px 0 0; font-size: 12.5px; line-height: 1.55; color: #64748b;">Chat is scoped to Reactivity and its passages, so answers stay on-topic.</p>
+        <div style="display: flex; flex-direction: column; gap: 6px; margin-top: 11px;">
+          <button type="button" style="box-sizing: border-box; width: 100%; text-align: left; border: 1px solid #e7e5e4; background: #ffffff; border-radius: 9px; padding: 9px 11px; font-size: 12.5px; color: #334155; cursor: pointer; font-family: inherit;">Why is &rho; negative when subcritical?</button>
+          <button type="button" style="box-sizing: border-box; width: 100%; text-align: left; border: 1px solid #e7e5e4; background: #ffffff; border-radius: 9px; padding: 9px 11px; font-size: 12.5px; color: #334155; cursor: pointer; font-family: inherit;">Show me the pcm worth of each rod</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  // Stand-in for the canvas runtime's state handling: show one mode panel at a
+  // time and restyle the tab buttons, the same way the DCLogic class did.
+  var TAB_ACTIVE = 'border: none; border-radius: 9px 9px 0 0; padding: 11px 19px; font-size: 14px; cursor: pointer; font-family: inherit; background: #f8f7f6; color: #0f172a; font-weight: 700; border-bottom: 2px solid #dc2626;';
+  var TAB_IDLE = 'border: none; border-radius: 9px 9px 0 0; padding: 11px 19px; font-size: 14px; cursor: pointer; font-family: inherit; background: transparent; color: #64748b; font-weight: 500; border-bottom: 2px solid transparent;';
+  function setMode(mode) {
+    document.querySelectorAll('[data-mode-panel]').forEach(function (panel) {
+      panel.style.display = panel.dataset.modePanel === mode ? 'flex' : 'none';
+    });
+    document.querySelectorAll('[data-mode-tab]').forEach(function (tab) {
+      tab.setAttribute('style', tab.dataset.modeTab === mode ? TAB_ACTIVE : TAB_IDLE);
+    });
+  }
+  // Open a specific mode directly with a hash, e.g. Concept.html#graph
+  var VALID = ['learn', 'practice', 'cards', 'graph', 'sources'];
+  var requested = window.location.hash.replace('#', '');
+  setMode(VALID.indexOf(requested) === -1 ? 'learn' : requested);
+  window.addEventListener('hashchange', function () {
+    var next = window.location.hash.replace('#', '');
+    if (VALID.indexOf(next) !== -1) setMode(next);
+  });
+</script>
+</body>
+</html>
