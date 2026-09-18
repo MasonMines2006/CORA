@@ -355,26 +355,38 @@ MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Doc
 WHERE document.status = 'Completed'
   AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
 """ + _LABEL_FILTER_CLAUSE + """
-WITH entity, count(DISTINCT chunk) AS chunk_count,
+WITH entity,
+     count(DISTINCT chunk) AS chunk_count,
      count(DISTINCT document) AS document_count,
+     collect(DISTINCT document.fileName)[..5] AS sources
+WITH entity, chunk_count, document_count, sources,
      COUNT { (entity)--() } AS connectivity
 WHERE connectivity >= $min_connectivity
 // ORDER BY / LIMIT are sub-clauses of WITH and must come before its WHERE, so
 // filtering first needs a second WITH to order and truncate on. Collapsing
 // these two into one clause is a Cypher syntax error, not a style choice.
-WITH entity, chunk_count, document_count, connectivity
+WITH entity, chunk_count, document_count, sources, connectivity
 ORDER BY connectivity DESC, chunk_count DESC
 LIMIT $limit
-WITH collect(entity) AS selected
+// The nodes are collected twice on purpose: `selected` stays a list of NODES
+// because `neighbor IN selected` below compares nodes, while `node_rows` is the
+// projected shape the map draws with. Projecting only maps would break the
+// relationship match; collecting only nodes would lose the per-node coverage
+// (passage count, documents) that the Explore artboard sizes and filters on.
+WITH collect(entity) AS selected,
+     collect({
+       id: coalesce(toString(entity.id), toString(entity.name), elementId(entity)),
+       name: coalesce(toString(entity.name), toString(entity.id), 'Unnamed concept'),
+       labels: [label IN labels(entity) WHERE label <> '__Entity__'],
+       chunk_count: chunk_count,
+       document_count: document_count,
+       sources: [source IN sources WHERE source IS NOT NULL]
+     }) AS node_rows
 UNWIND selected AS entity
 OPTIONAL MATCH (entity)-[relationship]-(neighbor:__Entity__)
 WHERE neighbor IN selected
-WITH selected, collect(DISTINCT relationship) AS relationships
-RETURN [node IN selected | {
-         id: coalesce(toString(node.id), toString(node.name), elementId(node)),
-         name: coalesce(toString(node.name), toString(node.id), 'Unnamed concept'),
-         labels: [label IN labels(node) WHERE label <> '__Entity__']
-       }] AS nodes,
+WITH node_rows, collect(DISTINCT relationship) AS relationships
+RETURN node_rows AS nodes,
        [relationship IN relationships WHERE relationship IS NOT NULL | {
          id: elementId(relationship),
          from_id: coalesce(toString(startNode(relationship).id), toString(startNode(relationship).name), elementId(startNode(relationship))),

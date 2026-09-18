@@ -58,6 +58,12 @@ class NetworkNode(BaseModel):
     id: str
     name: str
     labels: list[str] = Field(default_factory=list)
+    # The Explore artboard sizes each node by passage count, filters by source
+    # document, and colours by learning state, so all three travel with the node.
+    chunk_count: int = 0
+    document_count: int = 0
+    sources: list[str] = Field(default_factory=list)
+    mastery: "Mastery | None" = None
 
 
 class NetworkRelationship(BaseModel):

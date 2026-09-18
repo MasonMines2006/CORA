@@ -2,6 +2,7 @@
 
 from src.learning.models import (
     Concept,
+    ConceptNetwork,
     ConceptProgress,
     DashboardRecommendation,
     LearningDashboard,
@@ -31,6 +32,25 @@ def mastery_from_row(concept_id: str, row: dict | None) -> Mastery:
         correct=correct,
         score=score,
         difficulty=difficulty_for(attempts, correct),
+    )
+
+
+def attach_mastery(network: ConceptNetwork, mastery_rows: dict[str, dict]) -> ConceptNetwork:
+    """Colour the course map by learning state rather than by extracted type.
+
+    Every node gets a Mastery, including concepts the learner has never opened --
+    "not started" is a state the map draws, so returning None there would make the
+    frontend guess. Guests save nothing, so an empty `mastery_rows` is normal.
+    """
+    return network.model_copy(
+        update={
+            "nodes": [
+                node.model_copy(
+                    update={"mastery": mastery_from_row(node.id, mastery_rows.get(node.id))}
+                )
+                for node in network.nodes
+            ]
+        }
     )
 
 

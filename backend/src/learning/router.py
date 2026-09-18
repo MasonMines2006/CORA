@@ -33,7 +33,7 @@ from src.learning.models import (
     ConceptNetwork,
     SourcePassage,
 )
-from src.learning.service import build_dashboard, mastery_from_row
+from src.learning.service import attach_mastery, build_dashboard, mastery_from_row
 from src.user_store import (
     cache_learning_content,
     get_cached_learning_content,
@@ -93,9 +93,16 @@ async def network(
     learner: dict = Depends(get_learner),
 ):
     """Return a fast, bounded concept-only view of the course graph."""
-    _learner_id(learner)
+    learner_id = _learner_id(learner)
     try:
-        return await asyncio.to_thread(get_concept_network, get_learning_graph(), limit)
+        # Mastery rides along so the map can colour by learning state in one
+        # request. A guest saves nothing, so this comes back empty for them and
+        # every node reads "not started" -- which is true.
+        graph, mastery_rows = await asyncio.gather(
+            asyncio.to_thread(get_concept_network, get_learning_graph(), limit),
+            asyncio.to_thread(list_mastery, learner_id),
+        )
+        return attach_mastery(ConceptNetwork(**graph), mastery_rows)
     except Exception as exc:
         logger.exception("Could not load learning concept network")
         raise HTTPException(status_code=503, detail="The course map is unavailable") from exc
