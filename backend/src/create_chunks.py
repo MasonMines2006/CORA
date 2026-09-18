@@ -40,7 +40,11 @@ class CreateChunksofDocument:
         """
         logging.info("Split file into smaller chunks")
         text_splitter = TokenTextSplitter(chunk_size=token_chunk_size, chunk_overlap=chunk_overlap)
-        max_token_chunk_size = get_value_from_env("MAX_TOKEN_CHUNK_SIZE", 10000, "int")
+        # 100,000 tokens is enough headroom for a full ~60-page course PDF at the
+        # project's default 100-token chunk size (1,000 chunks). The old 10,000
+        # default silently dropped everything past the first ~10 pages of any
+        # ingested document - see chunks[:chunk_to_be_created] below.
+        max_token_chunk_size = get_value_from_env("MAX_TOKEN_CHUNK_SIZE", 100000, "int")
         chunk_to_be_created = int(max_token_chunk_size / token_chunk_size)
         normalized_email = (email or "").strip().lower() or None
         is_neo4j_user = bool(normalized_email and normalized_email.endswith("@neo4j.com"))
@@ -73,7 +77,13 @@ class CreateChunksofDocument:
 
         logging.info('Total chunks created: %d', len(chunks))
         if not is_neo4j_user and len(chunks) > chunk_to_be_created:
+            total_chunks = len(chunks)
             chunks = chunks[:chunk_to_be_created]
-            logging.info('Non Neo4j user - limiting chunks to %d from %d', chunk_to_be_created, len(chunks))
+            logging.warning(
+                'Document truncated during ingestion: only the first %d of %d chunks were '
+                'kept (MAX_TOKEN_CHUNK_SIZE=%d). The rest of this document will be invisible '
+                'to search/chat - raise MAX_TOKEN_CHUNK_SIZE if this was not intended.',
+                chunk_to_be_created, total_chunks, max_token_chunk_size,
+            )
 
         return chunks

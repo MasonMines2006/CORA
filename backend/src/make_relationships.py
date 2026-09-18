@@ -1,12 +1,15 @@
-from langchain_neo4j import Neo4jGraph
+from __future__ import annotations
+
 from langchain_core.documents import Document
 from src.shared.common_fn import load_embedding_model,execute_graph_query,get_value_from_env
 import logging
-from typing import List
+from typing import TYPE_CHECKING, List
 import os
 import hashlib
 import time
-from langchain_neo4j import Neo4jVector
+
+if TYPE_CHECKING:
+    from langchain_neo4j import Neo4jGraph
 
 logging.basicConfig(format='%(asctime)s - %(message)s',level='INFO')
 
@@ -36,20 +39,22 @@ def merge_relationship_between_chunk_and_entites(graph: Neo4jGraph, graph_docume
 
     
 def create_chunk_embeddings(graph, chunkId_chunkDoc_list, file_name):
-    isEmbedding= get_value_from_env("IS_EMBEDDING", "True" ,"bool")
-    
+    is_embedding = get_value_from_env("IS_EMBEDDING", "True", "bool")
+    if not is_embedding:
+        logging.info("Chunk embeddings are disabled; skipping embedding generation")
+        return
+
     embeddings, dimension = load_embedding_model(EMBEDDING_MODEL)
     logging.info(f'embedding model:{embeddings} and dimesion:{dimension}')
     data_for_query = []
     logging.info(f"update embedding and vector index for chunks")
     for row in chunkId_chunkDoc_list:
-        if isEmbedding:
-            embeddings_arr = embeddings.embed_query(row['chunk_doc'].page_content)
-                                    
-            data_for_query.append({
-                "chunkId": row['chunk_id'],
-                "embeddings": embeddings_arr
-            })
+        embeddings_arr = embeddings.embed_query(row['chunk_doc'].page_content)
+
+        data_for_query.append({
+            "chunkId": row['chunk_id'],
+            "embeddings": embeddings_arr
+        })
     
     query_to_create_embedding = """
         UNWIND $data AS row
@@ -150,6 +155,13 @@ def create_relation_between_chunks(graph, file_name, chunks: List[Document])->li
 
 
 def create_chunk_vector_index(graph):
+    is_embedding = get_value_from_env("IS_EMBEDDING", "True", "bool")
+    if not is_embedding:
+        logging.info("Chunk embeddings are disabled; skipping vector index creation")
+        return
+
+    from langchain_neo4j import Neo4jVector
+
     start_time = time.time()
     try:
         vector_index_query = "SHOW INDEXES YIELD name, type, labelsOrTypes, properties WHERE name = 'vector' AND type = 'VECTOR' AND 'Chunk' IN labelsOrTypes AND 'embedding' IN properties RETURN name"
