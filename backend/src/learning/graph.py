@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import logging
+import os
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
@@ -133,6 +134,15 @@ def excluded_entity_labels() -> frozenset[str]:
 
 def min_concept_connectivity() -> int:
     """Return the minimum relationship count an entity needs to be listed."""
+    # Read the raw value first. Handing an unset or blank override to an int
+    # conversion raises, and the old code treated that as a misconfiguration --
+    # so simply not setting this optional variable, which is the normal case,
+    # logged "Invalid ...; falling back to 2" on every single request and buried
+    # the warnings that actually meant something.
+    raw = os.environ.get(_MIN_CONNECTIVITY_ENV_VAR)
+    if raw is None or not raw.strip():
+        return _DEFAULT_MIN_CONNECTIVITY
+
     try:
         value = get_value_from_env(
             _MIN_CONNECTIVITY_ENV_VAR,

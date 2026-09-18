@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import { fireEvent, render, screen } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { getLearningNetwork } from '../../API/Index';
@@ -9,21 +10,29 @@ vi.mock('../../services/GetFiles', () => ({
 }));
 vi.mock('../../services/GraphQuery', () => ({ graphQueryAPI: vi.fn() }));
 vi.mock('@neo4j-nvl/base', () => ({ default: class {} }));
+// forwardRef, because StudentExplore hands this component a ref. A plain function
+// component cannot take one, and React logs "Function components cannot be given
+// refs" on every run -- noise from the mock, not from the component under test.
 vi.mock('@neo4j-nvl/react', () => ({
-  InteractiveNvlWrapper: ({
-    nodes,
-    mouseEventCallbacks,
-  }: {
-    nodes: Array<{ id: string; caption?: string }>;
-    mouseEventCallbacks?: { onNodeClick?: (node: { id: string }) => void };
-  }) => (
-    <div>
-      {nodes.map((node) => (
-        <button key={node.id} onClick={() => mouseEventCallbacks?.onNodeClick?.(node)}>
-          {node.caption}
-        </button>
-      ))}
-    </div>
+  InteractiveNvlWrapper: forwardRef(
+    (
+      {
+        nodes,
+        mouseEventCallbacks,
+      }: {
+        nodes: Array<{ id: string; caption?: string }>;
+        mouseEventCallbacks?: { onNodeClick?: (node: { id: string }) => void };
+      },
+      _ref: React.ForwardedRef<unknown>
+    ) => (
+      <div>
+        {nodes.map((node) => (
+          <button key={node.id} onClick={() => mouseEventCallbacks?.onNodeClick?.(node)}>
+            {node.caption}
+          </button>
+        ))}
+      </div>
+    )
   ),
 }));
 

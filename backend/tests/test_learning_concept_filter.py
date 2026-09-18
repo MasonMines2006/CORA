@@ -8,6 +8,7 @@ teachable topic. These tests pin the rule itself and the shape of the query it
 sends, using a fake graph so no Neo4j instance is needed.
 """
 
+import logging
 import os
 import unittest
 from unittest.mock import patch
@@ -123,6 +124,29 @@ class ExcludedLabelConfigTests(unittest.TestCase):
     def test_invalid_min_connectivity_falls_back_instead_of_raising(self):
         with patch.dict(os.environ, {"LEARNING_MIN_CONCEPT_CONNECTIVITY": "not-a-number"}):
             self.assertEqual(min_concept_connectivity(), 2)
+
+    def test_invalid_min_connectivity_warns_once(self):
+        with patch.dict(os.environ, {"LEARNING_MIN_CONCEPT_CONNECTIVITY": "not-a-number"}):
+            with self.assertLogs(level="WARNING") as captured:
+                min_concept_connectivity()
+        self.assertTrue(any("LEARNING_MIN_CONCEPT_CONNECTIVITY" in line for line in captured.output))
+
+    def test_unset_min_connectivity_is_not_a_warning(self):
+        # Leaving the override unset is the normal case, not a misconfiguration.
+        # It used to log "Invalid ...; falling back to 2" on every single request,
+        # which buried real warnings in the backend log.
+        for value in ("", "   "):
+            with self.subTest(value=repr(value)):
+                with patch.dict(os.environ, {"LEARNING_MIN_CONCEPT_CONNECTIVITY": value}):
+                    with patch.object(logging.getLogger(), "warning") as warn:
+                        self.assertEqual(min_concept_connectivity(), 2)
+                    warn.assert_not_called()
+
+        with patch.dict(os.environ, {}, clear=False):
+            os.environ.pop("LEARNING_MIN_CONCEPT_CONNECTIVITY", None)
+            with patch.object(logging.getLogger(), "warning") as warn:
+                self.assertEqual(min_concept_connectivity(), 2)
+            warn.assert_not_called()
 
 
 class ConceptQueryTests(unittest.TestCase):
