@@ -54,6 +54,24 @@ class ConceptSources(BaseModel):
     passages: list[SourcePassage] = Field(default_factory=list)
 
 
+class NetworkNode(BaseModel):
+    id: str
+    name: str
+    labels: list[str] = Field(default_factory=list)
+
+
+class NetworkRelationship(BaseModel):
+    id: str
+    from_id: str
+    to_id: str
+    type: str
+
+
+class ConceptNetwork(BaseModel):
+    nodes: list[NetworkNode] = Field(default_factory=list)
+    relationships: list[NetworkRelationship] = Field(default_factory=list)
+
+
 class LessonBeat(BaseModel):
     key: Literal["core_idea", "how_it_works", "pulstar_application", "quick_check"]
     title: str

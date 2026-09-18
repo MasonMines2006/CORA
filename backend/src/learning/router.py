@@ -10,6 +10,7 @@ from src.auth import get_learner
 from src.learning.generation import generate_lesson, generate_quiz
 from src.learning.graph import (
     get_concept,
+    get_concept_network,
     get_learning_graph,
     get_source_context,
     get_source_passages,
@@ -29,6 +30,7 @@ from src.learning.models import (
     QuizQuestion,
     QuizResponse,
     ConceptSources,
+    ConceptNetwork,
     SourcePassage,
 )
 from src.learning.service import build_dashboard, mastery_from_row
@@ -83,6 +85,20 @@ async def dashboard(learner: dict = Depends(get_learner)):
     except Exception as exc:
         logger.exception("Could not load learner dashboard")
         raise HTTPException(status_code=503, detail="Your learning dashboard is unavailable") from exc
+
+
+@router.get("/network", response_model=ConceptNetwork)
+async def network(
+    limit: int = Query(default=120, ge=20, le=250),
+    learner: dict = Depends(get_learner),
+):
+    """Return a fast, bounded concept-only view of the course graph."""
+    _learner_id(learner)
+    try:
+        return await asyncio.to_thread(get_concept_network, get_learning_graph(), limit)
+    except Exception as exc:
+        logger.exception("Could not load learning concept network")
+        raise HTTPException(status_code=503, detail="The course map is unavailable") from exc
 
 
 @router.get("/mastery/{concept_id}", response_model=Mastery)

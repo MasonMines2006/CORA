@@ -332,3 +332,52 @@ def get_source_passages(graph: Neo4jGraph, concept_id: str, limit: int = 12) -> 
                 }
             )
     return passages[:limit]
+
+
+_CONCEPT_NETWORK_QUERY = """
+MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
+WHERE document.status = 'Completed'
+  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+""" + _LABEL_FILTER_CLAUSE + """
+WITH entity, count(DISTINCT chunk) AS chunk_count,
+     count(DISTINCT document) AS document_count,
+     COUNT { (entity)--() } AS connectivity
+WHERE connectivity >= $min_connectivity
+ORDER BY connectivity DESC, chunk_count DESC
+LIMIT $limit
+WITH collect(entity) AS selected
+UNWIND selected AS entity
+OPTIONAL MATCH (entity)-[relationship]-(neighbor:__Entity__)
+WHERE neighbor IN selected
+WITH selected, collect(DISTINCT relationship) AS relationships
+RETURN [node IN selected | {
+         id: coalesce(toString(node.id), toString(node.name), elementId(node)),
+         name: coalesce(toString(node.name), toString(node.id), 'Unnamed concept'),
+         labels: [label IN labels(node) WHERE label <> '__Entity__']
+       }] AS nodes,
+       [relationship IN relationships WHERE relationship IS NOT NULL | {
+         id: elementId(relationship),
+         from_id: coalesce(toString(startNode(relationship).id), toString(startNode(relationship).name), elementId(startNode(relationship))),
+         to_id: coalesce(toString(endNode(relationship).id), toString(endNode(relationship).name), elementId(endNode(relationship))),
+         type: type(relationship)
+       }] AS relationships
+"""
+
+
+def get_concept_network(graph: Neo4jGraph, limit: int = 120) -> dict[str, list[dict]]:
+    """Return a bounded entity-only network suitable for interactive exploration."""
+    rows = graph.query(
+        _CONCEPT_NETWORK_QUERY,
+        params={
+            "limit": limit,
+            "excluded_labels": sorted(excluded_entity_labels()),
+            "min_connectivity": min_concept_connectivity(),
+        },
+    )
+    if not rows:
+        return {"nodes": [], "relationships": []}
+    row = rows[0]
+    return {
+        "nodes": list(row.get("nodes") or []),
+        "relationships": list(row.get("relationships") or []),
+    }
