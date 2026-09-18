@@ -4,6 +4,15 @@ import react from '@vitejs/plugin-react';
 // Use import.meta.env instead of process.env for better browser compatibility, especially Safari
 export default defineConfig({
   plugins: [react()],
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://backend:8000',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
   optimizeDeps: { esbuildOptions: { target: 'es2020' } },
   build: {
     target: 'es2020',
