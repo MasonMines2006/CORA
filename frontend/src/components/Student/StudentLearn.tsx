@@ -7,9 +7,8 @@ import {
   HiOutlineMagnifyingGlass,
 } from 'react-icons/hi2';
 import {
-  getLearningConcepts,
+  getLearningDashboard,
   getLearningLesson,
-  getLearningMastery,
   LearningConcept,
   LearningLesson,
   LearningMastery,
@@ -203,28 +202,21 @@ const StudentLearn: React.FC<StudentLearnProps> = ({ onNavigateToChat, initialCo
 
     const load = async () => {
       try {
-        const items = await getLearningConcepts(controller.signal);
+        // One request for the list AND its mastery. This used to call
+        // getLearningConcepts (capped at 18) and then one getLearningMastery per
+        // concept -- 19 requests to draw one list. /learning/dashboard returns
+        // every concept with mastery already joined, which is also what Home
+        // renders, so the two tabs can no longer disagree about how many
+        // concepts the course has.
+        const dashboard = await getLearningDashboard(controller.signal);
         if (cancelled) {
           return;
         }
+        const items = dashboard.concepts.map((item) => item.concept);
         setConcepts(items);
         setSelectedConceptId((current) => current || initialConceptId || items[0]?.id || '');
         setLoadingConcepts(false);
-
-        // Progress is supplementary: the list renders immediately and the bars
-        // fill in when these resolve. A failed row simply shows "Not started".
-        const settled = await Promise.allSettled(items.map((item) => getLearningMastery(item.id, controller.signal)));
-        if (cancelled) {
-          return;
-        }
-        setMasteryByConcept(
-          settled.reduce<Record<string, LearningMastery>>((accumulator, result, index) => {
-            if (result.status !== 'fulfilled') {
-              return accumulator;
-            }
-            return { ...accumulator, [items[index].id]: result.value };
-          }, {})
-        );
+        setMasteryByConcept(Object.fromEntries(dashboard.concepts.map((item) => [item.concept.id, item.mastery])));
       } catch (requestError) {
         if (cancelled || isCanceled(requestError)) {
           return;
