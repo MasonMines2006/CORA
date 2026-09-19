@@ -14,7 +14,7 @@ from src.learning.graph import (
     get_suggested_concepts,
 )
 from src.learning.models import ConceptSuggestions
-from src.learning.service import build_suggestions, started_concept_ids, suggestion_reason
+from src.learning.service import build_suggestions, suggestion_reason
 
 
 class FakeGraph:
@@ -103,24 +103,6 @@ class SuggestedConceptsQueryTests(unittest.TestCase):
     def test_never_suggests_something_already_started(self):
         self.assertIn("NOT coalesce(", _SUGGESTED_CONCEPTS_QUERY)
         self.assertIn("IN $started_ids", _SUGGESTED_CONCEPTS_QUERY)
-
-
-class StartedConceptIdsTests(unittest.TestCase):
-    def test_keeps_the_most_recent_first_order_of_list_mastery(self):
-        rows = {
-            "Keff": {"attempts": 3, "correct": 1},
-            "Reactivity": {"attempts": 5, "correct": 4},
-        }
-
-        self.assertEqual(started_concept_ids(rows), ["Keff", "Reactivity"])
-
-    def test_rows_without_attempts_do_not_count_as_started(self):
-        rows = {"Keff": {"attempts": 0, "correct": 0}, "Reactivity": {"attempts": 1, "correct": 1}}
-
-        self.assertEqual(started_concept_ids(rows), ["Reactivity"])
-
-    def test_no_rows_is_nothing_started(self):
-        self.assertEqual(started_concept_ids({}), [])
 
 
 class SuggestionReasonTests(unittest.TestCase):

@@ -124,7 +124,7 @@ class GraphRouteTests(unittest.TestCase):
 
     def test_suggestions_for_a_learner_who_started_nothing_is_empty(self):
         with (
-            patch.object(router_module, "list_mastery", return_value={}),
+            patch.object(router_module, "list_touched_concepts", return_value=[]),
             patch.object(router_module, "get_suggested_concepts") as get_suggested,
         ):
             response = self.client.get("/learning/suggestions")
@@ -132,6 +132,20 @@ class GraphRouteTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"suggestions": []})
         get_suggested.assert_not_called()
+
+    def test_reading_a_lesson_is_enough_to_be_suggested_from(self):
+        # list_touched_concepts counts a lesson position and a graded card, not
+        # just a quiz. Keying suggestions off mastery alone left Home's
+        # "Suggested next" empty for anyone who had only read lessons.
+        with (
+            patch.object(router_module, "list_touched_concepts", return_value=["Reactivity"]) as touched,
+            patch.object(router_module, "get_suggested_concepts", return_value=[]) as get_suggested,
+        ):
+            response = self.client.get("/learning/suggestions")
+
+        self.assertEqual(response.status_code, 200)
+        touched.assert_called_once_with(LEARNER_ID)
+        self.assertEqual(get_suggested.call_args.args[1:], (["Reactivity"], 3))
 
     def test_suggestions_pass_started_concepts_and_explain_themselves(self):
         suggested = [
@@ -143,11 +157,7 @@ class GraphRouteTests(unittest.TestCase):
             }
         ]
         with (
-            patch.object(
-                router_module,
-                "list_mastery",
-                return_value={"Reactivity": {"attempts": 5, "correct": 4}},
-            ),
+            patch.object(router_module, "list_touched_concepts", return_value=["Reactivity"]),
             patch.object(router_module, "get_suggested_concepts", return_value=suggested) as get_suggested,
         ):
             response = self.client.get("/learning/suggestions?limit=2")

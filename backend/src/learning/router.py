@@ -38,13 +38,13 @@ from src.learning.models import (
     SourcePassage,
 )
 from src.learning.review_service import load_last_lesson, load_review_summary
+from src.learning.review_store import list_touched_concepts
 from src.learning.service import (
     attach_mastery,
     attach_neighbour_mastery,
     build_dashboard,
     build_suggestions,
     mastery_from_row,
-    started_concept_ids,
 )
 from src.user_store import (
     cache_learning_content,
@@ -162,12 +162,17 @@ async def suggestions(
     limit: int = Query(default=3, ge=1, le=10),
     learner: dict = Depends(get_learner),
 ):
-    """Suggest concepts linked to what the learner has started, but not started yet."""
+    """Suggest concepts linked to what the learner has worked on, but not worked on yet.
+
+    "Worked on" is the same test the review queue uses -- a quiz, a lesson
+    position or a graded card -- so reading a lesson is enough to be suggested
+    from. Keying this off quiz mastery alone left Home's "Suggested next" empty
+    for every learner who had only read.
+    """
     learner_id = _learner_id(learner)
     try:
         # One after the other on purpose: the graph query needs the started ids.
-        mastery_rows = await asyncio.to_thread(list_mastery, learner_id)
-        started_ids = started_concept_ids(mastery_rows)
+        started_ids = await asyncio.to_thread(list_touched_concepts, learner_id)
         if not started_ids:
             # Nothing started means nothing to link from; Home shows its own
             # empty state, so skip the graph entirely.

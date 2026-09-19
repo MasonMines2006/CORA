@@ -78,16 +78,6 @@ def attach_neighbour_mastery(
     return neighbourhood.model_copy(update={"neighbours": neighbours})
 
 
-def started_concept_ids(mastery_rows: dict[str, dict]) -> list[str]:
-    """Return the concepts the learner has attempted, most recently seen first.
-
-    `list_mastery()` orders its rows by last_seen, newest first, and a dict keeps
-    insertion order -- so this list is in recency order, which the suggestion
-    query uses to break ties.
-    """
-    return [concept_id for concept_id, row in mastery_rows.items() if _was_attempted(row)]
-
-
 def suggestion_reason(because_of_name: str, relationship: str, shared_passages: int) -> str:
     """One short line under a suggestion on Home, saying why it is there."""
     if shared_passages > 0:
