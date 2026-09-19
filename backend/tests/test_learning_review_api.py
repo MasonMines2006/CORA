@@ -332,5 +332,72 @@ class LessonProgressTests(ReviewApiTestCase):
         self.assertEqual(response.status_code, 404)
 
 
+class DashboardTests(ReviewApiTestCase):
+    def setUp(self):
+        super().setUp()
+        # The dashboard's own concept list; mastery stays real (empty for a new guest).
+        patcher = patch.multiple(
+            "src.learning.router",
+            get_learning_graph=lambda: object(),
+            list_concepts=lambda graph, limit: [fake_get_concept(None, "Reactivity")],
+        )
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+    def dashboard(self):
+        response = self.client.get("/learning/dashboard", headers=self.headers)
+        self.assertEqual(response.status_code, 200, response.text)
+        return response.json()
+
+    def test_a_new_guest_has_nothing_due_and_nothing_to_resume(self):
+        body = self.dashboard()
+
+        self.assertEqual(body["review"], {"due_count": 0, "new_count": 0})
+        self.assertIsNone(body["last_lesson"])
+
+    def test_existing_fields_are_unchanged(self):
+        body = self.dashboard()
+
+        self.assertEqual(body["total_concepts"], 1)
+        self.assertEqual(body["started_concepts"], 0)
+        self.assertEqual(body["recommended"]["concept"]["id"], "Reactivity")
+        self.assertEqual(body["recommended"]["reason"], "Recommended starting point")
+        self.assertEqual(len(body["concepts"]), 1)
+
+    def test_review_counts_match_the_queue(self):
+        self.open_lesson("Reactivity", beat_index=2)
+        self.grade("Reactivity::core_idea", "good")
+        record_grade(
+            self.learner_id,
+            "Reactivity::quick_check",
+            "Reactivity",
+            "good",
+            datetime.now(timezone.utc) - timedelta(days=2),
+        )
+
+        body = self.dashboard()
+        queue = self.queue()
+
+        self.assertEqual(body["review"], {"due_count": 1, "new_count": 2})
+        self.assertEqual(body["review"], {"due_count": queue["due_count"], "new_count": queue["new_count"]})
+
+    def test_last_lesson_is_the_one_touched_most_recently(self):
+        self.open_lesson("Reactivity", beat_index=3)
+        self.open_lesson("Reactor Period", beat_index=1)
+
+        last = self.dashboard()["last_lesson"]
+
+        self.assertEqual(
+            {key: last[key] for key in ("concept_id", "concept_name", "beat_index", "beat_count")},
+            {
+                "concept_id": "Reactor Period",
+                "concept_name": "Reactor Period",
+                "beat_index": 1,
+                "beat_count": 4,
+            },
+        )
+        self.assertIsNotNone(datetime.fromisoformat(last["updated_at"].replace("Z", "+00:00")))
+
+
 if __name__ == "__main__":
     unittest.main()

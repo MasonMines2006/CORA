@@ -4,6 +4,8 @@ from typing import Literal
 
 from pydantic import BaseModel, Field
 
+from src.learning.review_models import LastLesson, ReviewSummary
+
 
 Difficulty = Literal["easy", "medium", "hard"]
 
@@ -41,6 +43,9 @@ class LearningDashboard(BaseModel):
     average_mastery: float
     recommended: DashboardRecommendation | None = None
     concepts: list[ConceptProgress] = Field(default_factory=list)
+    # Home's "cards due" card and "pick up where you left off" card.
+    review: ReviewSummary = Field(default_factory=ReviewSummary)
+    last_lesson: LastLesson | None = None
 
 
 class SourcePassage(BaseModel):
