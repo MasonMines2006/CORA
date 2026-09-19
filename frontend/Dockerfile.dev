@@ -1,6 +1,10 @@
 FROM node:20
 
-WORKDIR /app
+# Not /app: Vite resolves bare URL paths against the working directory, so a
+# WORKDIR of /app made the app's own /app route resolve to this folder and fail
+# with "Failed to resolve entry for package /app". Keep this in step with the
+# volume mounts in docker-compose.dev.yml.
+WORKDIR /srv/app
 COPY package.json yarn.lock ./
 RUN yarn install
 COPY . ./

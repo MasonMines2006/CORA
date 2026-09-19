@@ -78,8 +78,9 @@ services:
       context: ./frontend
       dockerfile: Dockerfile.dev
     volumes:
-      - ./frontend:/app
-      - /app/node_modules
+      # /srv/app, not /app -- see the comment in frontend/Dockerfile.dev.
+      - ./frontend:/srv/app
+      - /srv/app/node_modules
     env_file:
       - ./frontend/.env
     container_name: frontend-dev

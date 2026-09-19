@@ -183,7 +183,9 @@ const Landing = () => {
 
       {/* Features */}
       <section id='features' className='bg-white'>
-        <div className='mx-auto max-w-5xl px-6 py-20'>
+        {/* py-[80px], not py-20: the NDL preset maps the `20` spacing key to 20px,
+            so py-20 padded these sections to a quarter of the design. See CLAUDE.md. */}
+        <div className='mx-auto max-w-5xl px-6 py-[80px]'>
           <div className='mb-10 text-center'>
             <p className='text-xs font-semibold uppercase tracking-wider text-red-500'>Why Cora</p>
             <h2 className='mt-2 text-2xl font-bold tracking-tight text-slate-900 md:mb-2'>
@@ -211,9 +213,9 @@ const Landing = () => {
       <section className='bg-red-50'>
         <div className='mx-auto max-w-5xl px-6 py-16'>
           <div className='rounded-2xl border border-red-100 bg-white px-8 py-10 shadow-sm'>
-            <div className='flex items-center justify-center gap-12 md:gap-20'>
+            <div className='flex items-center justify-center gap-12 md:gap-[80px]'>
               {stats.map((stat, i) => (
-                <div key={stat.label} className='flex items-center gap-12 md:gap-20'>
+                <div key={stat.label} className='flex items-center gap-12 md:gap-[80px]'>
                   <div className='text-center'>
                     <div className='text-3xl font-bold text-red-600'>{stat.value}</div>
                     <div className='mt-1 text-xs font-medium uppercase tracking-wider text-slate-400'>{stat.label}</div>
@@ -228,7 +230,7 @@ const Landing = () => {
 
       {/* Graph Preview */}
       <section id='graph-preview' className='bg-white'>
-        <div className='mx-auto max-w-5xl px-6 py-20'>
+        <div className='mx-auto max-w-5xl px-6 py-[80px]'>
           <div className='mb-10 text-center'>
             <p className='text-xs font-semibold uppercase tracking-wider text-red-500'>Live Preview</p>
             <h2 className='mt-2 text-2xl font-bold tracking-tight text-slate-900'>Explore the knowledge graph</h2>
