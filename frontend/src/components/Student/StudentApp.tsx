@@ -1,6 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth0 } from '@auth0/auth0-react';
+import { useSearchParams } from 'react-router-dom';
 import {
+  HiOutlineArrowLeft,
   HiOutlineBookOpen,
   HiOutlineChatBubbleLeftRight,
   HiOutlineHome,
@@ -13,47 +15,64 @@ import { FileContextProvider } from '../../context/UsersFiles';
 import { MessageContextWrapper } from '../../context/UserMessages';
 import { SpotlightProvider } from '@neo4j-ndl/react';
 import ErrorBoundary from '../UI/ErrroBoundary';
+import ConceptHub from './ConceptHub';
+import ConceptIndex from './ConceptIndex';
+import { HubMode } from './conceptHubModel';
+import ReviewSession from './ReviewSession';
 import StudentChat from './StudentChat';
 import StudentExplore from './StudentExplore';
-import StudentLearn from './StudentLearn';
 import StudentHome from './StudentHomeArtboard';
-import StudentReview from './StudentReview';
+import { StudentLocation, StudentView, parseLocation, toSearchParams } from './studentLocation';
 
-type Tab = 'home' | 'learn' | 'explore' | 'review' | 'chat';
-
-const desktopTabs: { key: Tab; label: string }[] = [
-  { key: 'home', label: 'Home' },
-  { key: 'learn', label: 'Concepts' },
-  { key: 'explore', label: 'Graph' },
-  { key: 'review', label: 'Review' },
+const desktopTabs: { view: StudentView; label: string }[] = [
+  { view: 'home', label: 'Home' },
+  { view: 'concepts', label: 'Concepts' },
+  { view: 'graph', label: 'Graph' },
+  { view: 'review', label: 'Review' },
 ];
 
 const mobileTabs = [
-  { key: 'home' as const, label: 'Home', icon: HiOutlineHome },
-  { key: 'learn' as const, label: 'Learn', icon: HiOutlineBookOpen },
-  { key: 'review' as const, label: 'Review', icon: HiOutlineRectangleStack },
-  { key: 'explore' as const, label: 'Graph', icon: HiOutlineShare },
-  { key: 'chat' as const, label: 'Ask', icon: HiOutlineChatBubbleLeftRight },
+  { view: 'home' as const, label: 'Home', icon: HiOutlineHome },
+  { view: 'concepts' as const, label: 'Learn', icon: HiOutlineBookOpen },
+  { view: 'review' as const, label: 'Review', icon: HiOutlineRectangleStack },
+  { view: 'graph' as const, label: 'Graph', icon: HiOutlineShare },
+  { view: 'ask' as const, label: 'Ask', icon: HiOutlineChatBubbleLeftRight },
 ];
 
-const StudentLayout: React.FC = () => {
+const StudentLayout = () => {
   const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
-  // Guests arrive through the public QR code, so start them in the mode that
-  // works without an authenticated Chat connection.
-  const [activeTab, setActiveTab] = useState<Tab>('home');
-  const [hasOpenedChat, setHasOpenedChat] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const location = parseLocation(params);
+  // Chat keeps its conversation in component state, so once opened it stays
+  // mounted (hidden) rather than being rebuilt on every visit.
+  const [hasOpenedChat, setHasOpenedChat] = useState(location.view === 'ask');
   const [chatPrompt, setChatPrompt] = useState('');
-  const [selectedConceptId, setSelectedConceptId] = useState('');
-  const [conceptMode, setConceptMode] = useState<'lesson' | 'practice'>('lesson');
+  const [askedFrom, setAskedFrom] = useState<StudentLocation | null>(null);
 
-  // Opening a concept is always "which concept, in which mode", so the course
-  // map's Learn and Practice buttons land in the right place rather than both
-  // dropping you on the lesson.
-  const openConcept = (conceptId: string, mode: 'lesson' | 'practice') => {
-    setSelectedConceptId(conceptId);
-    setConceptMode(mode);
-    setActiveTab('learn');
+  const go = (next: StudentLocation, options: { replace?: boolean } = {}) => {
+    if (next.view === 'ask') {
+      setHasOpenedChat(true);
+    }
+    setParams(toSearchParams(next), { replace: options.replace });
   };
+
+  const goToView = (view: StudentView) => go({ view, conceptId: '', mode: 'learn' });
+
+  const openConcept = (conceptId: string, mode: HubMode = 'learn', beat?: number) =>
+    go({ view: 'concepts', conceptId, mode, beat });
+
+  const ask = (prompt: string) => {
+    setChatPrompt(prompt);
+    setAskedFrom(location.view === 'ask' ? askedFrom : location);
+    goToView('ask');
+  };
+
+  // A new page should start at the top, not wherever the last one was scrolled to.
+  useEffect(() => {
+    if (typeof window.scrollTo === 'function') {
+      window.scrollTo({ top: 0 });
+    }
+  }, [location.view, location.conceptId]);
 
   const handleAccountAction = () => {
     if (!isAuthenticated) {
@@ -64,55 +83,50 @@ const StudentLayout: React.FC = () => {
     logout({ logoutParams: { returnTo: window.location.origin } });
   };
 
-  const selectTab = (tab: Tab) => {
-    if (tab === 'chat') {
-      setHasOpenedChat(true);
-    }
-    setActiveTab(tab);
-  };
+  const askedFromConcept = askedFrom?.view === 'concepts' && askedFrom.conceptId ? askedFrom : null;
 
   return (
-    <div className='box-border flex min-h-screen flex-col bg-stone-50 text-slate-900'>
+    <div className='box-border flex min-h-screen flex-col bg-[#f8f7f6] text-slate-900'>
       <header className='sticky top-0 z-50 border-b border-stone-200 bg-white'>
-        <div className='box-border mx-auto flex h-16 max-w-[1536px] items-center justify-between px-5 sm:px-8 lg:px-12'>
-          <div className='flex items-center gap-3'>
-            <div className='flex h-10 w-10 items-center justify-center rounded-xl bg-red-600'>
-              <span className='text-lg font-bold text-white'>C</span>
-            </div>
-            <span className='text-2xl font-bold tracking-tight text-slate-900'>Cora</span>
-          </div>
+        <div className='mx-auto flex h-16 max-w-[1440px] items-center gap-10 px-5 sm:px-8 lg:px-12'>
+          <button type='button' onClick={() => goToView('home')} className='flex items-center gap-2.5'>
+            <span className='flex h-7 w-7 items-center justify-center rounded-lg bg-red-600 font-display text-[15px] font-bold text-white'>
+              C
+            </span>
+            <span className='font-display text-[17px] font-bold tracking-tight text-slate-900'>Cora</span>
+          </button>
 
-          <nav className='hidden items-center gap-1 lg:flex' aria-label='Primary navigation'>
-            {desktopTabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => selectTab(tab.key)}
-                className={`min-h-11 whitespace-nowrap rounded-xl px-5 text-sm font-bold transition-colors ${
-                  activeTab === tab.key ? 'bg-red-50 text-red-700' : 'text-slate-600 hover:text-slate-900'
-                }`}
-                style={{
-                  border: 0,
-                  backgroundColor: activeTab === tab.key ? '#fef2f2' : 'transparent',
-                  padding: '0.7rem 1.25rem',
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
+          <nav className='hidden flex-1 items-center gap-1 lg:flex' aria-label='Primary navigation'>
+            {desktopTabs.map((tab) => {
+              const active = location.view === tab.view;
+              return (
+                <button
+                  key={tab.view}
+                  type='button'
+                  aria-current={active ? 'page' : undefined}
+                  onClick={() => goToView(tab.view)}
+                  className={`rounded-lg px-3.5 py-2 text-sm ${
+                    active ? 'bg-red-50 font-semibold text-red-700' : 'font-medium text-slate-600 hover:text-slate-900'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              );
+            })}
           </nav>
 
-          <div className='flex items-center gap-3'>
+          <div className='ml-auto flex items-center gap-3'>
             {!isAuthenticated && (
-              <span className='flex items-center gap-2 rounded-full border border-stone-200 px-3 py-2 text-sm font-semibold text-slate-500'>
-                <i className='h-2 w-2 rounded-full bg-emerald-600' />
+              <span className='flex items-center gap-2 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-slate-500'>
+                <i className='h-1.5 w-1.5 rounded-full bg-emerald-600' />
                 <span className='hidden sm:inline'>Guest session</span>
                 <span className='sm:hidden'>Guest</span>
               </span>
             )}
             <button
+              type='button'
               onClick={handleAccountAction}
-              className='hidden rounded-full border border-stone-200 px-5 py-2 text-sm font-bold text-slate-900 lg:block'
-              style={{ border: '1px solid #e7e5e4', backgroundColor: '#fff', padding: '0.55rem 1.25rem' }}
+              className='hidden rounded-full border border-stone-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 hover:border-stone-300 lg:block'
             >
               {isAuthenticated ? 'Sign out' : 'Sign in'}
             </button>
@@ -122,58 +136,81 @@ const StudentLayout: React.FC = () => {
 
       {/* Clear the fixed mobile tab bar so the last card is not hidden behind it. */}
       <main className='flex-1 pb-[74px] lg:pb-0'>
-        {activeTab === 'home' && (
+        {location.view === 'home' && (
           <StudentHome
-            onOpenConcept={(conceptId) => openConcept(conceptId, 'lesson')}
-            onOpenExplore={() => setActiveTab('explore')}
-            onOpenReview={() => setActiveTab('review')}
+            onOpenConcept={(conceptId) => openConcept(conceptId)}
+            onOpenExplore={() => goToView('graph')}
+            onOpenReview={() => goToView('review')}
           />
         )}
+
+        {location.view === 'concepts' &&
+          (location.conceptId ? (
+            <ConceptHub
+              key={location.conceptId}
+              conceptId={location.conceptId}
+              mode={location.mode}
+              initialBeat={location.beat}
+              // Switching mode replaces the history entry: Back should leave the
+              // concept, not step back through every tab you clicked on it.
+              onModeChange={(mode) => go({ ...location, mode, beat: undefined }, { replace: true })}
+              onOpenConcept={(conceptId) => openConcept(conceptId)}
+              onAllConcepts={() => goToView('concepts')}
+              onAsk={ask}
+            />
+          ) : (
+            <ConceptIndex onOpenConcept={(conceptId) => openConcept(conceptId)} />
+          ))}
+
+        {location.view === 'review' && (
+          <div className='mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12'>
+            <ReviewSession showRail onFindCards={() => goToView('concepts')} />
+          </div>
+        )}
+
         {hasOpenedChat && (
-          <div className={activeTab === 'chat' ? '' : 'hidden'}>
+          <div className={location.view === 'ask' ? '' : 'hidden'}>
+            {askedFromConcept && (
+              <div className='mx-auto max-w-5xl px-5 pt-5 sm:px-8'>
+                <button
+                  type='button'
+                  onClick={() => go(askedFromConcept)}
+                  className='flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900'
+                >
+                  <HiOutlineArrowLeft className='h-4 w-4' /> Back to {askedFromConcept.conceptId}
+                </button>
+              </div>
+            )}
             <StudentChat externalPrompt={chatPrompt} onExternalPromptConsumed={() => setChatPrompt('')} />
           </div>
         )}
-        <div className={activeTab === 'explore' ? '' : 'hidden'}>
+
+        {/* The course map stays mounted: its force layout is expensive to rebuild. */}
+        <div className={location.view === 'graph' ? '' : 'hidden'}>
           <StudentExplore
-            onOpenConcept={(conceptId) => openConcept(conceptId, 'lesson')}
+            onOpenConcept={(conceptId) => openConcept(conceptId)}
             onPracticeConcept={(conceptId) => openConcept(conceptId, 'practice')}
           />
         </div>
-        {activeTab === 'learn' && (
-          <StudentLearn
-            key={`${selectedConceptId || 'study'}-${conceptMode}`}
-            initialConceptId={selectedConceptId}
-            initialMode={conceptMode}
-            onNavigateToChat={(prompt) => {
-              if (prompt) {
-                setChatPrompt(prompt);
-              }
-              setHasOpenedChat(true);
-              setActiveTab('chat');
-            }}
-          />
-        )}
-        {activeTab === 'review' && <StudentReview conceptId={selectedConceptId || undefined} />}
       </main>
 
       {/* Height and bottom padding are arbitrary values on purpose. The NDL preset
           extends Tailwind's spacing scale and its `20` key is 20px, not Tailwind's
-          80px -- so `h-20` silently rendered this bar 20px tall, clipping every
-          label, and `pb-20` would clear only 20px of it. 74px matches the artboard
-          (docs/artboards/png/MobileHome.png). See CLAUDE.md, "Tailwind Configuration". */}
+          80px -- so `h-20` silently rendered this bar 20px tall. See CLAUDE.md. */}
       <nav
         className='fixed inset-x-0 bottom-0 z-50 grid h-[74px] grid-cols-5 border-t border-stone-200 bg-white lg:hidden'
         aria-label='Mobile navigation'
       >
-        {mobileTabs.map(({ key, label, icon: Icon }) => (
+        {mobileTabs.map(({ view, label, icon: Icon }) => (
           <button
             type='button'
-            key={key}
+            key={view}
             aria-label={label}
-            onClick={() => selectTab(key)}
-            className={`flex min-h-11 flex-col items-center justify-center gap-1 text-[11px] font-bold ${activeTab === key ? 'text-red-600' : 'text-slate-400'}`}
-            style={{ border: 0, backgroundColor: '#fff', padding: '0.4rem' }}
+            aria-current={location.view === view ? 'page' : undefined}
+            onClick={() => goToView(view)}
+            className={`flex min-h-11 flex-col items-center justify-center gap-1 bg-white p-1.5 text-[11px] font-bold ${
+              location.view === view ? 'text-red-600' : 'text-slate-400'
+            }`}
           >
             <Icon className='h-6 w-6' />
             <span>{label}</span>
@@ -184,22 +221,20 @@ const StudentLayout: React.FC = () => {
   );
 };
 
-const StudentApp: React.FC = () => {
-  return (
-    <ErrorBoundary>
-      <ThemeWrapper>
-        <UserCredentialsWrapper>
-          <SpotlightProvider>
-            <FileContextProvider>
-              <MessageContextWrapper>
-                <StudentLayout />
-              </MessageContextWrapper>
-            </FileContextProvider>
-          </SpotlightProvider>
-        </UserCredentialsWrapper>
-      </ThemeWrapper>
-    </ErrorBoundary>
-  );
-};
+const StudentApp = () => (
+  <ErrorBoundary>
+    <ThemeWrapper>
+      <UserCredentialsWrapper>
+        <SpotlightProvider>
+          <FileContextProvider>
+            <MessageContextWrapper>
+              <StudentLayout />
+            </MessageContextWrapper>
+          </FileContextProvider>
+        </SpotlightProvider>
+      </UserCredentialsWrapper>
+    </ThemeWrapper>
+  </ErrorBoundary>
+);
 
 export default StudentApp;

@@ -18,6 +18,8 @@
    tokens call for, generated no CSS at all and every card rendered flat. Declaring
    them here restores the standard scale; NDL's own shadows are untouched. */
 @theme {
+  /* `font-display` class: headings and numerals, per docs/artboards. Falls back to system sans offline. */
+  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);

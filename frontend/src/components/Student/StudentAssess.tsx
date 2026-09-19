@@ -70,9 +70,11 @@ const optionStateStyle = ({ correctOption, wrongSelection, selected }: OptionSta
 interface StudentAssessProps {
   initialConceptId?: string;
   embedded?: boolean;
+  /** Called with the new mastery after a quiz is graded, so a parent header can update. */
+  onMasteryChange?: (mastery: LearningMastery) => void;
 }
 
-const StudentAssess: React.FC<StudentAssessProps> = ({ initialConceptId, embedded = false }) => {
+const StudentAssess: React.FC<StudentAssessProps> = ({ initialConceptId, embedded = false, onMasteryChange }) => {
   const [concepts, setConcepts] = useState<LearningConcept[]>([]);
   const [conceptId, setConceptId] = useState('');
   const [mastery, setMastery] = useState<LearningMastery>(emptyMastery());
@@ -144,6 +146,7 @@ const StudentAssess: React.FC<StudentAssessProps> = ({ initialConceptId, embedde
       );
       setGrade(result);
       setMastery(result.mastery);
+      onMasteryChange?.(result.mastery);
     } catch (requestError) {
       setError(errorMessage(requestError));
     } finally {

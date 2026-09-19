@@ -170,6 +170,14 @@ export interface LearningRecommendation extends LearningConceptProgress {
   reason: string;
 }
 
+export interface LearningLastLesson {
+  concept_id: string;
+  concept_name: string;
+  beat_index: number;
+  beat_count: number;
+  updated_at: string;
+}
+
 export interface LearningDashboard {
   total_concepts: number;
   started_concepts: number;
@@ -177,6 +185,10 @@ export interface LearningDashboard {
   average_mastery: number;
   recommended: LearningRecommendation | null;
   concepts: LearningConceptProgress[];
+  /** Cards waiting in spaced review. Optional until every backend serves it. */
+  review?: { due_count: number; new_count: number };
+  /** The lesson the learner most recently moved through, for "Pick up where you left off". */
+  last_lesson?: LearningLastLesson | null;
 }
 
 export interface LearningSourcePassage {
@@ -311,6 +323,115 @@ export const gradeLearningQuiz = async (quizId: string, answers: number[]): Prom
   const response = await api.post<QuizGrade>(
     '/learning/quiz/grade',
     { quiz_id: quizId, answers },
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+  return response.data;
+};
+
+/* ----------------------------- Concept hub ----------------------------- */
+
+export interface ConceptNeighbour {
+  id: string;
+  name: string;
+  labels: string[];
+  chunk_count: number;
+  /** Relationship type between the two concepts, e.g. RELATED_TO. */
+  relationship: string;
+  /** Which way the relationship points, relative to the centre concept. */
+  direction: 'out' | 'in';
+  /** Passages that mention both concepts. */
+  shared_passages: number;
+  /** Null when the learner has never practised this neighbour. */
+  mastery: LearningMastery | null;
+}
+
+export interface ConceptNeighbourhood {
+  concept: LearningConcept;
+  /** Every eligible neighbour, not just the ones returned. */
+  linked_count: number;
+  neighbours: ConceptNeighbour[];
+}
+
+export const getConceptNeighbourhood = async (
+  conceptId: string,
+  limit = 8,
+  signal?: AbortSignal
+): Promise<ConceptNeighbourhood> => {
+  const response = await api.get<ConceptNeighbourhood>(
+    `/learning/concepts/${encodeURIComponent(conceptId)}/neighbourhood`,
+    { params: { limit }, signal }
+  );
+  return response.data;
+};
+
+export interface ConceptSuggestion {
+  concept: LearningConcept;
+  because_of: { id: string; name: string };
+  relationship: string;
+  shared_passages: number;
+  reason: string;
+}
+
+export const getConceptSuggestions = async (limit = 3, signal?: AbortSignal): Promise<ConceptSuggestion[]> => {
+  const response = await api.get<{ suggestions: ConceptSuggestion[] }>('/learning/suggestions', {
+    params: { limit },
+    signal,
+  });
+  return response.data.suggestions;
+};
+
+/** Saves how far through a lesson the learner got, so Home can offer "Resume". */
+export const saveLessonProgress = async (conceptId: string, beatIndex: number, beatCount: number): Promise<void> => {
+  await api.put(
+    `/learning/lesson/${encodeURIComponent(conceptId)}/progress`,
+    { beat_index: beatIndex, beat_count: beatCount },
+    { headers: { 'Content-Type': 'application/json' } }
+  );
+};
+
+/* ---------------------------- Spaced review ---------------------------- */
+
+export type ReviewGrade = 'again' | 'hard' | 'good' | 'easy';
+
+export interface ReviewCard {
+  card_id: string;
+  concept_id: string;
+  concept_name: string;
+  prompt: string;
+  answer: string;
+  source: string;
+  state: 'new' | 'learning' | 'review';
+  last_reviewed_at: string | null;
+  due_at: string | null;
+  /** Seconds until the card would come back, for each grade. Printed under the buttons. */
+  intervals: Record<ReviewGrade, number>;
+}
+
+export interface ReviewQueue {
+  due_count: number;
+  new_count: number;
+  cards: ReviewCard[];
+}
+
+export interface ReviewGradeResult {
+  card_id: string;
+  due_at: string;
+  interval_seconds: number;
+  state: ReviewCard['state'];
+}
+
+export const getReviewQueue = async (conceptId?: string, signal?: AbortSignal): Promise<ReviewQueue> => {
+  const response = await api.get<ReviewQueue>('/learning/review/queue', {
+    params: conceptId ? { concept_id: conceptId } : {},
+    signal,
+  });
+  return response.data;
+};
+
+export const gradeReviewCard = async (cardId: string, grade: ReviewGrade): Promise<ReviewGradeResult> => {
+  const response = await api.post<ReviewGradeResult>(
+    '/learning/review/grade',
+    { card_id: cardId, grade },
     { headers: { 'Content-Type': 'application/json' } }
   );
   return response.data;
