@@ -138,9 +138,10 @@ const StudentLayout = () => {
       <main className='flex-1 pb-[74px] lg:pb-0'>
         {location.view === 'home' && (
           <StudentHome
-            onOpenConcept={(conceptId) => openConcept(conceptId)}
+            onOpenConcept={(conceptId, beat) => openConcept(conceptId, 'learn', beat)}
             onOpenExplore={() => goToView('graph')}
             onOpenReview={() => goToView('review')}
+            onAsk={ask}
           />
         )}
 

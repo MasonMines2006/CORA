@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { getLearningSources, LearningNetworkNode, LearningNetworkRelationship } from '../../API/Index';
 import { MASTERY_COLORS, masteryState } from './exploreModel';
+import { STATE_STYLE, masteryLabel } from './learningState';
 
 /*
  * The course map's right rail: what the selected concept is, how well the
@@ -15,12 +16,6 @@ const TOKEN = {
   faint: '#94a3b8',
   red: '#dc2626',
   teal: '#0f766e',
-} as const;
-
-const STATE_LABEL = {
-  mastered: 'Mastered',
-  inProgress: 'In progress',
-  notStarted: 'Not started',
 } as const;
 
 const primaryButton: React.CSSProperties = {
@@ -142,10 +137,10 @@ const ExploreInspector: React.FC<ExploreInspectorProps> = ({
         </p>
         <div className='mt-1 flex items-baseline gap-2'>
           <span className='text-2xl font-bold' style={{ color: MASTERY_COLORS[state] }}>
-            {mastery && mastery.attempts > 0 ? `${Math.round(mastery.score)}%` : '—'}
+            {masteryLabel(mastery)}
           </span>
           <span className='text-xs' style={{ color: TOKEN.muted }}>
-            {STATE_LABEL[state]}
+            {STATE_STYLE[state].label}
           </span>
         </div>
         {mastery && mastery.attempts > 0 && (

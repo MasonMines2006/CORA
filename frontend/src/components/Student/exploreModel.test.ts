@@ -9,6 +9,7 @@ import {
   nodeSize,
   typeCounts,
 } from './exploreModel';
+import { STATE_STYLE } from './learningState';
 
 const node = (id: string, overrides: Partial<LearningNetworkNode> = {}): LearningNetworkNode => ({
   id,
@@ -53,6 +54,14 @@ describe('mastery colouring', () => {
   it('treats a missing mastery row as not started', () => {
     // Guests save nothing, so a null row is the normal path for them.
     expect(masteryState(node('a', { mastery: null }))).toBe('notStarted');
+  });
+
+  it('takes its colours from the shared learning palette, not the graph teal', () => {
+    // The map used to own a teal "mastered"; STUDENT_UI.md section 4 reserves
+    // teal for graph structure and gives learning state emerald.
+    expect(MASTERY_COLORS.mastered).toBe(STATE_STYLE.mastered.color);
+    expect(MASTERY_COLORS.inProgress).toBe(STATE_STYLE.inProgress.color);
+    expect(MASTERY_COLORS.notStarted).toBe(STATE_STYLE.notStarted.color);
   });
 
   it('gives selection priority over state', () => {

@@ -1,4 +1,5 @@
 import { LearningNetworkNode, LearningNetworkRelationship } from '../../API/Index';
+import { MasteryState, STATE_STYLE, masteryState as conceptMasteryState } from './learningState';
 
 /*
  * Filtering and presentation rules for the course map, kept out of the component
@@ -9,12 +10,19 @@ import { LearningNetworkNode, LearningNetworkRelationship } from '../../API/Inde
  * learning state, never decoration.
  */
 
-/** Semantic mastery colours. These are the whole point of the palette. */
+/**
+ * Semantic mastery colours. These are the whole point of the palette.
+ *
+ * Learning state comes from learningState.ts so the map, Home and the concept
+ * pages cannot drift apart again -- the map drew mastered concepts teal, which
+ * STUDENT_UI.md section 4 reserves for graph structure. `selected` is the map's
+ * own idea and stays here.
+ */
 export const MASTERY_COLORS = {
   selected: '#dc2626',
-  mastered: '#0f766e',
-  inProgress: '#b45309',
-  notStarted: '#94a3b8',
+  mastered: STATE_STYLE.mastered.color,
+  inProgress: STATE_STYLE.inProgress.color,
+  notStarted: STATE_STYLE.notStarted.color,
 } as const;
 
 /**
@@ -24,17 +32,11 @@ export const MASTERY_COLORS = {
  */
 export const NOISE_TYPES = ['Institution', 'Document', 'Organization', 'Person'] as const;
 
-/** A concept is "mastered" at 80%, matching the dashboard and the lesson tabs. */
-const MASTERED_AT = 80;
+export type { MasteryState };
 
-export type MasteryState = 'mastered' | 'inProgress' | 'notStarted';
-
+/** The map holds nodes, not bare mastery rows; the rule itself is shared. */
 export const masteryState = (node: LearningNetworkNode): MasteryState => {
-  const { mastery } = node;
-  if (!mastery || mastery.attempts === 0) {
-    return 'notStarted';
-  }
-  return mastery.score >= MASTERED_AT ? 'mastered' : 'inProgress';
+  return conceptMasteryState(node.mastery);
 };
 
 export const nodeColor = (node: LearningNetworkNode, isSelected: boolean): string => {

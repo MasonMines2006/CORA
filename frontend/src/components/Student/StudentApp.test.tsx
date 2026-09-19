@@ -21,9 +21,17 @@ vi.mock('@neo4j-ndl/react', () => ({ SpotlightProvider: ({ children }: { childre
 vi.mock('../UI/ErrroBoundary', () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
 
 vi.mock('./StudentHomeArtboard', () => ({
-  default: ({ onOpenConcept }: { onOpenConcept: (id: string) => void }) => (
+  default: ({
+    onOpenConcept,
+    onAsk,
+  }: {
+    onOpenConcept: (id: string, beat?: number) => void;
+    onAsk: (prompt: string) => void;
+  }) => (
     <div>
       Home screen <button onClick={() => onOpenConcept('Reactivity')}>Open Reactivity</button>
+      <button onClick={() => onOpenConcept('Reactivity', 2)}>Resume Reactivity</button>
+      <button onClick={() => onAsk('What is reactivity?')}>Ask from home</button>
     </div>
   ),
 }));
@@ -32,16 +40,19 @@ vi.mock('./ConceptHub', () => ({
   default: ({
     conceptId,
     mode,
+    initialBeat,
     onModeChange,
     onAsk,
   }: {
     conceptId: string;
     mode: string;
+    initialBeat?: number;
     onModeChange: (mode: string) => void;
     onAsk: (prompt: string) => void;
   }) => (
     <div>
       Hub for {conceptId} in {mode}
+      {initialBeat !== undefined && <span> at beat {initialBeat}</span>}
       <button onClick={() => onModeChange('graph')}>Switch to graph</button>
       <button onClick={() => onAsk('Why?')}>Ask why</button>
     </div>
@@ -96,6 +107,21 @@ describe('StudentApp navigation', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /back to reactivity/i }));
     expect(screen.getByText('Hub for Reactivity in learn')).toBeInTheDocument();
+  });
+
+  it('resumes a lesson from Home at the beat the learner left it', () => {
+    renderAt();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Resume Reactivity' }));
+    expect(screen.getByText(/hub for reactivity in learn/i)).toBeInTheDocument();
+    expect(screen.getByText(/at beat 2/i)).toBeInTheDocument();
+  });
+
+  it('sends a question from Home to Ask', () => {
+    renderAt();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Ask from home' }));
+    expect(screen.getByText('Ask screen')).toBeInTheDocument();
   });
 
   it('treats an unknown view in the URL as Home rather than a blank page', () => {
