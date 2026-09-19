@@ -53,6 +53,14 @@ class LearningDashboardTests(unittest.TestCase):
         self.assertIsNone(dashboard.recommended)
         self.assertEqual(dashboard.concepts, [])
 
+    def test_review_and_resume_default_to_nothing_pending(self):
+        # The endpoint fills these in; a dashboard built without them must
+        # still say "no cards due, nothing to resume" rather than omit them.
+        dashboard = build_dashboard([concept("Reactivity", 50)], {})
+
+        self.assertEqual(dashboard.review.model_dump(), {"due_count": 0, "new_count": 0})
+        self.assertIsNone(dashboard.last_lesson)
+
 
 if __name__ == "__main__":
     unittest.main()

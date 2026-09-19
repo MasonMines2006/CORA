@@ -57,6 +57,8 @@ from src.auth import (
     set_user_role,
 )
 from src.learning import router as learning_router
+from src.learning.review_router import router as review_router
+from src.learning.review_store import ensure_review_tables
 from src.user_store import close_pool, ensure_learning_tables
 
 load_dotenv()
@@ -124,6 +126,7 @@ class CustomGZipMiddleware:
 
 app = FastAPI()
 app.include_router(learning_router)
+app.include_router(review_router)
 
 
 @app.on_event("startup")
@@ -132,6 +135,7 @@ def _init_user_store():
     # instead of on every single authenticated request.
     ensure_users_table()
     ensure_learning_tables()
+    ensure_review_tables()
 
 
 @app.on_event("shutdown")

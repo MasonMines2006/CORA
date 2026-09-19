@@ -37,6 +37,7 @@ from src.learning.models import (
     ConceptSuggestions,
     SourcePassage,
 )
+from src.learning.review_service import load_last_lesson, load_review_summary
 from src.learning.service import (
     attach_mastery,
     attach_neighbour_mastery,
@@ -88,11 +89,15 @@ async def dashboard(learner: dict = Depends(get_learner)):
     """Return one cohesive home-screen view of course concepts and progress."""
     learner_id = _learner_id(learner)
     try:
-        graph, mastery_rows = await asyncio.gather(
+        graph, mastery_rows, review, last_lesson = await asyncio.gather(
             asyncio.to_thread(list_concepts, get_learning_graph(), 50),
             asyncio.to_thread(list_mastery, learner_id),
+            load_review_summary(learner_id),
+            load_last_lesson(learner_id),
         )
-        return build_dashboard(graph, mastery_rows)
+        return build_dashboard(graph, mastery_rows).model_copy(
+            update={"review": review, "last_lesson": last_lesson}
+        )
     except Exception as exc:
         logger.exception("Could not load learner dashboard")
         raise HTTPException(status_code=503, detail="Your learning dashboard is unavailable") from exc
