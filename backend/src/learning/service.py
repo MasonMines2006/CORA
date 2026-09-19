@@ -2,8 +2,12 @@
 
 from src.learning.models import (
     Concept,
+    ConceptNeighbourhood,
     ConceptNetwork,
     ConceptProgress,
+    ConceptRef,
+    ConceptSuggestion,
+    ConceptSuggestions,
     DashboardRecommendation,
     LearningDashboard,
     Mastery,
@@ -51,6 +55,62 @@ def attach_mastery(network: ConceptNetwork, mastery_rows: dict[str, dict]) -> Co
                 for node in network.nodes
             ]
         }
+    )
+
+
+def _was_attempted(row: dict | None) -> bool:
+    return bool(row) and int(row.get("attempts") or 0) > 0
+
+
+def attach_neighbour_mastery(
+    neighbourhood: ConceptNeighbourhood, mastery_rows: dict[str, dict]
+) -> ConceptNeighbourhood:
+    """Put the learner's mastery on each linked concept.
+
+    Unlike the course map, a neighbour the learner never attempted gets None:
+    the concept hub's "Linked concepts" rail draws an em-dash for it.
+    """
+    neighbours = []
+    for neighbour in neighbourhood.neighbours:
+        row = mastery_rows.get(neighbour.id)
+        mastery = mastery_from_row(neighbour.id, row) if _was_attempted(row) else None
+        neighbours.append(neighbour.model_copy(update={"mastery": mastery}))
+    return neighbourhood.model_copy(update={"neighbours": neighbours})
+
+
+def started_concept_ids(mastery_rows: dict[str, dict]) -> list[str]:
+    """Return the concepts the learner has attempted, most recently seen first.
+
+    `list_mastery()` orders its rows by last_seen, newest first, and a dict keeps
+    insertion order -- so this list is in recency order, which the suggestion
+    query uses to break ties.
+    """
+    return [concept_id for concept_id, row in mastery_rows.items() if _was_attempted(row)]
+
+
+def suggestion_reason(because_of_name: str, relationship: str, shared_passages: int) -> str:
+    """One short line under a suggestion on Home, saying why it is there."""
+    if shared_passages > 0:
+        noun = "passage" if shared_passages == 1 else "passages"
+        return f"Appears with {because_of_name} in {shared_passages} {noun}"
+    return f"Linked to {because_of_name} ({relationship})"
+
+
+def build_suggestions(items: list[dict]) -> ConceptSuggestions:
+    """Turn get_suggested_concepts() output into the response, with reasons."""
+    return ConceptSuggestions(
+        suggestions=[
+            ConceptSuggestion(
+                concept=item["concept"],
+                because_of=ConceptRef(**item["because_of"]),
+                relationship=item["relationship"],
+                shared_passages=item["shared_passages"],
+                reason=suggestion_reason(
+                    item["because_of"]["name"], item["relationship"], item["shared_passages"]
+                ),
+            )
+            for item in items
+        ]
     )
 
 

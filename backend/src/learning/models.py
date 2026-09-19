@@ -78,6 +78,50 @@ class ConceptNetwork(BaseModel):
     relationships: list[NetworkRelationship] = Field(default_factory=list)
 
 
+class ConceptNeighbour(BaseModel):
+    """A concept linked to the concept hub's centre, for Graph mode and the
+    "Linked concepts" rail."""
+
+    id: str
+    name: str
+    labels: list[str] = Field(default_factory=list)
+    chunk_count: int = 0
+    # The relationship type between the two, and which way it points relative to
+    # the centre: "out" reads "centre CALCULATED_FROM neighbour".
+    relationship: str
+    direction: Literal["out", "in"]
+    # Passages that mention both concepts -- the strength of the link.
+    shared_passages: int = 0
+    # None when the learner never attempted it: the rail draws an em-dash there,
+    # and a 0% Mastery would read as "attempted and got nothing right".
+    mastery: Mastery | None = None
+
+
+class ConceptNeighbourhood(BaseModel):
+    concept: Concept
+    # Every eligible neighbour, not just the ones in `neighbours`.
+    linked_count: int = 0
+    neighbours: list[ConceptNeighbour] = Field(default_factory=list)
+
+
+class ConceptRef(BaseModel):
+    id: str
+    name: str
+
+
+class ConceptSuggestion(BaseModel):
+    concept: Concept
+    # The started concept this suggestion is linked to.
+    because_of: ConceptRef
+    relationship: str
+    shared_passages: int = 0
+    reason: str
+
+
+class ConceptSuggestions(BaseModel):
+    suggestions: list[ConceptSuggestion] = Field(default_factory=list)
+
+
 class LessonBeat(BaseModel):
     key: Literal["core_idea", "how_it_works", "pulstar_application", "quick_check"]
     title: str

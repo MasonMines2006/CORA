@@ -413,3 +413,224 @@ def get_concept_network(graph: Neo4jGraph, limit: int = 120) -> dict[str, list[d
         "nodes": list(row.get("nodes") or []),
         "relationships": list(row.get("relationships") or []),
     }
+
+
+# --- One concept's neighbourhood, and "suggested next" -------------------------
+#
+# Both queries walk ONE hop out from known concepts. The course map above only
+# draws the top-ranked concepts, so a concept outside that set would otherwise
+# show no neighbours at all.
+#
+# Every neighbour must pass the same rules as list_concepts(), or the concept hub
+# would list "Reactor Operations Homework #3" as a linked concept:
+#   * no excluded (noise) label           -> _LABEL_FILTER_CLAUSE
+#   * grounded in a completed, non-answer-key document
+#   * at least min_concept_connectivity() relationships
+# The candidate neighbour is called `entity` in both queries so the shared label
+# clause applies to it unchanged.
+
+# Relationship types that only say "these two are connected". When a pair is
+# joined several ways (Reactivity and Keff are joined three ways), a specific type
+# such as CALCULATED_FROM tells a student more, so these are chosen last. Every
+# spelling listed here occurs in the dev graph.
+_GENERIC_RELATIONSHIP_TYPES = frozenset(
+    {"RELATED_TO", "RELATEDTO", "IS_RELATED_TO", "ASSOCIATED_WITH", "CONNECTED_TO"}
+)
+_FALLBACK_LINK = {"type": "RELATED_TO", "direction": "out"}
+
+
+_CONCEPT_NEIGHBOURHOOD_QUERY = """
+MATCH (centre:__Entity__)
+WHERE coalesce(toString(centre.id), toString(centre.name), elementId(centre)) = $concept_id
+// One hop, to entities only. Chunks also hang off every concept via HAS_ENTITY;
+// they are passages, not neighbours.
+MATCH (centre)-[relationship]-(entity:__Entity__)
+WHERE entity <> centre
+""" + _LABEL_FILTER_CLAUSE + """
+// Keep every relationship between the pair; pick_relationship() chooses one.
+WITH centre, entity,
+     collect({type: type(relationship),
+              direction: CASE WHEN startNode(relationship) = centre THEN 'out' ELSE 'in' END}) AS links
+// The concept list's coverage rule: a neighbour with no passage in a completed,
+// non-answer-key document drops out here. `shared_passages` counts the passages
+// that mention BOTH concepts -- the strength of the link.
+MATCH (entity)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
+WHERE document.status = 'Completed'
+  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+WITH centre, entity, links,
+     count(DISTINCT chunk) AS chunk_count,
+     count(DISTINCT CASE WHEN EXISTS { (chunk)-[:HAS_ENTITY]->(centre) } THEN chunk END) AS shared_passages,
+     COUNT { (entity)--() } AS connectivity
+WHERE connectivity >= $min_connectivity
+// ORDER BY cannot follow the WHERE above (it belongs to that WITH), so it gets a
+// WITH of its own.
+WITH entity, links, chunk_count, shared_passages, connectivity,
+     coalesce(toString(entity.name), toString(entity.id), 'Unnamed concept') AS name
+ORDER BY shared_passages DESC, connectivity DESC, name ASC
+// Collect ALL eligible neighbours so linked_count covers them, then return the
+// strongest $limit. collect() keeps the order set just above.
+WITH collect({
+       id: coalesce(toString(entity.id), toString(entity.name), elementId(entity)),
+       name: name,
+       labels: [label IN labels(entity) WHERE label <> '__Entity__'],
+       chunk_count: chunk_count,
+       shared_passages: shared_passages,
+       links: links
+     }) AS neighbours
+RETURN size(neighbours) AS linked_count, neighbours[..$limit] AS neighbours
+"""
+
+
+_SUGGESTED_CONCEPTS_QUERY = """
+// `anchor` is a concept the learner has started; $started_ids is ordered most
+// recently seen first.
+MATCH (anchor:__Entity__)
+WITH anchor, coalesce(toString(anchor.id), toString(anchor.name), elementId(anchor)) AS anchor_id
+WHERE anchor_id IN $started_ids
+// One hop out, to entities the learner has NOT started.
+MATCH (anchor)-[relationship]-(entity:__Entity__)
+WHERE NOT coalesce(toString(entity.id), toString(entity.name), elementId(entity)) IN $started_ids
+""" + _LABEL_FILTER_CLAUSE + """
+WITH anchor, anchor_id, entity,
+     collect({type: type(relationship),
+              direction: CASE WHEN startNode(relationship) = anchor THEN 'out' ELSE 'in' END}) AS links
+// Same coverage rule and link strength as the neighbourhood query above.
+MATCH (entity)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
+WHERE document.status = 'Completed'
+  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+WITH anchor, anchor_id, entity, links,
+     count(DISTINCT chunk) AS chunk_count,
+     count(DISTINCT document) AS document_count,
+     collect(DISTINCT document.fileName)[..5] AS sources,
+     count(DISTINCT CASE WHEN EXISTS { (chunk)-[:HAS_ENTITY]->(anchor) } THEN chunk END) AS shared_passages,
+     COUNT { (entity)--() } AS connectivity
+WHERE connectivity >= $min_connectivity
+// A candidate linked to several started concepts must appear once. Keep its
+// strongest link: most shared passages, then the most recently seen anchor
+// (its position in $started_ids).
+WITH entity, chunk_count, document_count, sources, connectivity,
+     anchor, anchor_id, links, shared_passages,
+     [index IN range(0, size($started_ids) - 1) WHERE $started_ids[index] = anchor_id][0] AS anchor_rank
+ORDER BY shared_passages DESC, anchor_rank ASC
+WITH entity, chunk_count, document_count, sources, connectivity,
+     collect({
+       id: anchor_id,
+       name: coalesce(toString(anchor.name), toString(anchor.id), 'Unnamed concept'),
+       links: links,
+       shared_passages: shared_passages
+     })[0] AS strongest
+WITH entity, chunk_count, document_count, sources, connectivity, strongest,
+     coalesce(toString(entity.name), toString(entity.id), 'Unnamed concept') AS name
+ORDER BY strongest.shared_passages DESC, connectivity DESC, name ASC
+LIMIT $limit
+RETURN coalesce(toString(entity.id), toString(entity.name), elementId(entity)) AS id,
+       name,
+       chunk_count,
+       document_count,
+       connectivity,
+       [source IN sources WHERE source IS NOT NULL] AS sources,
+       strongest AS because_of
+"""
+
+
+def pick_relationship(links: list[dict]) -> dict[str, str]:
+    """Choose the one relationship to show when a pair is linked several ways.
+
+    Specific types beat generic ones; ties go alphabetically so the choice never
+    flickers between requests, then outgoing ("centre TYPE neighbour") before
+    incoming.
+    """
+    usable = [link for link in links or [] if link and link.get("type")]
+    if not usable:
+        return dict(_FALLBACK_LINK)
+
+    def rank(link: dict) -> tuple[bool, str, bool]:
+        is_generic = link["type"] in _GENERIC_RELATIONSHIP_TYPES
+        is_incoming = link.get("direction") != "out"
+        return (is_generic, link["type"], is_incoming)
+
+    best = min(usable, key=rank)
+    return {
+        "type": str(best["type"]),
+        "direction": "out" if best.get("direction") == "out" else "in",
+    }
+
+
+def _eligibility_params() -> dict:
+    """The concept-list rules, as query parameters."""
+    return {
+        "excluded_labels": sorted(excluded_entity_labels()),
+        "min_connectivity": min_concept_connectivity(),
+    }
+
+
+def _neighbour_from_row(row: dict) -> dict:
+    link = pick_relationship(row.get("links") or [])
+    return {
+        "id": str(row["id"]),
+        "name": str(row["name"]),
+        "labels": list(row.get("labels") or []),
+        "chunk_count": int(row.get("chunk_count") or 0),
+        "relationship": link["type"],
+        "direction": link["direction"],
+        "shared_passages": int(row.get("shared_passages") or 0),
+    }
+
+
+def get_concept_neighbourhood(graph: Neo4jGraph, concept_id: str, limit: int = 8) -> dict:
+    """Return one concept's eligible neighbours, strongest link first.
+
+    `linked_count` counts every eligible neighbour rather than only the `limit`
+    returned, so the hub can say "linked to 25 other concepts" while drawing
+    eight. An unknown concept comes back as an empty neighbourhood; the router
+    decides whether that is a 404.
+    """
+    rows = graph.query(
+        _CONCEPT_NEIGHBOURHOOD_QUERY,
+        params={"concept_id": concept_id, "limit": limit, **_eligibility_params()},
+    )
+    if not rows:
+        return {"linked_count": 0, "neighbours": []}
+    row = rows[0]
+    return {
+        "linked_count": int(row.get("linked_count") or 0),
+        "neighbours": [_neighbour_from_row(neighbour) for neighbour in row.get("neighbours") or []],
+    }
+
+
+def get_suggested_concepts(graph: Neo4jGraph, started_ids: list[str], limit: int = 3) -> list[dict]:
+    """Suggest unstarted concepts linked to the ones the learner has started.
+
+    `started_ids` should be ordered most recently seen first; that order breaks
+    ties between two started concepts that link to the same suggestion. Returns
+    one dict per suggestion: the Concept, the started concept it came from, the
+    relationship between them and their shared passage count.
+    """
+    if not started_ids:
+        return []
+    rows = graph.query(
+        _SUGGESTED_CONCEPTS_QUERY,
+        params={"started_ids": list(started_ids), "limit": limit, **_eligibility_params()},
+    )
+
+    suggestions = []
+    for row in rows:
+        because_of = row.get("because_of") or {}
+        link = pick_relationship(because_of.get("links") or [])
+        concept = Concept(
+            id=row["id"],
+            name=row["name"],
+            chunk_count=row["chunk_count"],
+            document_count=row["document_count"],
+            connectivity=row["connectivity"],
+            sources=row.get("sources") or [],
+        )
+        suggestions.append(
+            {
+                "concept": concept,
+                "because_of": {"id": str(because_of["id"]), "name": str(because_of["name"])},
+                "relationship": link["type"],
+                "shared_passages": int(because_of.get("shared_passages") or 0),
+            }
+        )
+    return suggestions

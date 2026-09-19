@@ -33,7 +33,18 @@ PARAM_PLACEHOLDERS = {
     "limit": 10,
     "min_connectivity": 1,
     "excluded_labels": ["document"],
+    "started_ids": ["placeholder"],
 }
+
+
+class QueryDiscoveryTests(unittest.TestCase):
+    """Runs without a database: the syntax check below is only as good as the
+    list of constants it discovers."""
+
+    def test_graph_queries_are_discovered(self):
+        for name in ("_CONCEPT_NEIGHBOURHOOD_QUERY", "_SUGGESTED_CONCEPTS_QUERY"):
+            with self.subTest(query=name):
+                self.assertIn(name, QUERY_CONSTANTS)
 
 
 def _neo4j_session():

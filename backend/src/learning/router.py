@@ -10,10 +10,12 @@ from src.auth import get_learner
 from src.learning.generation import generate_lesson, generate_quiz
 from src.learning.graph import (
     get_concept,
+    get_concept_neighbourhood,
     get_concept_network,
     get_learning_graph,
     get_source_context,
     get_source_passages,
+    get_suggested_concepts,
     list_concepts,
 )
 from src.learning.models import (
@@ -31,9 +33,18 @@ from src.learning.models import (
     QuizResponse,
     ConceptSources,
     ConceptNetwork,
+    ConceptNeighbourhood,
+    ConceptSuggestions,
     SourcePassage,
 )
-from src.learning.service import attach_mastery, build_dashboard, mastery_from_row
+from src.learning.service import (
+    attach_mastery,
+    attach_neighbour_mastery,
+    build_dashboard,
+    build_suggestions,
+    mastery_from_row,
+    started_concept_ids,
+)
 from src.user_store import (
     cache_learning_content,
     get_cached_learning_content,
@@ -106,6 +117,63 @@ async def network(
     except Exception as exc:
         logger.exception("Could not load learning concept network")
         raise HTTPException(status_code=503, detail="The course map is unavailable") from exc
+
+
+# `:path` lets the id itself contain "/" -- 30 concept ids do, such as "Cr2/Cr1" --
+# which a plain {concept_id} would 404 before this handler ever ran.
+@router.get("/concepts/{concept_id:path}/neighbourhood", response_model=ConceptNeighbourhood)
+async def concept_neighbourhood(
+    concept_id: str,
+    limit: int = Query(default=8, ge=1, le=20),
+    learner: dict = Depends(get_learner),
+):
+    """Return one concept's linked concepts, with the learner's mastery on each.
+
+    Unlike /network, this reaches every neighbour of the concept, not only the
+    ones inside the top-ranked slice the course map draws.
+    """
+    learner_id = _learner_id(learner)
+    try:
+        graph = get_learning_graph()
+        concept, neighbourhood, mastery_rows = await asyncio.gather(
+            asyncio.to_thread(get_concept, graph, concept_id),
+            asyncio.to_thread(get_concept_neighbourhood, graph, concept_id, limit),
+            asyncio.to_thread(list_mastery, learner_id),
+        )
+    except Exception as exc:
+        logger.exception("Could not load concept neighbourhood")
+        raise HTTPException(status_code=503, detail="Linked concepts are unavailable") from exc
+
+    # Raised outside the try on purpose: `except Exception` would turn it into a 503.
+    if concept is None:
+        raise HTTPException(status_code=404, detail="Concept was not found in completed course material")
+    return attach_neighbour_mastery(
+        ConceptNeighbourhood(concept=concept, **neighbourhood), mastery_rows
+    )
+
+
+@router.get("/suggestions", response_model=ConceptSuggestions)
+async def suggestions(
+    limit: int = Query(default=3, ge=1, le=10),
+    learner: dict = Depends(get_learner),
+):
+    """Suggest concepts linked to what the learner has started, but not started yet."""
+    learner_id = _learner_id(learner)
+    try:
+        # One after the other on purpose: the graph query needs the started ids.
+        mastery_rows = await asyncio.to_thread(list_mastery, learner_id)
+        started_ids = started_concept_ids(mastery_rows)
+        if not started_ids:
+            # Nothing started means nothing to link from; Home shows its own
+            # empty state, so skip the graph entirely.
+            return ConceptSuggestions()
+        items = await asyncio.to_thread(
+            get_suggested_concepts, get_learning_graph(), started_ids, limit
+        )
+    except Exception as exc:
+        logger.exception("Could not load suggested concepts")
+        raise HTTPException(status_code=503, detail="Suggestions are unavailable") from exc
+    return build_suggestions(items)
 
 
 @router.get("/mastery/{concept_id}", response_model=Mastery)
