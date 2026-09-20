@@ -62,7 +62,7 @@ export const createDefaultFormData = (userCredentials: UserCredentials) => {
     (config) => {
       // Learning endpoints use typed JSON bodies and server-side Neo4j settings.
       // They must not be converted into the legacy credential FormData shape.
-      if (config.url?.startsWith('/learning')) {
+      if (config.url?.startsWith('/learning') || config.url?.startsWith('/admin/materials')) {
         return config;
       }
       if (globalCredentials && config.data instanceof FormData) {
@@ -228,7 +228,7 @@ export interface LearningNetwork {
 }
 
 export interface LessonBeat {
-  key: 'core_idea' | 'how_it_works' | 'pulstar_application' | 'quick_check';
+  key: 'core_idea' | 'how_it_works' | 'application' | 'quick_check';
   title: string;
   content: string;
 }

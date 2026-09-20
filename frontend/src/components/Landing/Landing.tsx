@@ -21,25 +21,18 @@ const features = [
   {
     icon: HiOutlineChatBubbleLeftRight,
     title: 'Ask with context',
-    description:
-      'Every answer connects back to verified sources in the knowledge graph. No hallucinations, just traceable facts.',
+    description: 'Find answers grounded in published course material and follow their sources.',
   },
   {
     icon: HiOutlineShare,
     title: 'See relationships',
-    description: 'Explore how reactor components, safety systems, and concepts relate to each other visually.',
+    description: 'Explore how concepts in your published material relate to each other.',
   },
   {
     icon: HiOutlineAcademicCap,
     title: 'Learn faster',
     description: 'Guided study paths help you build understanding step-by-step, from fundamentals to advanced topics.',
   },
-];
-
-const stats = [
-  { value: '1,240+', label: 'Nodes' },
-  { value: '4,980+', label: 'Relationships' },
-  { value: '100%', label: 'Source-linked' },
 ];
 
 const demoGraphNodes = [
@@ -108,7 +101,7 @@ const Landing = () => {
       return;
     }
     auth0.loginWithRedirect({
-      appState: { returnTo: '/app' },
+      appState: { returnTo: '/admin' },
       authorizationParams: {
         redirect_uri: `${window.location.origin}/callback`,
         audience: 'https://api.cora.com',
@@ -127,7 +120,7 @@ const Landing = () => {
             </div>
             <div>
               <span className='text-lg font-semibold tracking-tight text-red-600'>Cora</span>
-              <p className='text-[11px] leading-none text-slate-400'>PULSTAR Assistant</p>
+              <p className='text-[11px] leading-none text-slate-400'>Learning assistant</p>
             </div>
           </div>
           <button
@@ -147,7 +140,7 @@ const Landing = () => {
         <div className='relative mx-auto max-w-5xl px-6 pb-24 pt-28 text-center'>
           <div className='inline-flex items-center gap-1.5 rounded-full border border-red-200 bg-white px-3 py-1 text-[11px] font-semibold uppercase tracking-wider text-red-600 shadow-sm'>
             <span className='h-1.5 w-1.5 rounded-full bg-red-500' />
-            PULSTAR Learning Assistant
+            Learn from published material
           </div>
           <h1 className='mt-7 mb-3 text-5xl font-bold leading-[1.08] tracking-tight text-slate-900 md:text-6xl'>
             Learn with your
@@ -209,30 +202,11 @@ const Landing = () => {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className='bg-red-50'>
-        <div className='mx-auto max-w-5xl px-6 py-16'>
-          <div className='rounded-2xl border border-red-100 bg-white px-8 py-10 shadow-sm'>
-            <div className='flex items-center justify-center gap-12 md:gap-[80px]'>
-              {stats.map((stat, i) => (
-                <div key={stat.label} className='flex items-center gap-12 md:gap-[80px]'>
-                  <div className='text-center'>
-                    <div className='text-3xl font-bold text-red-600'>{stat.value}</div>
-                    <div className='mt-1 text-xs font-medium uppercase tracking-wider text-slate-400'>{stat.label}</div>
-                  </div>
-                  {i < stats.length - 1 && <div className='hidden h-10 w-px bg-red-200 md:block' />}
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* Graph Preview */}
       <section id='graph-preview' className='bg-white'>
         <div className='mx-auto max-w-5xl px-6 py-[80px]'>
           <div className='mb-10 text-center'>
-            <p className='text-xs font-semibold uppercase tracking-wider text-red-500'>Live Preview</p>
+            <p className='text-xs font-semibold uppercase tracking-wider text-red-500'>Illustration</p>
             <h2 className='mt-2 text-2xl font-bold tracking-tight text-slate-900'>Explore the knowledge graph</h2>
             <p className='mt-5 text-lg leading-relaxed text-slate-500'>
               See how Cora connects documents, entities, and relationships into an interactive graph.

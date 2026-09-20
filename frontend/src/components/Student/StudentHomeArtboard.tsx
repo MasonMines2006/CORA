@@ -216,7 +216,7 @@ const StudentHome: React.FC<StudentHomeProps> = ({ onOpenConcept, onOpenExplore,
     <div className='mx-auto grid w-full max-w-[1536px] gap-10 px-5 py-9 pb-28 sm:px-8 lg:grid-cols-[minmax(0,1fr)_340px] lg:px-12 lg:pb-12'>
       <div className='min-w-0'>
         <div className='mb-7 lg:hidden'>
-          <h1 className='text-[32px] font-bold leading-tight tracking-tight text-slate-900'>Welcome to NE235</h1>
+          <h1 className='text-[32px] font-bold leading-tight tracking-tight text-slate-900'>Your learning home</h1>
           <p className='mt-3 text-base leading-7 text-slate-500'>
             {dashboard.total_concepts} concepts pulled from your course materials. Start anywhere.
           </p>
@@ -405,8 +405,8 @@ const StudentHome: React.FC<StudentHomeProps> = ({ onOpenConcept, onOpenExplore,
               <span className='text-xs text-slate-400'>passages</span>
             </div>
             <div>
-              <strong className='block text-lg'>NE235</strong>
-              <span className='text-xs text-slate-400'>course</span>
+              <strong className='block text-lg'>{dashboard.total_concepts}</strong>
+              <span className='text-xs text-slate-400'>concepts</span>
             </div>
           </div>
           <button

@@ -27,7 +27,7 @@ const optionClass = (state: 'idle' | 'selected' | 'correct' | 'wrong') =>
   })[state];
 
 /**
- * The four-beat guided lesson: core idea → how it works → PULSTAR application →
+ * The four-beat guided lesson: core idea → how it works → an example →
  * quick check. Opens straight into the lesson — the concept page already told the
  * student what they picked, so there is no "Start" step in between.
  */

@@ -248,9 +248,9 @@ async def lesson(concept_id: str, learner: dict = Depends(get_learner)):
         LessonBeat(key="core_idea", title="Core idea", content=generated.core_idea),
         LessonBeat(key="how_it_works", title="How it works", content=generated.how_it_works),
         LessonBeat(
-            key="pulstar_application",
-            title="PULSTAR application",
-            content=generated.pulstar_application,
+            key="application",
+            title="Application",
+            content=generated.application,
         ),
         LessonBeat(
             key="quick_check",

@@ -100,5 +100,5 @@ export const scopedPrompt = (conceptName: string, question: string): string => {
 /** Two starter questions for the "Ask about this" rail. */
 export const suggestedQuestions = (conceptName: string): string[] => [
   `Explain ${conceptName} in plain terms, with one example from the course.`,
-  `How does ${conceptName} come up when operating the PULSTAR reactor?`,
+  `What example or application of ${conceptName} do the sources describe?`,
 ];

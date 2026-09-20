@@ -43,7 +43,7 @@ class graphDBdataAccess:
             job_status = "New"
             logging.info(f"creating source node if does not exist in database {self.graph._database}")
             self.graph.query("""MERGE(d:Document {fileName :$fn}) SET d.fileSize = $fs, d.fileType = $ft ,
-                            d.status = $st, d.url = $url, d.awsAccessKeyId = $awsacc_key_id, 
+                            d.status = $st, d.publicationStatus = 'draft', d.url = $url, d.awsAccessKeyId = $awsacc_key_id,
                             d.fileSource = $f_source, d.createdAt = $c_at, d.updatedAt = $u_at, 
                             d.processingTime = $pt, d.errorMessage = $e_message, d.nodeCount= $n_count, 
                             d.relationshipCount = $r_count, d.model= $model, d.gcsBucket=$gcs_bucket, 
@@ -118,7 +118,16 @@ class graphDBdataAccess:
             param= {"props":params}
             
             logging.info(f'Base Param value 1 : {param}')
-            query = "MERGE(d:Document {fileName :$props.fileName}) SET d += $props"
+            # A reprocess changes the underlying passages. Require a fresh
+            # review even if this filename was published previously.
+            query = """
+            MERGE (d:Document {fileName: $props.fileName})
+            SET d += $props,
+                d.publicationStatus = CASE
+                    WHEN $props.status IN ['New', 'Processing', 'Ready to Reprocess'] THEN 'draft'
+                    ELSE coalesce(d.publicationStatus, 'draft')
+                END
+            """
             logging.info("Update source node properties")
             self.graph.query(query,param,session_params={"database":self.graph._database})
         except Exception as e:

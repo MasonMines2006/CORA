@@ -165,9 +165,9 @@ class NeighbourhoodQueryShapeTests(unittest.TestCase):
     def test_uses_the_shared_label_filter(self):
         self.assertIn(_LABEL_FILTER_CLAUSE, _CONCEPT_NEIGHBOURHOOD_QUERY)
 
-    def test_requires_completed_non_answer_key_documents(self):
+    def test_requires_completed_published_documents(self):
         self.assertIn("document.status = 'Completed'", _CONCEPT_NEIGHBOURHOOD_QUERY)
-        self.assertIn("CONTAINS 'key'", _CONCEPT_NEIGHBOURHOOD_QUERY)
+        self.assertIn("document.publicationStatus = 'published'", _CONCEPT_NEIGHBOURHOOD_QUERY)
 
     def test_applies_the_minimum_connectivity(self):
         self.assertIn("connectivity >= $min_connectivity", _CONCEPT_NEIGHBOURHOOD_QUERY)

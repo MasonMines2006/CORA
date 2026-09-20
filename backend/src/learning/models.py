@@ -128,7 +128,7 @@ class ConceptSuggestions(BaseModel):
 
 
 class LessonBeat(BaseModel):
-    key: Literal["core_idea", "how_it_works", "pulstar_application", "quick_check"]
+    key: Literal["core_idea", "how_it_works", "application", "quick_check"]
     title: str
     content: str
 
@@ -143,7 +143,7 @@ class QuickCheck(BaseModel):
 class GeneratedLesson(BaseModel):
     core_idea: str
     how_it_works: str
-    pulstar_application: str
+    application: str
     quick_check: QuickCheck
 
 
@@ -169,6 +169,16 @@ class GeneratedQuestion(BaseModel):
 
 class GeneratedQuiz(BaseModel):
     questions: list[GeneratedQuestion]
+
+
+class GeneratedFlashcard(BaseModel):
+    question: str
+    answer: str
+    source: str
+
+
+class GeneratedFlashcards(BaseModel):
+    cards: list[GeneratedFlashcard] = Field(min_length=1, max_length=7)
 
 
 class QuizQuestion(BaseModel):

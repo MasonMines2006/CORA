@@ -86,7 +86,8 @@ describe('StudentHome', () => {
 
     expect(await screen.findByText(/pick up where you left off/i)).toBeInTheDocument();
     expect(screen.getByText('Course graph')).toBeInTheDocument();
-    expect(screen.getByText('3')).toBeInTheDocument();
+    expect(screen.getAllByText('3').length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/concepts pulled from your course materials/i).length).toBeGreaterThan(0);
     expect(screen.getAllByText('Criticality').length).toBeGreaterThan(0);
     expect(screen.getAllByText('Keff').length).toBeGreaterThan(0);
     expect(screen.getByText('100%')).toBeInTheDocument();

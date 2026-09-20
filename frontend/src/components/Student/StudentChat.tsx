@@ -7,13 +7,9 @@ import ConnectionModal from '../Popups/ConnectionModal/ConnectionModal';
 import { envConnectionAPI } from '../../services/ConnectAPI';
 import { connectionState } from '../../types';
 import { getIsLoading } from '../../utils/Utils';
-
-const suggestedPrompts = [
-  'Explain how the PULSTAR reactor achieves criticality',
-  'What safety systems are used in the PULSTAR reactor?',
-  'Summarize the main components of the PULSTAR reactor core',
-  'How does neutron moderation work in the PULSTAR reactor?',
-];
+import { getLearningConcepts } from '../../API/Index';
+import { useFileContext } from '../../context/UsersFiles';
+import { chatModeLables } from '../../utils/Constants';
 
 interface StudentChatProps {
   externalPrompt?: string;
@@ -24,6 +20,8 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
   const { clearHistoryData, messages, setMessages, setClearHistoryData, isDeleteChatLoading } = useMessageContext();
   const { setUserCredentials, setConnectionStatus, connectionStatus, setShowDisconnectButton } = useCredentials();
   const { isAuthenticated } = useAuth0();
+  const { setchatModes } = useFileContext();
+  const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [pendingPrompt, setPendingPrompt] = useState<string>('');
   const [connectionError, setConnectionError] = useState(false);
   const [openConnection, setOpenConnection] = useState<connectionState>({
@@ -32,6 +30,20 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
     vectorIndexMisMatch: false,
     chunksExistsWithDifferentDimension: false,
   });
+
+  useEffect(() => {
+    // The student route uses the server's published-only vector mode.
+    setchatModes([chatModeLables.vector]);
+    const controller = new AbortController();
+    getLearningConcepts(controller.signal)
+      .then((concepts) =>
+        setSuggestedPrompts(
+          concepts.slice(0, 4).map((concept) => `Explain ${concept.name} using the published course material.`)
+        )
+      )
+      .catch(() => setSuggestedPrompts([]));
+    return () => controller.abort();
+  }, [setchatModes]);
 
   /**
    * The manual Neo4j credentials dialog posts to /connect, which is Auth0-only. A guest can
@@ -113,8 +125,7 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
           id: 2,
           modes: {
             'graph+vector+fulltext': {
-              message:
-                'Welcome to CORA: the Cognitive Operator Reactor Assistant. You can ask questions related to class material which have been released.',
+              message: 'Welcome to CORA. Ask a question about the published material.',
             },
           },
           user: 'chatbot',
@@ -156,8 +167,7 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
           <div className='rounded-2xl border border-red-100 bg-red-50 p-4 text-center'>
             <p className='text-sm font-semibold text-slate-900'>Chat is unavailable right now</p>
             <p className='mt-1 text-xs leading-relaxed text-slate-500'>
-              We could not reach the CORA knowledge base. Please try again in a moment - the Learn tab still works
-              offline from cached lessons.
+              We could not reach the CORA knowledge base. Please try again in a moment.
             </p>
           </div>
         </div>
@@ -167,7 +177,7 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
         <div className='mx-auto w-full max-w-2xl px-6 pt-12 text-center'>
           <h2 className='text-2xl font-semibold tracking-tight text-slate-900'>What would you like to learn?</h2>
           <p className='mt-2 text-sm text-slate-500'>
-            Ask a question about the PULSTAR reactor or try one of these suggestions.
+            Ask a question about published material or try one of these suggestions.
           </p>
           <div className='mt-6 flex flex-wrap justify-center gap-2'>
             {suggestedPrompts.map((prompt) => (

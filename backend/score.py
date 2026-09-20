@@ -7,6 +7,7 @@ import os
 import time
 from datetime import datetime, timezone
 from typing import List, Optional
+from uuid import uuid4
 from pydantic import BaseModel
 
 import uvicorn
@@ -59,6 +60,8 @@ from src.auth import (
 from src.learning import router as learning_router
 from src.learning.review_router import router as review_router
 from src.learning.review_store import ensure_review_tables
+from src.publication import router as publication_router
+from src.publication import publication_fingerprint
 from src.user_store import close_pool, ensure_learning_tables
 
 load_dotenv()
@@ -127,6 +130,7 @@ class CustomGZipMiddleware:
 app = FastAPI()
 app.include_router(learning_router)
 app.include_router(review_router)
+app.include_router(publication_router)
 
 
 @app.on_event("startup")
@@ -167,7 +171,7 @@ app.add_api_route("/health", health([healthy_condition, healthy]))
 
 @app.post("/url/scan")
 async def create_source_knowledge_graph_url(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     params: SourceScanExtractParams = Depends(get_source_scan_extract_params)
 ):
     """Create a source node in the knowledge graph from a given URL or bucket."""
@@ -237,7 +241,7 @@ async def create_source_knowledge_graph_url(
 
 @app.post("/extract")
 async def extract_knowledge_graph_from_file(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     params: SourceScanExtractParams = Depends(get_source_scan_extract_params)
 ):
     """Extract a knowledge graph from a file or URL source."""
@@ -330,7 +334,7 @@ async def extract_knowledge_graph_from_file(
         gc.collect()
             
 @app.post("/sources_list")
-async def get_source_list(credentials: Neo4jCredentials = Depends(get_server_neo4j_credentials), user=Depends(get_learner)):
+async def get_source_list(credentials: Neo4jCredentials = Depends(get_server_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
     """Get the list of sources already present in the database."""
     try:
         start = time.time()
@@ -348,7 +352,7 @@ async def get_source_list(credentials: Neo4jCredentials = Depends(get_server_neo
         return create_api_response(job_status, message=message, error=error_message)
 
 @app.post("/post_processing")
-async def post_processing(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user), tasks=Form(None)):
+async def post_processing(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)), tasks=Form(None)):
     """Run post-processing tasks on the graph database."""
     try:
         graph = create_graph_database_connection(credentials)
@@ -427,14 +431,26 @@ async def chat_bot(
     logging.info(f"QA_RAG called at {datetime.now()}")
     qa_rag_start_time = time.time()
     try:
+        # Students and guests use the published-only vector retrieval path.
+        # The upstream graph/community modes can traverse unpublished entities.
+        if user["role"] not in ALLOWED_ADMIN_ROLES:
+            mode = "vector"
+            document_names = "[]"
         if mode == "graph":
             graph = Neo4jGraph(url=credentials.uri, username=credentials.userName, password=credentials.password, database=credentials.database, sanitize=True, refresh_schema=True)
         else:
             graph = create_graph_database_connection(credentials)
+        client_session_id = session_id or str(uuid4())
+        if user["role"] not in ALLOWED_ADMIN_ROLES:
+            # Old conversation summaries can mention a source that has since
+            # been unpublished. Keep each published-corpus revision separate.
+            session_id = f"{client_session_id.split(':pub:', 1)[0]}:pub:{publication_fingerprint(graph)}"
         
         graphDb_data_Access = graphDBdataAccess(graph)
         write_access = graphDb_data_Access.check_account_access(database=credentials.database)
         result = await asyncio.to_thread(QA_RAG, graph=graph, model=model, question=question, document_names=document_names, session_id=session_id, mode=mode, write_access=write_access, email=credentials.email, uri=credentials.uri)
+        if user["role"] not in ALLOWED_ADMIN_ROLES:
+            result["session_id"] = client_session_id
 
         total_call_time = time.time() - qa_rag_start_time
         logging.info(f"Total Response time is  {total_call_time:.2f} seconds")
@@ -456,7 +472,7 @@ async def chat_bot(
 
 @app.post("/chunk_entities")
 async def chunk_entities(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     nodedetails=Form(None),
     entities=Form(),
     mode=Form()
@@ -482,7 +498,7 @@ async def chunk_entities(
 
 @app.post("/get_neighbours")
 async def get_neighbours(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     elementId=Form(None)
 ):
     """Get neighbour nodes for a given element ID."""
@@ -505,7 +521,7 @@ async def get_neighbours(
 
 @app.post("/graph_query")
 async def graph_query(
-    credentials: Neo4jCredentials = Depends(get_server_neo4j_credentials), user=Depends(get_learner),
+    credentials: Neo4jCredentials = Depends(get_server_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     document_names: str = Form(None)
 ):
     """Query the graph for results based on document names."""
@@ -556,7 +572,7 @@ async def clear_chat_bot(
         gc.collect()
             
 @app.post("/connect")
-async def connect(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user)):
+async def connect(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
     """Connect to the Neo4j database and check vector dimensions."""
     try:
         start = time.time()
@@ -585,7 +601,7 @@ async def upload_large_file_into_chunks(
     totalChunks=Form(None),
     originalname=Form(None),
     model=Form(None),
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user)
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES))
 ):
     """Upload a large file in chunks and create a source node."""
     try:
@@ -616,7 +632,7 @@ async def upload_large_file_into_chunks(
         gc.collect()
             
 @app.post("/schema")
-async def get_structured_schema(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user)):
+async def get_structured_schema(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
     """Get the structured schema (labels and relation types) from Neo4j."""
     try:
         start = time.time()
@@ -649,7 +665,8 @@ async def update_extract_status(
     uri: str = None,
     userName: str = None,
     password: str = None,
-    database: str = None
+    database: str = None,
+    user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
 ):
     """Stream updates on extract status for a given file name."""
     async def generate():
@@ -702,7 +719,7 @@ async def update_extract_status(
 
 @app.post("/delete_document_and_entities")
 async def delete_document_and_entities(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     filenames=Form(),
     source_types=Form(),
     deleteEntities=Form()
@@ -730,7 +747,7 @@ async def delete_document_and_entities(
         gc.collect()
 
 @app.get('/document_status/{file_name}')
-async def get_document_status(file_name, url, userName, password, database, user=Depends(get_current_user)):
+async def get_document_status(file_name, url, userName, password, database, user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
     """Get the status of a document in the graph database."""
     decoded_password = decode_password(password)
    
@@ -773,7 +790,7 @@ async def get_document_status(file_name, url, userName, password, database, user
     
 @app.post("/cancelled_job")
 async def cancelled_job(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     filenames=Form(None),
     source_types=Form(None)
 ):
@@ -803,7 +820,8 @@ async def populate_graph_schema(
     model=Form(None),
     is_schema_description_checked=Form(None),
     is_local_storage=Form(None),
-    email=Form(None)
+    email=Form(None),
+    user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
 ):
     """Populate the graph schema from input text."""
     try:
@@ -824,7 +842,7 @@ async def populate_graph_schema(
         gc.collect()
         
 @app.post("/get_unconnected_nodes_list")
-async def get_unconnected_nodes_list(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user)):
+async def get_unconnected_nodes_list(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
     """Get the list of unconnected nodes in the graph database."""
     try:
         start = time.time()
@@ -847,7 +865,7 @@ async def get_unconnected_nodes_list(credentials: Neo4jCredentials = Depends(get
         
 @app.post("/delete_unconnected_nodes")
 async def delete_orphan_nodes(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     unconnected_entities_list=Form()
 ):
     """Delete unconnected (orphan) nodes from the graph database."""
@@ -871,7 +889,7 @@ async def delete_orphan_nodes(
         gc.collect()
         
 @app.post("/get_duplicate_nodes")
-async def get_duplicate_nodes(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user)):
+async def get_duplicate_nodes(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
     """Get the list of duplicate nodes in the graph database."""
     try:
         start = time.time()
@@ -894,7 +912,7 @@ async def get_duplicate_nodes(credentials: Neo4jCredentials = Depends(get_neo4j_
         
 @app.post("/merge_duplicate_nodes")
 async def merge_duplicate_nodes(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     duplicate_nodes_list=Form()
 ):
     """Merge duplicate nodes in the graph database."""
@@ -920,7 +938,7 @@ async def merge_duplicate_nodes(
         
 @app.post("/drop_create_vector_index")
 async def drop_create_vector_index(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     isVectorIndexExist=Form()
 ):
     """Drop and re-create the vector index in the graph database."""
@@ -946,7 +964,7 @@ async def drop_create_vector_index(
         
 @app.post("/retry_processing")
 async def retry_processing(
-    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),
+    credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     file_name=Form(),
     retry_condition=Form()
 ):
@@ -1052,7 +1070,7 @@ async def calculate_additional_metrics(question: str = Form(),
 
 @app.post("/fetch_chunktext")
 async def fetch_chunktext(
-   credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user),document_name: str = Form(),page_no: int = Form(1)
+   credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES)),document_name: str = Form(),page_no: int = Form(1)
 ):
    try:
        start = time.time()
@@ -1126,7 +1144,7 @@ async def backend_connection_configuration(user=Depends(get_learner)):
         gc.collect()
     
 @app.post("/schema_visualization")
-async def get_schema_visualization(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user)):
+async def get_schema_visualization(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
     try:
         start = time.time()
         result = await asyncio.to_thread(visualize_schema,credentials)

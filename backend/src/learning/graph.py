@@ -189,7 +189,7 @@ def get_learning_graph() -> Neo4jGraph:
 _LIST_CONCEPTS_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE document.status = 'Completed'
-  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+  AND document.publicationStatus = 'published'
 """ + _LABEL_FILTER_CLAUSE + """
 WITH entity,
      count(DISTINCT chunk) AS chunk_count,
@@ -216,7 +216,7 @@ _CONCEPT_ROWS_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE coalesce(toString(entity.id), toString(entity.name), elementId(entity)) = $concept_id
   AND document.status = 'Completed'
-  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+  AND document.publicationStatus = 'published'
 """ + _LABEL_FILTER_CLAUSE + """
 WITH entity,
      count(DISTINCT chunk) AS chunk_count,
@@ -265,46 +265,29 @@ def _concept_rows(graph: Neo4jGraph, concept_id: str) -> list[Concept]:
     return [Concept(**row) for row in rows]
 
 
-# Lesson beat 3 is a guaranteed PULSTAR slot, so a few PULSTAR-specific chunks are
-# reserved in every context window. Ranking purely by chunk size crowds them out:
-# the Theory Manual has the longest passages, so an all-theory context makes the
-# model correctly but uselessly report that it found no PULSTAR connection.
-_PULSTAR_CHUNK_QUOTA = 3
-
 _SOURCE_CONTEXT_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE coalesce(toString(entity.id), toString(entity.name), elementId(entity)) = $concept_id
   AND document.status = 'Completed'
-  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
-  AND ($pulstar_only = false
-       OR toLower(coalesce(document.fileName, '')) CONTAINS 'pulstar'
-       OR toLower(coalesce(chunk.text, '')) CONTAINS 'pulstar')
+  AND document.publicationStatus = 'published'
 WITH chunk, document, size(coalesce(chunk.text, chunk.content, chunk.page_content, '')) AS text_size
-ORDER BY text_size DESC
+ORDER BY document.publishedAt DESC, text_size DESC
 RETURN coalesce(chunk.text, chunk.content, chunk.page_content, '') AS text,
-       coalesce(document.fileName, 'Unknown source') AS source
+       coalesce(document.fileName, 'Unknown source') AS source,
+       toString(document.publishedAt) AS version
 LIMIT $limit
 """
 
 
 def get_source_context(graph: Neo4jGraph, concept_id: str, limit: int = 8) -> tuple[str, list[str], str]:
-    """Fetch bounded, non-answer-key source text and a stable hash for caching."""
-    pulstar_rows = graph.query(
+    """Fetch bounded published source text and a stable hash for caching."""
+    rows = graph.query(
         _SOURCE_CONTEXT_QUERY,
-        params={"concept_id": concept_id, "limit": _PULSTAR_CHUNK_QUOTA, "pulstar_only": True},
+        params={"concept_id": concept_id, "limit": limit},
     )
-    general_rows = graph.query(
-        _SOURCE_CONTEXT_QUERY,
-        params={"concept_id": concept_id, "limit": limit, "pulstar_only": False},
-    )
-
-    # PULSTAR chunks lead so they survive the character cap below; dict.fromkeys
-    # keeps first-seen order while dropping the duplicates the two queries share.
-    ordered_text = dict.fromkeys(
-        str(row.get("text", "")) for row in [*pulstar_rows, *general_rows]
-    )
+    ordered_text = dict.fromkeys(str(row.get("text", "")) for row in rows)
     by_text = {}
-    for row in [*pulstar_rows, *general_rows]:
+    for row in rows:
         by_text.setdefault(str(row.get("text", "")), row)
     rows = [by_text[text] for text in ordered_text][:limit]
 
@@ -313,7 +296,10 @@ def get_source_context(graph: Neo4jGraph, concept_id: str, limit: int = 8) -> tu
         f"SOURCE: {row['source']}\n{str(row['text']).strip()}" for row in usable
     )
     sources = list(dict.fromkeys(str(row["source"]) for row in usable))
-    source_hash = hashlib.sha256(context.encode("utf-8")).hexdigest()
+    source_versions = "\n".join(
+        f"{row['source']}:{row.get('version') or ''}" for row in usable
+    )
+    source_hash = hashlib.sha256(f"{source_versions}\n{context}".encode("utf-8")).hexdigest()
     return context[:24000], sources, source_hash
 
 
@@ -321,7 +307,7 @@ _SOURCE_PASSAGES_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE coalesce(toString(entity.id), toString(entity.name), elementId(entity)) = $concept_id
   AND document.status = 'Completed'
-  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+  AND document.publicationStatus = 'published'
   AND trim(coalesce(chunk.text, chunk.content, chunk.page_content, '')) <> ''
 WITH DISTINCT chunk, document,
      coalesce(chunk.text, chunk.content, chunk.page_content, '') AS text
@@ -353,7 +339,7 @@ def get_source_passages(graph: Neo4jGraph, concept_id: str, limit: int = 12) -> 
 _CONCEPT_NETWORK_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE document.status = 'Completed'
-  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+  AND document.publicationStatus = 'published'
 """ + _LABEL_FILTER_CLAUSE + """
 WITH entity,
      count(DISTINCT chunk) AS chunk_count,
@@ -385,13 +371,19 @@ WITH collect(entity) AS selected,
 UNWIND selected AS entity
 OPTIONAL MATCH (entity)-[relationship]-(neighbor:__Entity__)
 WHERE neighbor IN selected
+  AND EXISTS {
+    MATCH (entity)<-[:HAS_ENTITY]-(shared:Chunk)-[:HAS_ENTITY]->(neighbor)
+    MATCH (shared)-[:PART_OF]->(published:Document)
+    WHERE published.status = 'Completed'
+      AND published.publicationStatus = 'published'
+  }
 WITH node_rows, collect(DISTINCT relationship) AS relationships
 RETURN node_rows AS nodes,
        [relationship IN relationships WHERE relationship IS NOT NULL | {
          id: elementId(relationship),
          from_id: coalesce(toString(startNode(relationship).id), toString(startNode(relationship).name), elementId(startNode(relationship))),
          to_id: coalesce(toString(endNode(relationship).id), toString(endNode(relationship).name), elementId(endNode(relationship))),
-         type: type(relationship)
+         type: 'RELATED_TO'
        }] AS relationships
 """
 
@@ -424,7 +416,7 @@ def get_concept_network(graph: Neo4jGraph, limit: int = 120) -> dict[str, list[d
 # Every neighbour must pass the same rules as list_concepts(), or the concept hub
 # would list "Reactor Operations Homework #3" as a linked concept:
 #   * no excluded (noise) label           -> _LABEL_FILTER_CLAUSE
-#   * grounded in a completed, non-answer-key document
+#   * grounded in a completed, published document
 #   * at least min_concept_connectivity() relationships
 # The candidate neighbour is called `entity` in both queries so the shared label
 # clause applies to it unchanged.
@@ -446,17 +438,22 @@ WHERE coalesce(toString(centre.id), toString(centre.name), elementId(centre)) = 
 // they are passages, not neighbours.
 MATCH (centre)-[relationship]-(entity:__Entity__)
 WHERE entity <> centre
+  AND EXISTS {
+    MATCH (centre)<-[:HAS_ENTITY]-(shared:Chunk)-[:HAS_ENTITY]->(entity)
+    MATCH (shared)-[:PART_OF]->(published:Document)
+    WHERE published.status = 'Completed'
+      AND published.publicationStatus = 'published'
+  }
 """ + _LABEL_FILTER_CLAUSE + """
 // Keep every relationship between the pair; pick_relationship() chooses one.
 WITH centre, entity,
-     collect({type: type(relationship),
-              direction: CASE WHEN startNode(relationship) = centre THEN 'out' ELSE 'in' END}) AS links
-// The concept list's coverage rule: a neighbour with no passage in a completed,
-// non-answer-key document drops out here. `shared_passages` counts the passages
+     collect(DISTINCT {type: 'RELATED_TO', direction: 'out'}) AS links
+// The concept list's coverage rule: a neighbour with no published passage
+// drops out here. `shared_passages` counts the passages
 // that mention BOTH concepts -- the strength of the link.
 MATCH (entity)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE document.status = 'Completed'
-  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+  AND document.publicationStatus = 'published'
 WITH centre, entity, links,
      count(DISTINCT chunk) AS chunk_count,
      count(DISTINCT CASE WHEN EXISTS { (chunk)-[:HAS_ENTITY]->(centre) } THEN chunk END) AS shared_passages,
@@ -490,14 +487,19 @@ WHERE anchor_id IN $started_ids
 // One hop out, to entities the learner has NOT started.
 MATCH (anchor)-[relationship]-(entity:__Entity__)
 WHERE NOT coalesce(toString(entity.id), toString(entity.name), elementId(entity)) IN $started_ids
+  AND EXISTS {
+    MATCH (anchor)<-[:HAS_ENTITY]-(shared:Chunk)-[:HAS_ENTITY]->(entity)
+    MATCH (shared)-[:PART_OF]->(published:Document)
+    WHERE published.status = 'Completed'
+      AND published.publicationStatus = 'published'
+  }
 """ + _LABEL_FILTER_CLAUSE + """
 WITH anchor, anchor_id, entity,
-     collect({type: type(relationship),
-              direction: CASE WHEN startNode(relationship) = anchor THEN 'out' ELSE 'in' END}) AS links
+     collect(DISTINCT {type: 'RELATED_TO', direction: 'out'}) AS links
 // Same coverage rule and link strength as the neighbourhood query above.
 MATCH (entity)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE document.status = 'Completed'
-  AND NOT toLower(coalesce(document.fileName, '')) CONTAINS 'key'
+  AND document.publicationStatus = 'published'
 WITH anchor, anchor_id, entity, links,
      count(DISTINCT chunk) AS chunk_count,
      count(DISTINCT document) AS document_count,

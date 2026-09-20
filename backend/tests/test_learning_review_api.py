@@ -1,8 +1,8 @@
 """The review and lesson-progress endpoints, end to end except for Neo4j.
 
 The routers, validation, guest identity and Postgres store are all real. Only
-the graph and the lesson cache are replaced, so the tests control which
-concepts have a cached lesson -- and nothing here can ever generate one.
+the graph and content generation are replaced, so the tests control source
+revisions and generated decks without making paid LLM calls.
 Rows are written under a fresh guest id and deleted afterwards. Skips cleanly
 when no Postgres is configured.
 """
@@ -19,51 +19,51 @@ from fastapi.testclient import TestClient
 from src.auth import get_auth_settings
 from src.learning import review_router as review_router_module
 from src.learning import review_service
-from src.learning.models import Concept, GeneratedLesson, QuickCheck
+from src.learning.models import Concept, GeneratedFlashcard, GeneratedFlashcards
+from src.learning.flashcards import make_card_id
 from src.learning.review import DAY
 from src.learning.review_router import router as review_router
 from src.learning.review_store import ensure_review_tables, record_grade
 from src.learning.router import router as learning_router
 from src.user_store import ensure_learning_tables, get_pool
 
-SOURCES = ["Theory Manual - NE235.pdf", "PULSTAR Technical Specifications.pdf"]
+SOURCES = ["Published Source.pdf"]
+VERSION = "abcdef0123456789" * 4
 
-# Concepts the fake graph knows. Xenon exists but nobody has opened its lesson,
-# and Keff's cached lesson was built from an older version of its sources.
+# Concepts the fake graph knows. Some have no cached deck yet; review generates it.
 CACHED = ("Reactivity", "Reactor", "Reactor Period")
 UNCACHED = "Xenon"
 STALE = "Keff"
 KNOWN = (*CACHED, UNCACHED, STALE)
 
 
-def lesson_payload(name: str) -> dict:
-    return GeneratedLesson(
-        core_idea=f"{name} core idea.",
-        how_it_works=f"{name} mechanism.",
-        pulstar_application=f"{name} at PULSTAR.",
-        quick_check=QuickCheck(
-            question=f"Quick check on {name}?",
-            options=["No", "Yes"],
-            answer_index=1,
-            explanation="Because the passage says so",
-        ),
-    ).model_dump()
+def deck(name: str) -> GeneratedFlashcards:
+    return GeneratedFlashcards(cards=[
+        GeneratedFlashcard(question=f"Question {index} on {name}?", answer=f"Answer {index}.", source=SOURCES[0])
+        for index in range(4)
+    ])
+
+
+def card_id(name: str, index: int) -> str:
+    return make_card_id(name, VERSION, index)
 
 
 def fake_source_context(graph, concept_id):
     if concept_id not in KNOWN:
         return "", [], "no-context"
-    return f"SOURCE: {SOURCES[0]}\ntext", SOURCES, f"current-{concept_id}"
+    return f"SOURCE: {SOURCES[0]}\ntext", SOURCES, VERSION
 
 
 def fake_cached_content(concept_id, content_type, difficulty, source_hash):
-    if content_type != "lesson" or difficulty != "":
+    if content_type != "cards" or difficulty != "":
         return None
-    if concept_id == STALE and source_hash == f"old-{STALE}":
-        return lesson_payload(STALE)
-    if concept_id in CACHED and source_hash == f"current-{concept_id}":
-        return lesson_payload(concept_id)
+    if concept_id in CACHED and source_hash == VERSION:
+        return deck(concept_id).model_dump()
     return None
+
+
+async def fake_generate_cards(name, context, sources):
+    return deck(name)
 
 
 def fake_get_concept(graph, concept_id):
@@ -116,6 +116,8 @@ class ReviewApiTestCase(unittest.TestCase):
             review_service,
             get_source_context=fake_source_context,
             get_cached_learning_content=fake_cached_content,
+            generate_flashcards=fake_generate_cards,
+            cache_learning_content=lambda *args: None,
         )
         patcher.start()
         self.addCleanup(patcher.stop)
@@ -159,31 +161,29 @@ class ReviewQueueTests(ReviewApiTestCase):
         self.assertEqual(
             first,
             {
-                "card_id": "Reactivity::core_idea",
+                "card_id": card_id("Reactivity", 0),
                 "concept_id": "Reactivity",
                 "concept_name": "Reactivity",
-                "prompt": "What is the core idea behind Reactivity?",
-                "answer": "Reactivity core idea.",
-                "source": "Theory Manual - NE235.pdf",
+                "prompt": "Question 0 on Reactivity?",
+                "answer": "Answer 0.",
+                "source": "Published Source.pdf",
                 "state": "new",
                 "last_reviewed_at": None,
                 "due_at": None,
                 "intervals": {"again": 60, "hard": DAY, "good": DAY, "easy": 4 * DAY},
             },
         )
-        self.assertEqual(queue["cards"][3]["answer"], "Yes. Because the passage says so")
+        self.assertEqual(queue["cards"][3]["answer"], "Answer 3.")
 
-    def test_touched_concepts_without_a_cached_lesson_have_no_cards(self):
+    def test_touched_concepts_without_a_cached_deck_generate_cards(self):
         self.open_lesson(UNCACHED)
 
-        self.assertEqual(self.queue()["new_count"], 0)
+        self.assertEqual(self.queue()["new_count"], 4)
 
-    def test_a_lesson_cached_for_older_sources_has_no_cards(self):
-        # The lesson endpoint keys its cache on the current source hash, so a
-        # lesson built from older passages is not the lesson the student sees.
+    def test_a_deck_for_older_sources_is_regenerated(self):
         self.open_lesson(STALE)
 
-        self.assertEqual(self.queue()["cards"], [])
+        self.assertEqual(self.queue()["new_count"], 4)
 
     def test_new_cards_are_capped_per_request(self):
         for concept_id in CACHED:
@@ -209,14 +209,14 @@ class ReviewQueueTests(ReviewApiTestCase):
         self.assertEqual(queue["new_count"], 4)
         self.assertEqual({card["concept_id"] for card in queue["cards"]}, {"Reactivity"})
 
-    def test_concept_filter_without_a_lesson_is_empty(self):
-        self.assertEqual(self.queue(concept_id=UNCACHED)["cards"], [])
+    def test_concept_filter_can_generate_a_new_deck(self):
+        self.assertEqual(self.queue(concept_id=UNCACHED)["new_count"], 4)
 
     def test_overdue_cards_come_before_new_ones(self):
         self.open_lesson("Reactivity")
         record_grade(
             self.learner_id,
-            "Reactivity::quick_check",
+            card_id("Reactivity", 3),
             "Reactivity",
             "good",
             datetime.now(timezone.utc) - timedelta(days=2),
@@ -226,7 +226,7 @@ class ReviewQueueTests(ReviewApiTestCase):
 
         self.assertEqual((queue["due_count"], queue["new_count"]), (1, 3))
         due = queue["cards"][0]
-        self.assertEqual(due["card_id"], "Reactivity::quick_check")
+        self.assertEqual(due["card_id"], card_id("Reactivity", 3))
         self.assertEqual(due["state"], "review")
         self.assertIsNotNone(due["last_reviewed_at"])
         self.assertEqual(due["intervals"]["good"], 3 * DAY)
@@ -248,11 +248,11 @@ class ReviewGradeTests(ReviewApiTestCase):
         self.open_lesson("Reactivity")
         before = datetime.now(timezone.utc)
 
-        response = self.grade("Reactivity::core_idea", "good")
+        response = self.grade(card_id("Reactivity", 0), "good")
 
         self.assertEqual(response.status_code, 200, response.text)
         body = response.json()
-        self.assertEqual(body["card_id"], "Reactivity::core_idea")
+        self.assertEqual(body["card_id"], card_id("Reactivity", 0))
         self.assertEqual(body["interval_seconds"], DAY)
         self.assertEqual(body["state"], "review")
         due_at = datetime.fromisoformat(body["due_at"].replace("Z", "+00:00"))
@@ -260,17 +260,17 @@ class ReviewGradeTests(ReviewApiTestCase):
 
         queue = self.queue()
         self.assertEqual((queue["due_count"], queue["new_count"]), (0, 3))
-        self.assertNotIn("Reactivity::core_idea", [card["card_id"] for card in queue["cards"]])
+        self.assertNotIn(card_id("Reactivity", 0), [card["card_id"] for card in queue["cards"]])
 
     def test_again_puts_the_card_back_in_learning(self):
-        body = self.grade("Reactivity::how_it_works", "again").json()
+        body = self.grade(card_id("Reactivity", 1), "again").json()
 
         self.assertEqual((body["interval_seconds"], body["state"]), (60, "learning"))
 
     def test_invalid_bodies_are_rejected(self):
         for payload in (
-            {"card_id": "Reactivity::core_idea", "grade": "perfect"},
-            {"card_id": "Reactivity::core_idea"},
+            {"card_id": card_id("Reactivity", 0), "grade": "perfect"},
+            {"card_id": card_id("Reactivity", 0)},
             {"grade": "good"},
             {"card_id": "", "grade": "good"},
         ):
@@ -279,18 +279,17 @@ class ReviewGradeTests(ReviewApiTestCase):
                 self.assertEqual(response.status_code, 422)
 
     def test_unknown_cards_are_not_found(self):
-        for card_id in (
+        for unknown_id in (
             "nonsense",
             "Reactivity::summary",
-            f"{UNCACHED}::core_idea",
-            f"{STALE}::core_idea",
-            "Not A Concept::core_idea",
+            make_card_id("Reactivity", "1234567890abcdef" * 4, 0),
+            card_id("Not A Concept", 0),
         ):
-            with self.subTest(card_id=card_id):
-                self.assertEqual(self.grade(card_id, "good").status_code, 404)
+            with self.subTest(card_id=unknown_id):
+                self.assertEqual(self.grade(unknown_id, "good").status_code, 404)
 
     def test_a_rejected_grade_saves_nothing(self):
-        self.grade(f"{UNCACHED}::core_idea", "good")
+        self.grade(make_card_id("Reactivity", "1234567890abcdef" * 4, 0), "good")
 
         with get_pool().connection() as conn, conn.cursor() as cur:
             cur.execute("SELECT count(*) FROM review_cards WHERE learner_id = %s", (self.learner_id,))
@@ -366,10 +365,10 @@ class DashboardTests(ReviewApiTestCase):
 
     def test_review_counts_match_the_queue(self):
         self.open_lesson("Reactivity", beat_index=2)
-        self.grade("Reactivity::core_idea", "good")
+        self.grade(card_id("Reactivity", 0), "good")
         record_grade(
             self.learner_id,
-            "Reactivity::quick_check",
+            card_id("Reactivity", 3),
             "Reactivity",
             "good",
             datetime.now(timezone.utc) - timedelta(days=2),
