@@ -1,3 +1,6 @@
+# Student-facing chat retrieval must stay inside the published corpus.
+from src.shared.published_corpus import published_document
+
 GRAPH_CHUNK_LIMIT = 50 
 
 #query 
@@ -303,7 +306,7 @@ VECTOR_SEARCH_TOP_K = 5
 VECTOR_SEARCH_QUERY = """
 WITH node AS chunk, score
 MATCH (chunk)-[:PART_OF]->(d:Document)
-WHERE d.status = 'Completed' AND d.publicationStatus = 'published'
+WHERE """ + published_document("d") + """
 WITH d, 
      collect(distinct {chunk: chunk, score: score}) AS chunks, 
      avg(score) AS avg_score
@@ -336,7 +339,7 @@ VECTOR_GRAPH_SEARCH_QUERY_PREFIX = """
 WITH node as chunk, score
 // find the document of the chunk
 MATCH (chunk)-[:PART_OF]->(d:Document)
-WHERE d.status = 'Completed' AND d.publicationStatus = 'published'
+WHERE """ + published_document("d") + """
 // aggregate chunk-details
 WITH d, collect(DISTINCT {chunk: chunk, score: score}) AS chunks, avg(score) as avg_score
 // fetch entities

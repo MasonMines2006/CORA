@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING
 
 from src.learning.models import Concept
 from src.shared.common_fn import get_value_from_env
+from src.shared.published_corpus import published_document
 
 if TYPE_CHECKING:
     from langchain_neo4j import Neo4jGraph
@@ -188,8 +189,7 @@ def get_learning_graph() -> Neo4jGraph:
 
 _LIST_CONCEPTS_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
-WHERE document.status = 'Completed'
-  AND document.publicationStatus = 'published'
+WHERE """ + published_document("document") + """
 """ + _LABEL_FILTER_CLAUSE + """
 WITH entity,
      count(DISTINCT chunk) AS chunk_count,
@@ -215,8 +215,7 @@ LIMIT $limit
 _CONCEPT_ROWS_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE coalesce(toString(entity.id), toString(entity.name), elementId(entity)) = $concept_id
-  AND document.status = 'Completed'
-  AND document.publicationStatus = 'published'
+  AND """ + published_document("document") + """
 """ + _LABEL_FILTER_CLAUSE + """
 WITH entity,
      count(DISTINCT chunk) AS chunk_count,
@@ -268,8 +267,7 @@ def _concept_rows(graph: Neo4jGraph, concept_id: str) -> list[Concept]:
 _SOURCE_CONTEXT_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE coalesce(toString(entity.id), toString(entity.name), elementId(entity)) = $concept_id
-  AND document.status = 'Completed'
-  AND document.publicationStatus = 'published'
+  AND """ + published_document("document") + """
 WITH chunk, document, size(coalesce(chunk.text, chunk.content, chunk.page_content, '')) AS text_size
 ORDER BY document.publishedAt DESC, text_size DESC
 RETURN coalesce(chunk.text, chunk.content, chunk.page_content, '') AS text,
@@ -306,8 +304,7 @@ def get_source_context(graph: Neo4jGraph, concept_id: str, limit: int = 8) -> tu
 _SOURCE_PASSAGES_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE coalesce(toString(entity.id), toString(entity.name), elementId(entity)) = $concept_id
-  AND document.status = 'Completed'
-  AND document.publicationStatus = 'published'
+  AND """ + published_document("document") + """
   AND trim(coalesce(chunk.text, chunk.content, chunk.page_content, '')) <> ''
 WITH DISTINCT chunk, document,
      coalesce(chunk.text, chunk.content, chunk.page_content, '') AS text
@@ -338,8 +335,7 @@ def get_source_passages(graph: Neo4jGraph, concept_id: str, limit: int = 12) -> 
 
 _CONCEPT_NETWORK_QUERY = """
 MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
-WHERE document.status = 'Completed'
-  AND document.publicationStatus = 'published'
+WHERE """ + published_document("document") + """
 """ + _LABEL_FILTER_CLAUSE + """
 WITH entity,
      count(DISTINCT chunk) AS chunk_count,
@@ -374,8 +370,7 @@ WHERE neighbor IN selected
   AND EXISTS {
     MATCH (entity)<-[:HAS_ENTITY]-(shared:Chunk)-[:HAS_ENTITY]->(neighbor)
     MATCH (shared)-[:PART_OF]->(published:Document)
-    WHERE published.status = 'Completed'
-      AND published.publicationStatus = 'published'
+    WHERE """ + published_document("published") + """
   }
 WITH node_rows, collect(DISTINCT relationship) AS relationships
 RETURN node_rows AS nodes,
@@ -441,8 +436,7 @@ WHERE entity <> centre
   AND EXISTS {
     MATCH (centre)<-[:HAS_ENTITY]-(shared:Chunk)-[:HAS_ENTITY]->(entity)
     MATCH (shared)-[:PART_OF]->(published:Document)
-    WHERE published.status = 'Completed'
-      AND published.publicationStatus = 'published'
+    WHERE """ + published_document("published") + """
   }
 """ + _LABEL_FILTER_CLAUSE + """
 // Keep every relationship between the pair; pick_relationship() chooses one.
@@ -452,8 +446,7 @@ WITH centre, entity,
 // drops out here. `shared_passages` counts the passages
 // that mention BOTH concepts -- the strength of the link.
 MATCH (entity)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
-WHERE document.status = 'Completed'
-  AND document.publicationStatus = 'published'
+WHERE """ + published_document("document") + """
 WITH centre, entity, links,
      count(DISTINCT chunk) AS chunk_count,
      count(DISTINCT CASE WHEN EXISTS { (chunk)-[:HAS_ENTITY]->(centre) } THEN chunk END) AS shared_passages,
@@ -490,16 +483,14 @@ WHERE NOT coalesce(toString(entity.id), toString(entity.name), elementId(entity)
   AND EXISTS {
     MATCH (anchor)<-[:HAS_ENTITY]-(shared:Chunk)-[:HAS_ENTITY]->(entity)
     MATCH (shared)-[:PART_OF]->(published:Document)
-    WHERE published.status = 'Completed'
-      AND published.publicationStatus = 'published'
+    WHERE """ + published_document("published") + """
   }
 """ + _LABEL_FILTER_CLAUSE + """
 WITH anchor, anchor_id, entity,
      collect(DISTINCT {type: 'RELATED_TO', direction: 'out'}) AS links
 // Same coverage rule and link strength as the neighbourhood query above.
 MATCH (entity)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
-WHERE document.status = 'Completed'
-  AND document.publicationStatus = 'published'
+WHERE """ + published_document("document") + """
 WITH anchor, anchor_id, entity, links,
      count(DISTINCT chunk) AS chunk_count,
      count(DISTINCT document) AS document_count,
