@@ -17,7 +17,9 @@ import os
 import re
 import unittest
 
+from src import publication
 from src.learning import graph as learning_graph
+from src.shared import constants
 
 # Every module-level constant holding a query. Named this way by convention, so
 # a new query is covered automatically the moment it is added.
@@ -27,6 +29,25 @@ QUERY_CONSTANTS = {
     if name.endswith("_QUERY") and isinstance(value, str)
 }
 
+# The read-only queries behind the publication boundary that live outside the
+# learning module. The publish/unpublish writes are left out on purpose: EXPLAIN
+# would not run them, but this suite only ever sends reads to the live database.
+QUERY_CONSTANTS.update({
+    "publication._LIST_QUERY": publication._LIST_QUERY,
+    "publication._PREVIEW_QUERY": publication._PREVIEW_QUERY,
+    "publication._PUBLISHED_FINGERPRINT_QUERY": publication._PUBLISHED_FINGERPRINT_QUERY,
+})
+
+# Chat retrieval queries are fragments: langchain's Neo4jVector runs them after
+# `CALL db.index.vector.queryNodes(...) YIELD node, score`. This stand-in
+# preamble binds the same two variables without needing the index or an
+# embedding, so EXPLAIN can plan the published-only filter they carry.
+_RETRIEVAL_PREAMBLE = "MATCH (node:Chunk) WITH node, 1.0 AS score\n"
+QUERY_CONSTANTS.update({
+    "constants.VECTOR_SEARCH_QUERY": _RETRIEVAL_PREAMBLE + constants.VECTOR_SEARCH_QUERY,
+    "constants.VECTOR_GRAPH_SEARCH_QUERY": _RETRIEVAL_PREAMBLE + constants.VECTOR_GRAPH_SEARCH_QUERY,
+})
+
 # Cypher refuses to plan a query whose parameters are absent, and EXPLAIN never
 # reads them, so any placeholder of the right rough shape is enough.
 PARAM_PLACEHOLDERS = {
@@ -34,6 +55,7 @@ PARAM_PLACEHOLDERS = {
     "min_connectivity": 1,
     "excluded_labels": ["document"],
     "started_ids": ["placeholder"],
+    "query_vector": [0.1, 0.2, 0.3],
 }
 
 
@@ -42,7 +64,12 @@ class QueryDiscoveryTests(unittest.TestCase):
     list of constants it discovers."""
 
     def test_graph_queries_are_discovered(self):
-        for name in ("_CONCEPT_NEIGHBOURHOOD_QUERY", "_SUGGESTED_CONCEPTS_QUERY"):
+        for name in (
+            "_CONCEPT_NEIGHBOURHOOD_QUERY",
+            "_SUGGESTED_CONCEPTS_QUERY",
+            "publication._PUBLISHED_FINGERPRINT_QUERY",
+            "constants.VECTOR_SEARCH_QUERY",
+        ):
             with self.subTest(query=name):
                 self.assertIn(name, QUERY_CONSTANTS)
 
