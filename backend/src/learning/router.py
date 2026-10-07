@@ -249,7 +249,7 @@ async def lesson(concept_id: str, learner: dict = Depends(get_learner)):
         LessonBeat(key="how_it_works", title="How it works", content=generated.how_it_works),
         LessonBeat(
             key="application",
-            title="Application",
+            title="In the material",
             content=generated.application,
         ),
         LessonBeat(

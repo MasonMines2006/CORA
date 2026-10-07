@@ -2,7 +2,7 @@
 
 from typing import Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 
 from src.learning.review_models import LastLesson, ReviewSummary
 
@@ -145,6 +145,22 @@ class GeneratedLesson(BaseModel):
     how_it_works: str
     application: str
     quick_check: QuickCheck
+
+    @model_validator(mode="before")
+    @classmethod
+    def _accept_legacy_application_key(cls, data):
+        """Read lessons cached before the course-neutral rename.
+
+        Lessons generated earlier were stored in `learning_content_cache` with a
+        `pulstar_application` field. Mapping it here keeps those cached rows valid
+        instead of failing validation (which would surface as a 503) or forcing a
+        paid regeneration of every lesson.
+        """
+        if isinstance(data, dict) and "application" not in data and "pulstar_application" in data:
+            # Build a new dict rather than mutating the cached payload in place.
+            renamed = {key: value for key, value in data.items() if key != "pulstar_application"}
+            return {**renamed, "application": data["pulstar_application"]}
+        return data
 
 
 class LessonResponse(BaseModel):
