@@ -10,6 +10,7 @@ import { getIsLoading } from '../../utils/Utils';
 import { getLearningConcepts } from '../../API/Index';
 import { useFileContext } from '../../context/UsersFiles';
 import { chatModeLables } from '../../utils/Constants';
+import { buildSuggestedPrompts } from './suggestedPrompts';
 
 interface StudentChatProps {
   externalPrompt?: string;
@@ -36,11 +37,9 @@ const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPro
     setchatModes([chatModeLables.vector]);
     const controller = new AbortController();
     getLearningConcepts(controller.signal)
-      .then((concepts) =>
-        setSuggestedPrompts(
-          concepts.slice(0, 4).map((concept) => `Explain ${concept.name} using the published course material.`)
-        )
-      )
+      // Suggestions come from the published concepts, so they follow whatever
+      // material is loaded. With no concepts, no chips are shown.
+      .then((concepts) => setSuggestedPrompts(buildSuggestedPrompts(concepts)))
       .catch(() => setSuggestedPrompts([]));
     return () => controller.abort();
   }, [setchatModes]);
