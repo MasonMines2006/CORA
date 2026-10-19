@@ -6,8 +6,10 @@ import ErrorBoundary from '../UI/ErrroBoundary';
 import AskView from '../ask/AskView';
 import { useSessionStore } from '../ask/useSessionStore';
 import AppShell from '../shell/AppShell';
+import { ShellAccount } from '../shell/account';
 import { SessionSummary } from '../shell/types';
 import PathView from '../path/PathView';
+import ProgressView from '../progress/ProgressView';
 import { useDashboard } from '../path/useDashboard';
 import Button from '../ui-kit/Button';
 import EmptyState from '../ui-kit/EmptyState';
@@ -98,6 +100,14 @@ const StudentLayout = () => {
     session.signOut();
   };
 
+  const account: ShellAccount = {
+    isAuthenticated: session.isAuthenticated,
+    name: session.user?.name,
+    email: session.user?.email,
+    onSignIn: () => session.signIn('/student'),
+    onSignOut: signOut,
+  };
+
   // A lesson or quiz link with no concept has nothing to show, so it falls back to the Path.
   const needsConcept = location.view === 'lesson' || location.view === 'quiz';
   const shellView: StudentView = needsConcept && !location.conceptId ? 'path' : location.view;
@@ -158,13 +168,7 @@ const StudentLayout = () => {
       activeSessionId={location.view === 'ask' ? location.session : undefined}
       onOpenSession={openSession}
       onNewSession={() => goToView('ask')}
-      account={{
-        isAuthenticated: session.isAuthenticated,
-        name: session.user?.name,
-        email: session.user?.email,
-        onSignIn: () => session.signIn('/student'),
-        onSignOut: signOut,
-      }}
+      account={account}
     >
       {shellView === 'path' && (
         <PathView
@@ -215,9 +219,7 @@ const StudentLayout = () => {
       )}
 
       {location.view === 'progress' && (
-        <EmptyState icon={<HiOutlineChartBar className='h-6 w-6' />} title='Progress is on its way'>
-          Your mastery by unit and the concepts that need work will show here.
-        </EmptyState>
+        <ProgressView dashboard={dashboard} onRetry={reloadDashboard} account={account} onQuiz={modes.onQuiz} />
       )}
 
       {hasOpenedGraph && (
