@@ -17,7 +17,7 @@ from unittest.mock import AsyncMock, MagicMock, patch
 from fastapi.testclient import TestClient
 
 import score
-from src.auth import get_auth_settings, get_current_user
+from src.auth import get_current_user
 
 # Form fields the frontend sends (see frontend/src/services/GetRagasMetric.ts).
 METRIC_FORM = {
@@ -58,9 +58,8 @@ class MetricEndpointAuthTests(unittest.TestCase):
 
     def anonymous(self):
         """No logged-in user. Keep the real get_current_user so the missing
-        Authorization header is what rejects the request; only stub the Auth0
-        settings so the test does not depend on AUTH0_* values in .env."""
-        self.app.dependency_overrides[get_auth_settings] = lambda: object()
+        Authorization header is what rejects the request."""
+        self.app.dependency_overrides.pop(get_current_user, None)
 
     def post_both(self):
         return (

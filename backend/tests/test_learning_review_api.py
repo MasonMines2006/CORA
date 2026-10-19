@@ -16,7 +16,6 @@ from uuid import uuid4
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
-from src.auth import get_auth_settings
 from src.learning import review_router as review_router_module
 from src.learning import review_service
 from src.learning.models import CourseStats
@@ -97,8 +96,6 @@ class ReviewApiTestCase(unittest.TestCase):
         app = FastAPI()
         app.include_router(learning_router)
         app.include_router(review_router)
-        # Guests never touch Auth0 settings; this keeps the tests independent of them.
-        app.dependency_overrides[get_auth_settings] = lambda: object()
         cls.client = TestClient(app)
 
     def setUp(self):

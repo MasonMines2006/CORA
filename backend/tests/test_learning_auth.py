@@ -17,7 +17,7 @@ class LearningIdentityTests(unittest.TestCase):
     def test_valid_guest_uuid_becomes_namespaced_learner(self):
         guest_id = str(uuid4())
 
-        learner = auth.get_learner(request_with_headers(**{"X-Guest-Id": guest_id}), settings=object())
+        learner = auth.get_learner(request_with_headers(**{"X-Guest-Id": guest_id}))
 
         self.assertEqual(learner["learner_id"], f"guest:{guest_id}")
         self.assertEqual(learner["role"], "guest")
@@ -27,20 +27,20 @@ class LearningIdentityTests(unittest.TestCase):
         authenticated = {"auth0_sub": "auth0|student-1", "email": "student@example.edu", "role": "student"}
 
         with patch.object(auth, "get_current_user", return_value=authenticated):
-            learner = auth.get_learner(request, settings=object())
+            learner = auth.get_learner(request)
 
         self.assertEqual(learner["learner_id"], "auth0|student-1")
         self.assertEqual(learner["role"], "student")
 
     def test_malformed_guest_id_is_rejected(self):
         with self.assertRaises(HTTPException) as raised:
-            auth.get_learner(request_with_headers(**{"X-Guest-Id": "not-a-uuid"}), settings=object())
+            auth.get_learner(request_with_headers(**{"X-Guest-Id": "not-a-uuid"}))
 
         self.assertEqual(raised.exception.status_code, 401)
 
     def test_missing_identity_is_rejected(self):
         with self.assertRaises(HTTPException) as raised:
-            auth.get_learner(request_with_headers(), settings=object())
+            auth.get_learner(request_with_headers())
 
         self.assertEqual(raised.exception.status_code, 401)
 
@@ -49,7 +49,7 @@ class LearningIdentityTests(unittest.TestCase):
         request = request_with_headers(**{"X-Guest-Id": guest_id})
 
         with patch.object(auth, "consume_guest_chat_quota", return_value=1) as consume:
-            learner = auth.get_chat_learner(request, settings=object())
+            learner = auth.get_chat_learner(request)
 
         self.assertEqual(learner["learner_id"], f"guest:{guest_id}")
         consume.assert_called_once_with(f"guest:{guest_id}", 10)
@@ -59,7 +59,7 @@ class LearningIdentityTests(unittest.TestCase):
 
         with patch.object(auth, "consume_guest_chat_quota", return_value=None):
             with self.assertRaises(HTTPException) as raised:
-                auth.get_chat_learner(request, settings=object())
+                auth.get_chat_learner(request)
 
         self.assertEqual(raised.exception.status_code, 429)
 
@@ -71,7 +71,7 @@ class LearningIdentityTests(unittest.TestCase):
             patch.object(auth, "get_current_user", return_value=authenticated),
             patch.object(auth, "consume_guest_chat_quota") as consume,
         ):
-            learner = auth.get_chat_learner(request, settings=object())
+            learner = auth.get_chat_learner(request)
 
         self.assertEqual(learner["learner_id"], "auth0|student-1")
         consume.assert_not_called()
