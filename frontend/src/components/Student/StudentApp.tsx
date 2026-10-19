@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { HiOutlineChartBar } from 'react-icons/hi2';
 import ThemeWrapper from '../../context/ThemeWrapper';
@@ -9,12 +9,13 @@ import { useSession } from '../../context/session';
 import { SpotlightProvider } from '@neo4j-ndl/react';
 import ErrorBoundary from '../UI/ErrroBoundary';
 import AppShell from '../shell/AppShell';
+import PathView from '../path/PathView';
+import { useDashboard } from '../path/useDashboard';
 import EmptyState from '../ui-kit/EmptyState';
 import ConceptHub from './ConceptHub';
 import ReviewSession from './ReviewSession';
 import StudentChat from './StudentChat';
 import StudentExplore from './StudentExplore';
-import StudentHome from './StudentHomeArtboard';
 import { StudentLocation, StudentView, parseLocation, toSearchParams } from './studentLocation';
 
 const StudentLayout = () => {
@@ -25,6 +26,7 @@ const StudentLayout = () => {
   // mounted (hidden) rather than being rebuilt on every visit.
   const [hasOpenedChat, setHasOpenedChat] = useState(location.view === 'ask');
   const [chatPrompt, setChatPrompt] = useState('');
+  const { dashboard, reload: reloadDashboard } = useDashboard();
 
   const go = (next: StudentLocation, options: { replace?: boolean } = {}) => {
     if (next.view === 'ask') {
@@ -40,6 +42,19 @@ const StudentLayout = () => {
     setChatPrompt(prompt);
     goToView('ask');
   };
+
+  // Mastery can change in a quiz or review, so refresh the numbers when coming back.
+  // The very first render is skipped: useDashboard has just loaded them.
+  const isFirstView = useRef(true);
+  useEffect(() => {
+    if (isFirstView.current) {
+      isFirstView.current = false;
+      return;
+    }
+    if (location.view === 'path' || location.view === 'progress') {
+      reloadDashboard();
+    }
+  }, [location.view, reloadDashboard]);
 
   // A new page should start at the top, not wherever the last one was scrolled to.
   useEffect(() => {
@@ -57,6 +72,7 @@ const StudentLayout = () => {
     <AppShell
       active={location.view}
       onNavigate={goToView}
+      dueCount={dashboard.status === 'ready' ? dashboard.data.review?.due_count : undefined}
       sessions={[]}
       onOpenSession={() => goToView('ask')}
       onNewSession={() => goToView('ask')}
@@ -69,11 +85,15 @@ const StudentLayout = () => {
       }}
     >
       {location.view === 'path' && (
-        <StudentHome
-          onOpenConcept={openLesson}
-          onOpenExplore={() => goToView('graph')}
-          onOpenReview={() => goToView('review')}
-          onAsk={ask}
+        <PathView
+          dashboard={dashboard}
+          onRetry={reloadDashboard}
+          userName={session.user?.name}
+          onReview={() => goToView('review')}
+          onGraph={() => goToView('graph')}
+          onGuide={openLesson}
+          onAsk={(prompt) => ask(prompt)}
+          onQuiz={(conceptId) => go({ view: 'quiz', conceptId })}
         />
       )}
 

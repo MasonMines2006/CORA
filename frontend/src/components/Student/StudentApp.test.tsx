@@ -26,10 +26,19 @@ vi.mock('../../context/UserMessages', () => ({
 vi.mock('@neo4j-ndl/react', () => ({ SpotlightProvider: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock('../UI/ErrroBoundary', () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
 
-vi.mock('./StudentHomeArtboard', () => ({
-  default: ({ onOpenConcept, onAsk }: { onOpenConcept: (id: string) => void; onAsk: (prompt: string) => void }) => (
+vi.mock('../path/useDashboard', () => ({
+  useDashboard: () => ({ dashboard: { status: 'loading' }, reload: vi.fn() }),
+}));
+vi.mock('../path/PathView', () => ({
+  default: ({
+    onGuide,
+    onAsk,
+  }: {
+    onGuide: (id: string) => void;
+    onAsk: (prompt: string, conceptId?: string) => void;
+  }) => (
     <div>
-      Home screen <button onClick={() => onOpenConcept('Reactivity')}>Open Reactivity</button>
+      Home screen <button onClick={() => onGuide('Reactivity')}>Open Reactivity</button>
       <button onClick={() => onAsk('What is reactivity?')}>Ask from home</button>
     </div>
   ),
