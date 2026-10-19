@@ -1,46 +1,62 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { HiOutlineChartBar } from 'react-icons/hi2';
-import ThemeWrapper from '../../context/ThemeWrapper';
-import UserCredentialsWrapper from '../../context/UserCredentials';
-import { FileContextProvider } from '../../context/UsersFiles';
-import { MessageContextWrapper } from '../../context/UserMessages';
 import { useSession } from '../../context/session';
-import { SpotlightProvider } from '@neo4j-ndl/react';
 import ErrorBoundary from '../UI/ErrroBoundary';
+import AskView from '../ask/AskView';
+import { useSessionStore } from '../ask/useSessionStore';
 import AppShell from '../shell/AppShell';
+import { SessionSummary } from '../shell/types';
 import PathView from '../path/PathView';
 import { useDashboard } from '../path/useDashboard';
 import EmptyState from '../ui-kit/EmptyState';
 import ConceptHub from './ConceptHub';
 import ReviewSession from './ReviewSession';
-import StudentChat from './StudentChat';
 import StudentExplore from './StudentExplore';
 import { StudentLocation, StudentView, parseLocation, toSearchParams } from './studentLocation';
 
+/**
+ * The student app: one URL-driven view at a time inside the shell
+ * (docs/redesign/DESIGN.md section 3). Data that several views share (the
+ * dashboard and the recent-sessions list) is loaded here, once.
+ */
 const StudentLayout = () => {
   const session = useSession();
   const [params, setParams] = useSearchParams();
   const location = parseLocation(params);
-  // Ask keeps its conversation in component state, so once opened it stays
-  // mounted (hidden) rather than being rebuilt on every visit.
-  const [hasOpenedChat, setHasOpenedChat] = useState(location.view === 'ask');
-  const [chatPrompt, setChatPrompt] = useState('');
   const { dashboard, reload: reloadDashboard } = useDashboard();
+  const sessions = useSessionStore(session.user?.email);
+  // A question handed to Ask from another screen; Ask sends it once, then clears it.
+  const [askPrompt, setAskPrompt] = useState('');
+  // The course graph's force layout is expensive, so once opened it stays mounted (hidden).
+  const [hasOpenedGraph, setHasOpenedGraph] = useState(location.view === 'graph');
 
-  const go = (next: StudentLocation, options: { replace?: boolean } = {}) => {
-    if (next.view === 'ask') {
-      setHasOpenedChat(true);
+  const go = (next: StudentLocation) => {
+    if (next.view === 'graph') {
+      setHasOpenedGraph(true);
     }
-    setParams(toSearchParams(next), { replace: options.replace });
+    setParams(toSearchParams(next));
+  };
+  const goToView = (view: StudentView) => go({ view, conceptId: '' });
+  const concepts = dashboard.status === 'ready' ? dashboard.data.concepts.map((item) => item.concept) : [];
+  const conceptName = (id: string) => concepts.find((concept) => concept.id === id)?.name ?? id;
+
+  // The three ways into a concept, shared by every screen.
+  const modes = {
+    onGuide: (conceptId: string, beat?: number) => go({ view: 'lesson', conceptId, beat }),
+    onQuiz: (conceptId: string) => go({ view: 'quiz', conceptId }),
+    onAsk: (prompt: string, conceptId = '') => {
+      setAskPrompt(prompt);
+      go({ view: 'ask', conceptId });
+    },
   };
 
-  const goToView = (view: StudentView) => go({ view, conceptId: '' });
-  const openLesson = (conceptId: string, beat?: number) => go({ view: 'lesson', conceptId, beat });
-
-  const ask = (prompt: string) => {
-    setChatPrompt(prompt);
-    goToView('ask');
+  const openSession = (item: SessionSummary) => {
+    if (item.mode === 'ask') {
+      go({ view: 'ask', conceptId: item.conceptId ?? '', session: item.id });
+      return;
+    }
+    go({ view: item.mode === 'guide' ? 'lesson' : 'quiz', conceptId: item.conceptId ?? '' });
   };
 
   // Mastery can change in a quiz or review, so refresh the numbers when coming back.
@@ -63,7 +79,9 @@ const StudentLayout = () => {
     }
   }, [location.view, location.conceptId]);
 
+  // Sign-out forgets this device's sessions for that person (DESIGN.md 10, Phase 2).
   const signOut = () => {
+    sessions.clear();
     localStorage.removeItem('userRole');
     session.signOut();
   };
@@ -72,9 +90,11 @@ const StudentLayout = () => {
     <AppShell
       active={location.view}
       onNavigate={goToView}
+      fullHeight={location.view === 'ask'}
       dueCount={dashboard.status === 'ready' ? dashboard.data.review?.due_count : undefined}
-      sessions={[]}
-      onOpenSession={() => goToView('ask')}
+      sessions={sessions.sessions}
+      activeSessionId={location.view === 'ask' ? location.session : undefined}
+      onOpenSession={openSession}
       onNewSession={() => goToView('ask')}
       account={{
         isAuthenticated: session.isAuthenticated,
@@ -91,9 +111,28 @@ const StudentLayout = () => {
           userName={session.user?.name}
           onReview={() => goToView('review')}
           onGraph={() => goToView('graph')}
-          onGuide={openLesson}
-          onAsk={(prompt) => ask(prompt)}
-          onQuiz={(conceptId) => go({ view: 'quiz', conceptId })}
+          {...modes}
+        />
+      )}
+
+      {location.view === 'ask' && (
+        <AskView
+          // Not keyed on the session: starting a session must not remount the view mid-answer.
+          key={`ask-${location.conceptId}`}
+          session={sessions.sessions.find((item) => item.id === location.session && item.mode === 'ask')}
+          concepts={concepts}
+          scopeConcept={
+            location.conceptId ? { id: location.conceptId, name: conceptName(location.conceptId) } : undefined
+          }
+          initialPrompt={askPrompt}
+          onPromptConsumed={() => setAskPrompt('')}
+          upsert={sessions.upsert}
+          update={sessions.update}
+          onSessionStarted={(id) => setParams(toSearchParams({ ...location, session: id }), { replace: true })}
+          onGuide={modes.onGuide}
+          onQuiz={modes.onQuiz}
+          onReview={() => goToView('review')}
+          onSignIn={() => session.signIn('/student?view=ask')}
         />
       )}
 
@@ -104,9 +143,9 @@ const StudentLayout = () => {
           mode={location.view === 'quiz' ? 'practice' : 'learn'}
           initialBeat={location.beat}
           onModeChange={(mode) => go({ view: mode === 'practice' ? 'quiz' : 'lesson', conceptId: location.conceptId })}
-          onOpenConcept={(conceptId) => openLesson(conceptId)}
+          onOpenConcept={(conceptId) => modes.onGuide(conceptId)}
           onAllConcepts={() => goToView('path')}
-          onAsk={ask}
+          onAsk={(prompt) => modes.onAsk(prompt, location.conceptId)}
         />
       )}
 
@@ -122,36 +161,18 @@ const StudentLayout = () => {
         </EmptyState>
       )}
 
-      {hasOpenedChat && (
-        <div className={location.view === 'ask' ? '' : 'hidden'}>
-          <StudentChat externalPrompt={chatPrompt} onExternalPromptConsumed={() => setChatPrompt('')} />
+      {hasOpenedGraph && (
+        <div className={location.view === 'graph' ? '' : 'hidden'}>
+          <StudentExplore onOpenConcept={modes.onGuide} onPracticeConcept={modes.onQuiz} />
         </div>
       )}
-
-      {/* The course map stays mounted: its force layout is expensive to rebuild. */}
-      <div className={location.view === 'graph' ? '' : 'hidden'}>
-        <StudentExplore
-          onOpenConcept={(conceptId) => openLesson(conceptId)}
-          onPracticeConcept={(conceptId) => go({ view: 'quiz', conceptId })}
-        />
-      </div>
     </AppShell>
   );
 };
 
 const StudentApp = () => (
   <ErrorBoundary>
-    <ThemeWrapper>
-      <UserCredentialsWrapper>
-        <SpotlightProvider>
-          <FileContextProvider>
-            <MessageContextWrapper>
-              <StudentLayout />
-            </MessageContextWrapper>
-          </FileContextProvider>
-        </SpotlightProvider>
-      </UserCredentialsWrapper>
-    </ThemeWrapper>
+    <StudentLayout />
   </ErrorBoundary>
 );
 

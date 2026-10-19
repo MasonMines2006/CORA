@@ -13,17 +13,6 @@ vi.mock('../../context/session', () => ({
   }),
 }));
 
-vi.mock('../../context/ThemeWrapper', () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
-vi.mock('../../context/UserCredentials', () => ({
-  default: ({ children }: { children: React.ReactNode }) => children,
-}));
-vi.mock('../../context/UsersFiles', () => ({
-  FileContextProvider: ({ children }: { children: React.ReactNode }) => children,
-}));
-vi.mock('../../context/UserMessages', () => ({
-  MessageContextWrapper: ({ children }: { children: React.ReactNode }) => children,
-}));
-vi.mock('@neo4j-ndl/react', () => ({ SpotlightProvider: ({ children }: { children: React.ReactNode }) => children }));
 vi.mock('../UI/ErrroBoundary', () => ({ default: ({ children }: { children: React.ReactNode }) => children }));
 
 vi.mock('../path/useDashboard', () => ({
@@ -51,7 +40,14 @@ vi.mock('./ConceptHub', () => ({
   ),
 }));
 vi.mock('./StudentExplore', () => ({ default: () => <div>Graph screen</div> }));
-vi.mock('./StudentChat', () => ({ default: () => <div>Ask screen</div> }));
+vi.mock('../ask/AskView', () => ({
+  default: ({ initialPrompt, scopeConcept }: { initialPrompt?: string; scopeConcept?: { id: string } }) => (
+    <div>
+      Ask screen {initialPrompt && <span>asking: {initialPrompt}</span>}
+      {scopeConcept && <span>about {scopeConcept.id}</span>}
+    </div>
+  ),
+}));
 vi.mock('./ReviewSession', () => ({ default: () => <div>Review screen</div> }));
 
 const renderAt = (url = '/student') =>
@@ -89,7 +85,23 @@ describe('StudentApp navigation', () => {
   it('sends a question from the Path to Ask', () => {
     renderAt();
     fireEvent.click(screen.getByRole('button', { name: 'Ask from home' }));
-    expect(screen.getByText('Ask screen')).toBeInTheDocument();
+    expect(screen.getByText('asking: What is reactivity?')).toBeInTheDocument();
+  });
+
+  it('opens Ask about a concept from a link', () => {
+    renderAt('/student?view=ask&concept=Keff');
+    expect(screen.getByText('about Keff')).toBeInTheDocument();
+  });
+
+  it('reopens a lesson from the sessions list', () => {
+    window.localStorage.setItem(
+      'cora.sessions.v1.guest',
+      JSON.stringify([{ id: 'guide-Keff', mode: 'guide', title: 'Keff', conceptId: 'Keff', updatedAt: Date.now() }])
+    );
+    renderAt();
+    fireEvent.click(screen.getAllByRole('button', { name: /guide keff/i })[0]);
+    expect(screen.getByText('Hub for Keff in learn')).toBeInTheDocument();
+    window.localStorage.clear();
   });
 
   it('treats an unknown view in the URL as the Path rather than a blank page', () => {
