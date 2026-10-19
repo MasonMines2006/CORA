@@ -108,7 +108,7 @@ export async function mockQuiz(page: Page): Promise<{ gradedAnswers: () => numbe
   });
 
   await page.route('**/api/learning/quiz/grade', async (route) => {
-    const answers = (route.request().postDataJSON() as { answers: number[] }).answers;
+    const { answers } = route.request().postDataJSON() as { answers: number[] };
     gradedAnswers = answers;
     const results = MOCK_QUIZ.map((question, index) => ({
       id: String(index),
@@ -155,7 +155,12 @@ export async function mockChat(page: Page): Promise<void> {
           info: {
             sources: [MOCK_SOURCE],
             model: 'e2e-mock',
-            nodedetails: { chunkdetails: [{ id: 'chunk-1', score: 0.91 }, { id: 'chunk-2', score: 0.84 }] },
+            nodedetails: {
+              chunkdetails: [
+                { id: 'chunk-1', score: 0.91 },
+                { id: 'chunk-2', score: 0.84 },
+              ],
+            },
             error: '',
           },
         },

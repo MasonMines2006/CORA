@@ -8,14 +8,7 @@
  */
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import {
-  API_URL,
-  BACKEND_CONTAINER,
-  POSTGRES_CONTAINER,
-  POSTGRES_DB,
-  POSTGRES_USER,
-  TEST_EMAIL_DOMAIN,
-} from './env';
+import { API_URL, BACKEND_CONTAINER, POSTGRES_CONTAINER, POSTGRES_DB, POSTGRES_USER, TEST_EMAIL_DOMAIN } from './env';
 
 export type Role = 'student' | 'ta' | 'admin';
 
