@@ -68,9 +68,47 @@ Scope: DESIGN.md §10 Phases 0, 1 (Path only), 2, 3, and from Phase 4 the Progre
   - **No streak tile on Results** and no "Added to your review cards" line: there is no streak data, and quiz grading doesn't itself create review cards.
   - **Lesson "Flag it for your TA" left out**: no endpoint.
 
+## Phase 4 subset: Progress and Landing (done)
+
+- `progress/progressModel.ts` (tested): mastered / started / cards due / course concept count, "needs work" (started, unmastered, weakest first, max 5), mastery by unit (same units as the Path).
+- `progress/`: ProgressView (profile header, stat strip with "–" and "Finish your first check to start" for a new learner, mastery by unit as stacked emerald/amber bars with a text label, needs-work list with Quiz buttons, account card with Sign in / Sign out), loading skeleton and error with Retry.
+- `Landing/`: rewritten (Landing.tsx + LandingSections.tsx + test). Left-aligned claim, an example answer with its source beside it, "One concept, three ways in", "Every answer has a receipt", dark CTA strip. Sign in goes through `useSession().signIn('/student')`; signed-in visitors get "Open CORA". No orbs, demo graph, "AI-powered" or sparkles.
+- Checked in a browser at 1440 and 375: no horizontal scroll on Landing, Path, Ask, Review, Progress, lesson, quiz, graph (one Progress overflow found and fixed in `a4eefb0`).
+- Commits: `937f52c`, `342c161`, `a4eefb0`, `dc8da1f`.
+- Decisions:
+  - **Progress shows Mastered / Started / Cards due / In the course**, not streak / checks this week / questions asked / heatmap: there is no activity data (DESIGN.md cut item 6). Mastered and Started say they cover "the N most-connected concepts", because the dashboard computes them over its 50-concept sample (see Backend requests).
+  - **No "Change password" or daily-goal editor** on the account card: those belong to the in-house auth work and an activity endpoint that don't exist on this branch.
+  - **Landing keeps "Look around as a guest"** next to Sign in, because guest access still works today (DESIGN.md open question 2). Remove the button if guests are dropped.
+  - **Landing has no library counts**: `GET /public/stats` doesn't exist, and the rule is to hide counts rather than show zeros or made-up numbers. The example answer in the hero uses a "Source 1" chip, not a made-up document reference.
+
+## Review pass (after Phase 4)
+
+A read-only code review of `0bf8e87..HEAD` found no critical or high issues. These were fixed: Enter on a focused quiz button was hijacked as "Check", and holding Enter skipped through the feedback (`8f2d3b4`). Focus now moves to each new question (`8f2d3b4`). An empty answer never finished revealing (`f73324c`). A quiz cost two dashboard reloads (`ce96e62`). Review also got a page heading (`ce96e62`).
+
+Final results: `yarn test` 29 files / 194 tests green; `yarn build` passes; eslint clean on every changed file.
+
+## Known issues (not fixed)
+
+- **Quiz options are `role=radio` buttons, not a roving radio group.** Each option is a Tab stop, and arrow keys do nothing (1 to 4 work). During feedback the options are `disabled`. Better: native radios, or a roving tabindex with `aria-disabled`.
+- **The mobile menu and the phone source sheet don't trap Tab.** Focus moves in, Escape works and focus comes back, but Tab can reach the page behind. Fix: set `inert` on the main content while they are open.
+- **The course graph re-lays out after a lesson or quiz.** Focus views render outside AppShell, so the hidden-but-mounted `StudentExplore` unmounts. Fix: render focus views as an overlay, or hide the shell instead of returning early.
+- **Sign in with `VITE_SKIP_AUTH=true`** calls `useSession().signIn()`, which calls Auth0 with no provider and throws in the console. The Landing avoids this by opening `/student`; the student shell button doesn't. This will be resolved by the in-house auth `session.ts`.
+- **Results are memory-only.** A refresh on `?view=results` shows an explanation and a link to Progress.
+- **Graph explorer restyle** was cut, as planned. `StudentExplore` is reachable from "Course graph" and still uses its older look.
+
+## Where to resume
+
+All in-scope phases are done. The next steps:
+1. Fix the known issues above, roughly in that order.
+2. Phase 4 Admin (Materials restyle, Users) once the auth agent's work lands.
+3. Wire the Backend requests below as they arrive: passage text in the source drawer, per-question quiz checking, activity data for streak/goal/heatmap.
+
 ## Backend requests
 
 1. **Chat sources with passage text.** `/chat_bot` returns `info.sources` (filenames) and `info.nodedetails.chunkdetails` (`{id, score}` only). The source drawer needs, per chunk: document filename, chunk text, page/position. Either add those to `chunkdetails`, or add a learner-safe `GET /learning/passages/{chunk_id}` (published only). `/fetch_chunktext` and `/chunk_entities` are admin-only.
 2. **`/learning/sources/{concept}` passages have no `id`** although the frontend type says `id: string`. Harmless today; worth adding chunk ids so chat chunks and concept passages can be matched.
 3. **Per-question quiz checking.** For the immediate feedback in DESIGN.md 5.6: e.g. `POST /learning/quiz/{quiz_id}/check {question_id, selected_index}` → `{is_correct, correct_index, explanation}`, recording the answer, with mastery updated once at the end as today.
 4. **Lesson and quiz generation for guests** returns 503 "Learning content is temporarily unavailable" when no guest model is configured. The UI shows a retry; a distinct status or message (like chat's guest-unavailable 503) would let it say "sign in to use lessons" instead.
+5. **Whole-course progress counts.** `/learning/dashboard`'s `started_concepts` / `mastered_concepts` / `average_mastery` are computed over the ranked 50-concept sample, so a concept mastered outside the sample isn't counted. Progress needs whole-course counts (like `course`), and the Path needs either all concepts or a paged list to show every unit.
+6. **Activity data** (`GET /learning/activity`: distinct active days from quiz/review attempts) to bring back the streak, daily goal and heatmap.
+7. **`GET /public/stats`** (published documents / passages / concepts) if the landing should show library counts.
