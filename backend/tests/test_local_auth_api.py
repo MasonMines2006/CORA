@@ -26,6 +26,7 @@ from fastapi import FastAPI
 from fastapi.testclient import TestClient
 
 from src.local_auth import passwords, router as router_module, store
+from src.local_auth.rate_limit import SlidingWindowLimiter
 from src.local_auth.router import admin_router, router as auth_router
 from src.user_store import get_pool
 
@@ -65,6 +66,7 @@ class LocalAuthApiTestCase(unittest.TestCase):
         # test a fresh per-address budget.
         router_module._login_limiter.reset()
         router_module._signup_limiter.reset()
+        router_module._link_limiter.reset()
         # Each test gets its own email namespace, so tests never see each other's rows.
         self.run_id = uuid4().hex[:10]
         self.addCleanup(self._delete_test_rows)
@@ -161,7 +163,9 @@ class LoginTests(LocalAuthApiTestCase):
         self.assertGreater(datetime.fromisoformat(long), datetime.fromisoformat(short) + timedelta(days=1))
 
     def test_one_address_trying_too_many_logins_is_slowed_down(self):
-        responses = [self.login(self.email(f"guess{n}"), OTHER_PASSWORD) for n in range(31)]
+        # A tiny budget keeps the test fast; the real one is in router.py.
+        with patch.object(router_module, "_login_limiter", SlidingWindowLimiter(max_events=3, window_seconds=60)):
+            responses = [self.login(self.email(f"guess{n}"), OTHER_PASSWORD) for n in range(4)]
 
         self.assertEqual(responses[-1].status_code, 429)
 
@@ -350,6 +354,51 @@ class ChangePasswordTests(LocalAuthApiTestCase):
         self.assertEqual(right.status_code, 200)
         self.assertEqual(self.me(token).status_code, 401)  # old session is gone
         self.assertEqual(self.me(right.json()["token"]).status_code, 200)  # the new one works
+
+
+class SecurityReviewFollowUpTests(LocalAuthApiTestCase):
+    """Fixes from the security review of this branch."""
+
+    def change(self, token, current):
+        return self.client.post(
+            "/auth/password", json={"current_password": current, "new_password": OTHER_PASSWORD}, headers=self.bearer(token)
+        )
+
+    def test_guessing_the_current_password_counts_toward_the_lockout(self):
+        # A stolen session token must not allow unlimited guesses at the password.
+        self.make_user("ada")
+        token = self.login(self.email("ada"), GOOD_PASSWORD).json()["token"]
+        for _ in range(5):
+            self.change(token, "wrong guess number x")
+
+        self.assertEqual(self.change(token, GOOD_PASSWORD).status_code, 400)
+        self.assertEqual(self.login(self.email("ada"), GOOD_PASSWORD).status_code, 401)
+
+    def test_a_new_reset_link_cancels_older_ones(self):
+        user = self.make_user("ada")
+        first = self.client.post(f"/admin/users/{user['id']}/reset-link", headers=self.as_admin()).json()["token"]
+        self.client.post(f"/admin/users/{user['id']}/reset-link", headers=self.as_admin())
+
+        self.assertEqual(self.client.get(f"/auth/reset/{first}").status_code, 404)
+
+    def test_a_class_accepting_invites_from_one_network_is_not_throttled(self):
+        # Students on one campus network share an address; 60 of them joining
+        # in an hour must all get through.
+        links = self.client.post(
+            "/admin/invites", json={"emails": [self.email(f"s{n}") for n in range(60)], "role": "student"}, headers=self.as_admin()
+        ).json()["invites"]
+
+        codes = {
+            self.client.post(f"/auth/invites/{link['token']}/accept", json={"name": "S", "password": GOOD_PASSWORD}).status_code
+            for link in links
+        }
+
+        self.assertEqual(codes, {200})
+
+    def test_login_refuses_absurdly_long_passwords_before_hashing(self):
+        response = self.login(self.email("ada"), "x" * 129)
+
+        self.assertEqual(response.status_code, 422)
 
 
 class AdminUserTests(LocalAuthApiTestCase):
