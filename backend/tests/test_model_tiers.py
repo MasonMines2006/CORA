@@ -174,12 +174,15 @@ class ChatRouteTierTests(unittest.TestCase):
         self.assertEqual(response.json()["status"], "Failed")
         self.assertNotIn("LLM_MODEL_CONFIG", response.text)
 
-    def test_chat_errors_keep_details_for_staff(self):
+    def test_chat_errors_hide_internal_details_from_staff_too(self):
+        # Staff read raw errors in the server log. The browser never gets them:
+        # provider errors can quote part of an API key (see test_chat_error_leaks).
         self.qa_rag.side_effect = RuntimeError("Environment variable 'LLM_MODEL_CONFIG_SECRET' is missing")
         with env(TIER_ENV):
             response = self.ask_as(ADMIN)
 
-        self.assertIn("LLM_MODEL_CONFIG_SECRET", response.text)
+        self.assertEqual(response.json()["status"], "Failed")
+        self.assertNotIn("LLM_MODEL_CONFIG", response.text)
 
     def test_student_model_field_is_ignored(self):
         with env(TIER_ENV):

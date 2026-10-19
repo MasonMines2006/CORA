@@ -41,6 +41,10 @@ load_dotenv()
 
 EMBEDDING_MODEL = get_value_from_env("EMBEDDING_MODEL", "sentence_transformer")
 
+# What the browser sees when a chat answer fails. Raw exception text stays in the
+# server log: provider errors can quote part of the API key and name internals.
+CHAT_ERROR_MESSAGE = "Couldn't get an answer right now."
+
 class SessionChatHistory:
     history_dict = {}
 
@@ -482,18 +486,19 @@ def process_chat_response(messages, history, question, model, graph, document_na
             "user": "chatbot"
         }
     
-    except Exception as e:
-        logging.exception(f"Error processing chat response at {datetime.now()}: {str(e)}")
+    except Exception:
+        # logging.exception records the full traceback and message server-side.
+        logging.exception(f"Error processing chat response at {datetime.now()}")
         return {
             "session_id": "",
-            "message": "Something went wrong",
+            "message": CHAT_ERROR_MESSAGE,
             "info": {
                 "metrics" : [],
                 "sources": [],
                 "nodedetails": [],
                 "total_tokens": 0,
                 "response_time": 0,
-                "error": f"{type(e).__name__}: {str(e)}",
+                "error": CHAT_ERROR_MESSAGE,
                 "mode": chat_mode_settings["mode"],
                 "entities": [],
                 "metric_details": {},
@@ -614,18 +619,19 @@ def process_graph_response(model, graph, question, messages, history):
         
         return result
     
-    except Exception as e:
-        logging.exception(f"Error processing graph response at {datetime.now()}: {str(e)}")
+    except Exception:
+        logging.exception(f"Error processing graph response at {datetime.now()}")
         return {
-            "session_id": "",  
-            "message": "Something went wrong",
+            "session_id": "",
+            "message": CHAT_ERROR_MESSAGE,
             "info": {
-                "model": model_version,
+                # Not model_version: it is unset when create_graph_chain is what failed.
+                "model": "",
                 "cypher_query": "",
                 "context": "",
                 "mode": "graph",
                 "response_time": 0,
-                "error": f"{type(e).__name__}: {str(e)}"
+                "error": CHAT_ERROR_MESSAGE
             },
             "user": "chatbot"
         }
