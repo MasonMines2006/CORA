@@ -47,16 +47,14 @@ from src.shared.llm_graph_builder_exception import LLMGraphBuilderException
 from Secweb.XContentTypeOptions import XContentTypeOptions
 from Secweb.XFrameOptions import XFrame
 from src.auth import (
-    ensure_users_table,
     get_chat_learner,
     get_current_user,
     get_learner,
-    get_user_role,
-    list_users,
     require_role,
-    set_role_by_email,
-    set_user_role,
 )
+from src.local_auth.router import admin_router as admin_users_router, router as auth_router
+from src.local_auth.store import ensure_auth_tables
+from src.local_auth.tokens import jwt_secret
 from src.learning import router as learning_router
 from src.learning.review_router import router as review_router
 from src.learning.review_store import ensure_review_tables
@@ -141,13 +139,17 @@ app = FastAPI()
 app.include_router(learning_router)
 app.include_router(review_router)
 app.include_router(publication_router)
+app.include_router(auth_router)
+app.include_router(admin_users_router)
 
 
 @app.on_event("startup")
 def _init_user_store():
     # Run the app_users schema setup once per worker process at startup,
     # instead of on every single authenticated request.
-    ensure_users_table()
+    # Fail at startup, not at the first sign-in, if the token secret is missing.
+    jwt_secret()
+    ensure_auth_tables()  # app_users plus the sign-in columns and tables
     ensure_learning_tables()
     ensure_review_tables()
     # Logs a loud warning if the local-dev login shortcut is switched on.
@@ -1217,53 +1219,6 @@ async def get_schema_visualization(credentials: Neo4jCredentials = Depends(get_n
 # -----------------------
 # Authentication & Roles
 # -----------------------
-
-class SetUserRoleRequest(BaseModel):
-    email: str
-    role: str
-
-
-@app.get("/auth/me")
-async def auth_me(user=Depends(get_current_user)):
-    return create_api_response("Success", data={"email": user.get("email"), "role": user.get("role")})
-
-
-@app.post("/auth/login")
-async def auth_login(user=Depends(get_current_user)):
-    # Upsert happens inside get_current_user; just return the role/email
-    return create_api_response("Success", data={"email": user.get("email"), "role": user.get("role")})
-
-
-@app.get("/users")
-def list_all_users(user=Depends(require_role(ALLOWED_MANAGER_ROLES))):
-    # Plain `def`, not `async def`: list_users() does blocking Postgres I/O,
-    # and a plain def route gets dispatched to FastAPI's threadpool instead
-    # of running on (and blocking) the event loop.
-    try:
-        users = list_users()
-        return create_api_response("Success", data=users)
-    except Exception as e:
-        logging.exception("Failed to list users")
-        return create_api_response("Failed", message="Unable to list users", error=str(e))
-
-
-@app.post("/users")
-def set_user_role_endpoint(payload: SetUserRoleRequest, user=Depends(require_role(ALLOWED_ADMIN_ROLES))):
-    try:
-        if payload.role not in ALLOWED_MANAGER_ROLES + ["student"]:
-            return create_api_response("Failed", message=f"Unknown role '{payload.role}'")
-        updated_role = set_role_by_email(payload.email, payload.role)
-        if updated_role is None:
-            return create_api_response(
-                "Failed",
-                message=f"No user found with email {payload.email}. They need to log in at least once before their role can be changed.",
-            )
-        return create_api_response("Success", data={"email": payload.email, "role": updated_role})
-    except Exception as e:
-        logging.exception("Failed to set user role")
-        return create_api_response("Failed", message="Unable to update user role", error=str(e))
-
-
 
 @app.post("/get_token_limits")
 async def get_token_limits(credentials: Neo4jCredentials = Depends(get_neo4j_credentials), user=Depends(get_current_user)):
