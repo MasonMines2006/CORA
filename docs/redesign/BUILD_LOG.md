@@ -34,3 +34,25 @@ Scope: DESIGN.md §10 Phases 0, 1 (Path only), 2, 3, and from Phase 4 the Progre
   - **Popovers open on click only**, not automatically for the current node as in the prototype. Why: auto-opening would steal keyboard focus on page load.
   - **Provenance line** says "Built from N published passages in M documents" (from the concept), not "5 linked concepts", which would need a neighbourhood request per node.
 - Known issue: the unit split is only as good as `sources[0]`; with real data some units have one concept.
+
+## Phase 2: Ask (done)
+
+- `ask/askModel.ts` (tested): parses `/chat_bot` replies defensively → grounded answer / not in the material (no sources) / error (including the server's "Success" envelope with `info.error`); `classifyChatError` → hourly limit (429, keeps the server's wording), guest AI off (503), other; `matchConcept` (longest whole-word published concept name in the text); `titleFrom`.
+- `ask/sessionStore.ts` + `useSessionStore.ts` (tested): recent sessions per person in localStorage (`cora.sessions.v1.<email|guest>`), capped at 40, validated on read, pending replies settle to "interrupted" after a reload, Guide/Quiz entries recorded once per concept, cleared on sign-out. Guards against writing one person's list under another's key when the user changes.
+- `ask/`: AskView, AnswerTurn (grounded badge, markdown answer, source cards, copy, hand-off), SourceCards, SourceDrawer (desktop panel / phone bottom sheet; focus in, Escape, focus back), Composer (Ask / Guide me / Quiz me with `aria-pressed`; Enter sends), ModeHandoff, ReplyStates (failed / hourly limit / guest unavailable / not in material), `useReveal` (clock-based reveal; instant under reduced motion), `useAskRequest`.
+- Guide me / Quiz me in the composer open the lesson / quiz for the concept the text names (or the session's concept); if none matches, a hint lists real concept names. No request is sent.
+- StudentApp: Ask is no longer kept mounted; the conversation lives in the store, so an answer that lands after you leave still goes to the right session. Legacy chat contexts (ThemeWrapper, UserCredentials, FileContext, MessageContext, Spotlight) removed from the student app; `StudentChat.tsx` retired.
+- Checked in a browser as a guest: the 503 "guest AI off" state renders, the session appears in the sidebar under Today.
+- Commits: `5f70e9b` (prettier only), `6084bfd`, `9eaaacd`, `f34ad7d`.
+- Results: `yarn test` 22 files / 158 tests green; `yarn build` passes; eslint clean.
+- Decisions:
+  - **No inline [n] chips** (cut, per instructions). Source cards under every answer.
+  - **No scope selector.** The backend always searches all published material for learners, so the header says "Searching all published material" instead of offering a selector that would do nothing.
+  - **No "helpful" / "report" / "Tell my TA it's missing" buttons.** There is no endpoint to receive them; a button that does nothing would be fake. Copy is kept.
+  - **The source drawer shows a real passage only when Ask is about a concept** (it uses `/learning/sources/{concept}` and the passage from that document). Otherwise it says the passage text isn't available yet. See Backend requests.
+- Known issues: in Ask, the first answer of a brand-new session is announced/animated normally; answers restored from storage appear instantly (by design).
+
+## Backend requests
+
+1. **Chat sources with passage text.** `/chat_bot` returns `info.sources` (filenames) and `info.nodedetails.chunkdetails` (`{id, score}` only). The source drawer needs, per chunk: document filename, chunk text, page/position. Either add those to `chunkdetails`, or add a learner-safe `GET /learning/passages/{chunk_id}` (published only). `/fetch_chunktext` and `/chunk_entities` are admin-only.
+2. **`/learning/sources/{concept}` passages have no `id`** although the frontend type says `id: string`. Harmless today; worth adding chunk ids so chat chunks and concept passages can be matched.
