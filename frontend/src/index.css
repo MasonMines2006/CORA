@@ -391,6 +391,16 @@ body {
     color: var(--cora-slate-500);
     box-shadow: 0 5px 0 var(--cora-slate-300);
   }
+  /* Gentle zig-zag down the path: full offset from 640px up, 45% of it on phones.
+     The offset comes from an inline `--o` custom property on each row. */
+  .path-offset {
+    margin-left: calc(var(--o, 0px) * 0.45);
+  }
+  @media (min-width: 640px) {
+    .path-offset {
+      margin-left: var(--o, 0px);
+    }
+  }
   .node-current::before {
     content: '';
     position: absolute;
