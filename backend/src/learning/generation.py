@@ -4,7 +4,6 @@ from langchain_core.messages import HumanMessage, SystemMessage
 
 from src.learning.models import GeneratedFlashcards, GeneratedLesson, GeneratedQuiz
 from src.llm import get_llm
-from src.shared.common_fn import get_value_from_env
 
 
 GROUNDING_RULES = """
@@ -15,8 +14,9 @@ plainly. Keep the language appropriate for an undergraduate student of this mate
 """.strip()
 
 
-def _learning_llm():
-    model = get_value_from_env("LEARNING_MODEL", default_value="openai_gpt_4o", data_type=str)
+def _learning_llm(model: str):
+    # The caller picks the model from the learner's role (src/model_tiers.py),
+    # so guests get the free model and signed-in learners get LEARNING_MODEL.
     llm, _, _ = get_llm(model)
     return llm
 
@@ -30,11 +30,11 @@ def _validate_options(options: list[str], answer_index: int) -> None:
         raise ValueError("Generated question contains duplicate options")
 
 
-async def generate_lesson(concept_name: str, context: str) -> GeneratedLesson:
+async def generate_lesson(concept_name: str, context: str, *, model: str) -> GeneratedLesson:
     if not context.strip():
         raise ValueError("No source material is available for this concept")
 
-    structured_llm = _learning_llm().with_structured_output(GeneratedLesson)
+    structured_llm = _learning_llm(model).with_structured_output(GeneratedLesson)
     lesson = await structured_llm.ainvoke(
         [
             SystemMessage(content=GROUNDING_RULES),
@@ -69,6 +69,8 @@ async def generate_quiz(
     difficulty: str,
     question_count: int,
     context: str,
+    *,
+    model: str,
 ) -> GeneratedQuiz:
     if not context.strip():
         raise ValueError("No source material is available for this concept")
@@ -78,7 +80,7 @@ async def generate_quiz(
         "medium": "Require connecting two ideas stated in the excerpts.",
         "hard": "Require applying or distinguishing ideas across multiple excerpts without relying on trivia.",
     }[difficulty]
-    structured_llm = _learning_llm().with_structured_output(GeneratedQuiz)
+    structured_llm = _learning_llm(model).with_structured_output(GeneratedQuiz)
     quiz = await structured_llm.ainvoke(
         [
             SystemMessage(content=GROUNDING_RULES),
@@ -107,11 +109,11 @@ SOURCE EXCERPTS END
     return quiz
 
 
-async def generate_flashcards(concept_name: str, context: str, sources: list[str]) -> GeneratedFlashcards:
+async def generate_flashcards(concept_name: str, context: str, sources: list[str], *, model: str) -> GeneratedFlashcards:
     """Make a variable deck from published passages, independent of lesson beats."""
     if not context.strip():
         raise ValueError("No source material is available for this concept")
-    structured_llm = _learning_llm().with_structured_output(GeneratedFlashcards)
+    structured_llm = _learning_llm(model).with_structured_output(GeneratedFlashcards)
     cards = await structured_llm.ainvoke(
         [
             SystemMessage(content=GROUNDING_RULES),

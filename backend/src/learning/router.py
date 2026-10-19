@@ -8,6 +8,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 
 from src.auth import get_learner
 from src.learning.generation import generate_lesson, generate_quiz
+from src.model_tiers import cache_variant, learning_model_for
 from src.learning.graph import (
     get_concept,
     get_concept_neighbourhood,
@@ -94,7 +95,7 @@ async def dashboard(learner: dict = Depends(get_learner)):
             asyncio.to_thread(list_concepts, get_learning_graph(), 50),
             asyncio.to_thread(get_course_stats, get_learning_graph()),
             asyncio.to_thread(list_mastery, learner_id),
-            load_review_summary(learner_id),
+            load_review_summary(learner_id, role=learner.get("role")),
             load_last_lesson(learner_id),
         )
         return build_dashboard(graph, mastery_rows, course).model_copy(
@@ -224,22 +225,25 @@ async def lesson(concept_id: str, learner: dict = Depends(get_learner)):
     if not context:
         raise HTTPException(status_code=409, detail="This concept does not have usable source material yet")
 
+    # Guests' free-model lessons live in their own cache slot (see model_tiers).
+    role = learner.get("role")
+    variant = cache_variant(role, "")
     cached_payload = await asyncio.to_thread(
-        get_cached_learning_content, concept_id, "lesson", "", source_hash
+        get_cached_learning_content, concept_id, "lesson", variant, source_hash
     )
     cached = cached_payload is not None
     try:
         generated = (
             GeneratedLesson.model_validate(cached_payload)
             if cached_payload
-            else await generate_lesson(concept.name, context)
+            else await generate_lesson(concept.name, context, model=learning_model_for(role))
         )
         if not cached:
             await asyncio.to_thread(
                 cache_learning_content,
                 concept_id,
                 "lesson",
-                "",
+                variant,
                 source_hash,
                 generated.model_dump(),
             )
@@ -287,7 +291,8 @@ async def quiz_generate(
 
     mastery_row = await asyncio.to_thread(get_mastery, learner_id, request.concept_id)
     current_mastery = mastery_from_row(request.concept_id, mastery_row)
-    cache_difficulty = f"{current_mastery.difficulty}:{request.question_count}"
+    role = learner.get("role")
+    cache_difficulty = cache_variant(role, f"{current_mastery.difficulty}:{request.question_count}")
     cached_payload = await asyncio.to_thread(
         get_cached_learning_content,
         request.concept_id,
@@ -305,6 +310,7 @@ async def quiz_generate(
                 current_mastery.difficulty,
                 request.question_count,
                 context,
+                model=learning_model_for(role),
             )
         )
         if not cached:

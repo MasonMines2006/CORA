@@ -56,14 +56,16 @@ def fake_source_context(graph, concept_id):
 
 
 def fake_cached_content(concept_id, content_type, difficulty, source_hash):
-    if content_type != "cards" or difficulty != "":
+    # These tests run as a guest, and guests' decks live in the "guest" cache slot
+    # (see src/model_tiers.py cache_variant).
+    if content_type != "cards" or difficulty != "guest":
         return None
     if concept_id in CACHED and source_hash == VERSION:
         return deck(concept_id).model_dump()
     return None
 
 
-async def fake_generate_cards(name, context, sources):
+async def fake_generate_cards(name, context, sources, *, model):
     return deck(name)
 
 
@@ -100,6 +102,10 @@ class ReviewApiTestCase(unittest.TestCase):
         cls.client = TestClient(app)
 
     def setUp(self):
+        # Guests may only generate decks when a free guest model is configured.
+        env = patch.dict(os.environ, {"GUEST_LLM_MODEL": "guest_free", "LLM_MODEL_CONFIG_GUEST_FREE": "llama-3.1-8b-instant,https://example.invalid/v1,test-key"})
+        env.start()
+        self.addCleanup(env.stop)
         guest_uuid = str(uuid4())
         self.learner_id = f"guest:{guest_uuid}"
         self.headers = {"X-Guest-Id": guest_uuid}

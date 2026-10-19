@@ -35,7 +35,7 @@ async def review_queue(
     """Cards due now (oldest first), then new cards from lessons already opened."""
     learner_id = _learner_id(learner)
     try:
-        return await load_review_queue(learner_id, concept_id, limit)
+        return await load_review_queue(learner_id, concept_id, limit, role=learner.get("role"))
     except Exception as exc:
         logger.exception("Could not load the review queue")
         raise HTTPException(status_code=503, detail="Your review queue is unavailable") from exc
@@ -46,7 +46,7 @@ async def review_grade(request: ReviewGradeRequest, learner: dict = Depends(get_
     """Record how well the learner knew a card and schedule its next review."""
     learner_id = _learner_id(learner)
     try:
-        card = await find_card(request.card_id)
+        card = await find_card(request.card_id, role=learner.get("role"))
     except Exception as exc:
         logger.exception("Could not look up review card %r", request.card_id)
         raise HTTPException(status_code=503, detail="Review is temporarily unavailable") from exc

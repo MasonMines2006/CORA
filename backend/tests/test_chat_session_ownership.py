@@ -14,6 +14,7 @@ No Neo4j, Postgres or LLM is used: QA_RAG and clear_chat_history are patched and
 we only look at which session key they were handed.
 """
 
+import os
 import unittest
 from unittest.mock import MagicMock, patch
 
@@ -68,6 +69,10 @@ class ChatRouteOwnershipTests(unittest.TestCase):
         self.addCleanup(self.app.dependency_overrides.clear)
         self.app.dependency_overrides[get_server_neo4j_credentials] = lambda: MagicMock()
         self.client = TestClient(self.app)
+        # Guest chat is refused unless a free guest model is configured.
+        env = patch.dict(os.environ, {"GUEST_LLM_MODEL": "guest_free", "LLM_MODEL_CONFIG_GUEST_FREE": "llama-3.1-8b-instant,https://example.invalid/v1,test-key"})
+        env.start()
+        self.addCleanup(env.stop)
 
         self.qa_rag = MagicMock(side_effect=lambda **kwargs: {
             "session_id": kwargs["session_id"], "message": "ok", "info": {},
