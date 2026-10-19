@@ -1175,17 +1175,22 @@ async def backend_connection_configuration(user=Depends(get_learner)):
                 result['graph_connection'] = f'{graph_connection}',
                 result['connection_from'] = 'backendAPI'
                 logger.log_struct(result, "INFO")
+                # Only the admin app reads the URI and database details. Any
+                # learner (guests too) can call this route, so they get just
+                # the connection flag.
+                if user.get("role") not in ALLOWED_ADMIN_ROLES:
+                    result = {'graph_connection': result['graph_connection']}
                 return create_api_response('Success',message=f"Backend connection successful",data=result)
         else:
             graph_connection = False
             return create_api_response('Success',message=f"Backend connection is not successful",data=graph_connection)
-    except Exception as e:
+    except Exception:
         graph_connection = False
         job_status = "Failed"
         message="Unable to connect backend DB"
-        error_message = str(e)
-        logging.exception(f'{error_message}')
-        return create_api_response(job_status, message=message, error=error_message.rstrip('.') + ', or fill from the login dialog.', data=graph_connection)
+        # The exception text can hold the URI or username: log it, don't send it.
+        logging.exception('Exception in backend_connection_configuration')
+        return create_api_response(job_status, message=message, error='Could not connect to the database, or fill from the login dialog.', data=graph_connection)
     finally:
         gc.collect()
     
@@ -1247,7 +1252,8 @@ async def get_token_limits(credentials: Neo4jCredentials = Depends(get_neo4j_cre
         message = "Unable to fetch token limits"
         logger.log_struct({'api_name': 'get_token_limits', 'db_url': credentials.uri, 'email': credentials.email, 'error_message': error_message, 'logging_time': formatted_time(datetime.now(timezone.utc))}, "ERROR")
         logging.exception(f'Exception in get_token_limits: {error_message}')
-        return create_api_response(job_status, message=message, error=error_message)
+        # The full text is in the log above; the browser only needs to know it failed.
+        return create_api_response(job_status, message=message, error="Token limits are unavailable right now.")
         
 if __name__ == "__main__":
     uvicorn.run(app)
