@@ -13,6 +13,7 @@ import uvicorn
 from dotenv import load_dotenv
 from fastapi import Depends, FastAPI, File, Form, Request, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.middleware.gzip import GZipMiddleware
 from fastapi_health import health
 from google.oauth2.credentials import Credentials
@@ -62,6 +63,7 @@ from src.learning.review_store import ensure_review_tables
 from src.publication import router as publication_router
 from src import dev_auth
 from src.chat_sessions import clean_client_session_id, owned_session_id
+from src.model_tiers import GUEST_AI_UNAVAILABLE_MESSAGE, GuestModelNotConfigured, chat_model_for
 from src.publication import (
     can_read_unpublished,
     learner_chat_scope,
@@ -455,6 +457,16 @@ async def chat_bot(
     """Run QA chat bot on the graph database."""
     logging.info(f"QA_RAG called at {datetime.now()}")
     qa_rag_start_time = time.time()
+    # The server picks the model from the learner's role. The browser's `model`
+    # field is only honoured for staff, so a guest can never choose a paid model.
+    try:
+        model = chat_model_for(user["role"], model)
+    except GuestModelNotConfigured:
+        logging.warning("Guest chat refused: no free guest model is configured")
+        return JSONResponse(
+            status_code=503,
+            content=create_api_response("Failed", message=GUEST_AI_UNAVAILABLE_MESSAGE),
+        )
     try:
         # Students, TAs and guests use the published-only vector retrieval path.
         # The upstream graph/community modes can traverse unpublished entities.
@@ -487,7 +499,9 @@ async def chat_bot(
         message="Unable to get chat response"
         error_message = str(e)
         logging.exception(f'Exception in chat bot:{error_message}')
-        return create_api_response(job_status, message=message, error=error_message,data=mode)
+        # Raw errors can name settings and providers; only staff see them.
+        public_error = error_message if can_read_unpublished(user["role"]) else None
+        return create_api_response(job_status, message=message, error=public_error,data=mode)
     finally:
         gc.collect()
 
