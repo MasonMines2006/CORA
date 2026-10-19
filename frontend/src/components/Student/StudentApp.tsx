@@ -1,71 +1,90 @@
-import { useEffect, useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import {
-  HiOutlineArrowLeft,
-  HiOutlineBookOpen,
-  HiOutlineChatBubbleLeftRight,
-  HiOutlineHome,
-  HiOutlineRectangleStack,
-  HiOutlineShare,
-} from 'react-icons/hi2';
-import ThemeWrapper from '../../context/ThemeWrapper';
-import UserCredentialsWrapper from '../../context/UserCredentials';
-import { FileContextProvider } from '../../context/UsersFiles';
-import { MessageContextWrapper } from '../../context/UserMessages';
-import { SpotlightProvider } from '@neo4j-ndl/react';
+import { HiOutlineChartBar } from 'react-icons/hi2';
+import { useSession } from '../../context/session';
 import ErrorBoundary from '../UI/ErrroBoundary';
-import ConceptHub from './ConceptHub';
-import ConceptIndex from './ConceptIndex';
-import { HubMode } from './conceptHubModel';
+import AskView from '../ask/AskView';
+import { useSessionStore } from '../ask/useSessionStore';
+import AppShell from '../shell/AppShell';
+import { ShellAccount } from '../shell/account';
+import { SessionSummary } from '../shell/types';
+import PathView from '../path/PathView';
+import ProgressView from '../progress/ProgressView';
+import { useDashboard } from '../path/useDashboard';
+import Button from '../ui-kit/Button';
+import EmptyState from '../ui-kit/EmptyState';
+import LessonPlayer from '../lesson/LessonPlayer';
+import QuizPlayer, { QuizOutcome } from '../quiz/QuizPlayer';
+import QuizResults from '../quiz/QuizResults';
 import ReviewSession from './ReviewSession';
-import StudentChat from './StudentChat';
 import StudentExplore from './StudentExplore';
-import StudentHome from './StudentHomeArtboard';
-import { StudentLocation, StudentView, parseLocation, toSearchParams } from './studentLocation';
+import { isFocusView, StudentLocation, StudentView, parseLocation, toSearchParams } from './studentLocation';
 
-const desktopTabs: { view: StudentView; label: string }[] = [
-  { view: 'home', label: 'Home' },
-  { view: 'concepts', label: 'Concepts' },
-  { view: 'graph', label: 'Graph' },
-  { view: 'review', label: 'Review' },
-];
-
-const mobileTabs = [
-  { view: 'home' as const, label: 'Home', icon: HiOutlineHome },
-  { view: 'concepts' as const, label: 'Learn', icon: HiOutlineBookOpen },
-  { view: 'review' as const, label: 'Review', icon: HiOutlineRectangleStack },
-  { view: 'graph' as const, label: 'Graph', icon: HiOutlineShare },
-  { view: 'ask' as const, label: 'Ask', icon: HiOutlineChatBubbleLeftRight },
-];
-
+/**
+ * The student app: one URL-driven view at a time inside the shell
+ * (docs/redesign/DESIGN.md section 3). Data that several views share (the
+ * dashboard and the recent-sessions list) is loaded here, once.
+ */
 const StudentLayout = () => {
-  const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
+  const session = useSession();
   const [params, setParams] = useSearchParams();
   const location = parseLocation(params);
-  // Chat keeps its conversation in component state, so once opened it stays
-  // mounted (hidden) rather than being rebuilt on every visit.
-  const [hasOpenedChat, setHasOpenedChat] = useState(location.view === 'ask');
-  const [chatPrompt, setChatPrompt] = useState('');
-  const [askedFrom, setAskedFrom] = useState<StudentLocation | null>(null);
+  const { dashboard, reload: reloadDashboard } = useDashboard();
+  const sessions = useSessionStore(session.user?.email);
+  // A question handed to Ask from another screen; Ask sends it once, then clears it.
+  const [askPrompt, setAskPrompt] = useState('');
+  // The course graph's force layout is expensive, so once opened it stays mounted (hidden).
+  const [hasOpenedGraph, setHasOpenedGraph] = useState(location.view === 'graph');
+  // Where the X in a lesson or quiz goes back to: the screen you opened it from.
+  const [returnTo, setReturnTo] = useState<StudentLocation | null>(null);
+  // The finished quiz, for the Results screen. Kept in memory only; a refresh shows a fallback.
+  const [outcome, setOutcome] = useState<QuizOutcome | null>(null);
 
   const go = (next: StudentLocation, options: { replace?: boolean } = {}) => {
-    if (next.view === 'ask') {
-      setHasOpenedChat(true);
+    if (next.view === 'graph') {
+      setHasOpenedGraph(true);
+    }
+    if (isFocusView(next.view) && !isFocusView(location.view)) {
+      setReturnTo(location);
     }
     setParams(toSearchParams(next), { replace: options.replace });
   };
+  const leaveFocus = () => go(returnTo ?? { view: 'path', conceptId: '' });
+  const signInHere = () => session.signIn(`/student?${params.toString()}`);
+  const goToView = (view: StudentView) => go({ view, conceptId: '' });
+  const concepts = dashboard.status === 'ready' ? dashboard.data.concepts.map((item) => item.concept) : [];
+  const conceptName = (id: string) => concepts.find((concept) => concept.id === id)?.name ?? id;
 
-  const goToView = (view: StudentView) => go({ view, conceptId: '', mode: 'learn' });
-
-  const openConcept = (conceptId: string, mode: HubMode = 'learn', beat?: number) =>
-    go({ view: 'concepts', conceptId, mode, beat });
-
-  const ask = (prompt: string) => {
-    setChatPrompt(prompt);
-    setAskedFrom(location.view === 'ask' ? askedFrom : location);
-    goToView('ask');
+  // The three ways into a concept, shared by every screen.
+  const modes = {
+    onGuide: (conceptId: string, beat?: number) => go({ view: 'lesson', conceptId, beat }),
+    onQuiz: (conceptId: string) => go({ view: 'quiz', conceptId }),
+    onAsk: (prompt: string, conceptId = '') => {
+      setAskPrompt(prompt);
+      go({ view: 'ask', conceptId });
+    },
   };
+
+  const openSession = (item: SessionSummary) => {
+    if (item.mode === 'ask') {
+      go({ view: 'ask', conceptId: item.conceptId ?? '', session: item.id });
+      return;
+    }
+    go({ view: item.mode === 'guide' ? 'lesson' : 'quiz', conceptId: item.conceptId ?? '' });
+  };
+
+  // Mastery can change in a quiz or review, so refresh the numbers when coming back.
+  // The very first render is skipped: useDashboard has just loaded them.
+  const isFirstView = useRef(true);
+  useEffect(() => {
+    if (isFirstView.current) {
+      isFirstView.current = false;
+      return;
+    }
+    if (location.view === 'path' || location.view === 'progress') {
+      reloadDashboard();
+    }
+  }, [location.view, reloadDashboard]);
 
   // A new page should start at the top, not wherever the last one was scrolled to.
   useEffect(() => {
@@ -74,167 +93,148 @@ const StudentLayout = () => {
     }
   }, [location.view, location.conceptId]);
 
-  const handleAccountAction = () => {
-    if (!isAuthenticated) {
-      loginWithRedirect({ appState: { returnTo: '/student' } });
-      return;
-    }
+  // Sign-out forgets this device's sessions for that person (DESIGN.md 10, Phase 2).
+  const signOut = () => {
+    sessions.clear();
     localStorage.removeItem('userRole');
-    logout({ logoutParams: { returnTo: window.location.origin } });
+    session.signOut();
   };
 
-  const askedFromConcept = askedFrom?.view === 'concepts' && askedFrom.conceptId ? askedFrom : null;
+  const account: ShellAccount = {
+    isAuthenticated: session.isAuthenticated,
+    name: session.user?.name,
+    email: session.user?.email,
+    onSignIn: () => session.signIn('/student'),
+    onSignOut: signOut,
+  };
+
+  // A lesson or quiz link with no concept has nothing to show, so it falls back to the Path.
+  const needsConcept = location.view === 'lesson' || location.view === 'quiz';
+  const shellView: StudentView = needsConcept && !location.conceptId ? 'path' : location.view;
+
+  // Lessons, quizzes and results take the whole screen (FocusLayout), outside the shell.
+  if (location.view === 'lesson' && location.conceptId) {
+    return (
+      <LessonPlayer
+        key={location.conceptId}
+        conceptId={location.conceptId}
+        initialBeat={location.beat}
+        onClose={leaveFocus}
+        onAsk={modes.onAsk}
+        onQuiz={(conceptId) => go({ view: 'quiz', conceptId }, { replace: true })}
+        onLoaded={(name) => sessions.record('guide', location.conceptId, name)}
+        onSignIn={signInHere}
+      />
+    );
+  }
+  if (location.view === 'quiz' && location.conceptId) {
+    return (
+      <QuizPlayer
+        key={location.conceptId}
+        conceptId={location.conceptId}
+        onClose={leaveFocus}
+        onAsk={modes.onAsk}
+        onGuide={(conceptId) => go({ view: 'lesson', conceptId }, { replace: true })}
+        onLoaded={(name) => sessions.record('quiz', location.conceptId, name)}
+        onFinished={(finished) => {
+          setOutcome(finished);
+          // No dashboard reload here: going on to the Path or Progress reloads it.
+          // Replace, so Back from Results doesn't land on a quiz that is already graded.
+          go({ view: 'results', conceptId: location.conceptId }, { replace: true });
+        }}
+        onSignIn={signInHere}
+      />
+    );
+  }
+  if (location.view === 'results' && outcome) {
+    return (
+      <QuizResults
+        outcome={outcome}
+        onClose={() => goToView('path')}
+        onProgress={() => goToView('progress')}
+        onAsk={modes.onAsk}
+        onGuide={modes.onGuide}
+      />
+    );
+  }
 
   return (
-    <div className='box-border flex min-h-screen flex-col bg-[#f8f7f6] text-slate-900'>
-      <header className='sticky top-0 z-50 border-b border-stone-200 bg-white'>
-        <div className='mx-auto flex h-16 max-w-[1440px] items-center gap-10 px-5 sm:px-8 lg:px-12'>
-          <button type='button' onClick={() => goToView('home')} className='flex items-center gap-2.5'>
-            <span className='flex h-7 w-7 items-center justify-center rounded-lg bg-red-600 font-display text-[15px] font-bold text-white'>
-              C
-            </span>
-            <span className='font-display text-[17px] font-bold tracking-tight text-slate-900'>Cora</span>
-          </button>
+    <AppShell
+      active={shellView}
+      onNavigate={goToView}
+      fullHeight={location.view === 'ask'}
+      dueCount={dashboard.status === 'ready' ? dashboard.data.review?.due_count : undefined}
+      sessions={sessions.sessions}
+      activeSessionId={location.view === 'ask' ? location.session : undefined}
+      onOpenSession={openSession}
+      onNewSession={() => goToView('ask')}
+      account={account}
+    >
+      {shellView === 'path' && (
+        <PathView
+          dashboard={dashboard}
+          onRetry={reloadDashboard}
+          userName={session.user?.name}
+          onReview={() => goToView('review')}
+          onGraph={() => goToView('graph')}
+          {...modes}
+        />
+      )}
 
-          <nav className='hidden flex-1 items-center gap-1 lg:flex' aria-label='Primary navigation'>
-            {desktopTabs.map((tab) => {
-              const active = location.view === tab.view;
-              return (
-                <button
-                  key={tab.view}
-                  type='button'
-                  aria-current={active ? 'page' : undefined}
-                  onClick={() => goToView(tab.view)}
-                  className={`rounded-lg px-3.5 py-2 text-sm ${
-                    active ? 'bg-red-50 font-semibold text-red-700' : 'font-medium text-slate-600 hover:text-slate-900'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              );
-            })}
-          </nav>
+      {location.view === 'ask' && (
+        <AskView
+          // Not keyed on the session: starting a session must not remount the view mid-answer.
+          key={`ask-${location.conceptId}`}
+          session={sessions.sessions.find((item) => item.id === location.session && item.mode === 'ask')}
+          concepts={concepts}
+          scopeConcept={
+            location.conceptId ? { id: location.conceptId, name: conceptName(location.conceptId) } : undefined
+          }
+          initialPrompt={askPrompt}
+          onPromptConsumed={() => setAskPrompt('')}
+          upsert={sessions.upsert}
+          update={sessions.update}
+          onSessionStarted={(id) => setParams(toSearchParams({ ...location, session: id }), { replace: true })}
+          onGuide={modes.onGuide}
+          onQuiz={modes.onQuiz}
+          onReview={() => goToView('review')}
+          onSignIn={() => session.signIn('/student?view=ask')}
+        />
+      )}
 
-          <div className='ml-auto flex items-center gap-3'>
-            {!isAuthenticated && (
-              <span className='flex items-center gap-2 rounded-full border border-stone-200 px-3 py-1.5 text-xs font-medium text-slate-500'>
-                <i className='h-1.5 w-1.5 rounded-full bg-emerald-600' />
-                <span className='hidden sm:inline'>Guest session</span>
-                <span className='sm:hidden'>Guest</span>
-              </span>
-            )}
-            <button
-              type='button'
-              onClick={handleAccountAction}
-              className='hidden rounded-full border border-stone-200 bg-white px-4 py-2 text-[13px] font-semibold text-slate-900 hover:border-stone-300 lg:block'
-            >
-              {isAuthenticated ? 'Sign out' : 'Sign in'}
-            </button>
-          </div>
+      {location.view === 'review' && (
+        <div className='mx-auto max-w-[1120px] px-4 pb-10 pt-6 sm:px-8 lg:pt-10'>
+          <h1 className='mb-6 font-display text-[30px] font-bold tracking-tight sm:text-[36px]'>Review</h1>
+          <ReviewSession showRail onFindCards={() => goToView('path')} />
         </div>
-      </header>
+      )}
 
-      {/* Clear the fixed mobile tab bar so the last card is not hidden behind it. */}
-      <main className='flex-1 pb-[74px] lg:pb-0'>
-        {location.view === 'home' && (
-          <StudentHome
-            onOpenConcept={(conceptId, beat) => openConcept(conceptId, 'learn', beat)}
-            onOpenExplore={() => goToView('graph')}
-            onOpenReview={() => goToView('review')}
-            onAsk={ask}
-          />
-        )}
+      {location.view === 'results' && (
+        <EmptyState
+          icon={<HiOutlineChartBar className='h-6 w-6' />}
+          title='These results are no longer on screen'
+          actions={<Button onClick={() => goToView('progress')}>See progress</Button>}
+        >
+          Results are shown once, right after a quiz. Your mastery was saved and is on the Progress page.
+        </EmptyState>
+      )}
 
-        {location.view === 'concepts' &&
-          (location.conceptId ? (
-            <ConceptHub
-              key={location.conceptId}
-              conceptId={location.conceptId}
-              mode={location.mode}
-              initialBeat={location.beat}
-              // Switching mode replaces the history entry: Back should leave the
-              // concept, not step back through every tab you clicked on it.
-              onModeChange={(mode) => go({ ...location, mode, beat: undefined }, { replace: true })}
-              onOpenConcept={(conceptId) => openConcept(conceptId)}
-              onAllConcepts={() => goToView('concepts')}
-              onAsk={ask}
-            />
-          ) : (
-            <ConceptIndex onOpenConcept={(conceptId) => openConcept(conceptId)} />
-          ))}
+      {location.view === 'progress' && (
+        <ProgressView dashboard={dashboard} onRetry={reloadDashboard} account={account} onQuiz={modes.onQuiz} />
+      )}
 
-        {location.view === 'review' && (
-          <div className='mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12'>
-            <ReviewSession showRail onFindCards={() => goToView('concepts')} />
-          </div>
-        )}
-
-        {hasOpenedChat && (
-          <div className={location.view === 'ask' ? '' : 'hidden'}>
-            {askedFromConcept && (
-              <div className='mx-auto max-w-5xl px-5 pt-5 sm:px-8'>
-                <button
-                  type='button'
-                  onClick={() => go(askedFromConcept)}
-                  className='flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-slate-900'
-                >
-                  <HiOutlineArrowLeft className='h-4 w-4' /> Back to {askedFromConcept.conceptId}
-                </button>
-              </div>
-            )}
-            <StudentChat externalPrompt={chatPrompt} onExternalPromptConsumed={() => setChatPrompt('')} />
-          </div>
-        )}
-
-        {/* The course map stays mounted: its force layout is expensive to rebuild. */}
+      {hasOpenedGraph && (
         <div className={location.view === 'graph' ? '' : 'hidden'}>
-          <StudentExplore
-            onOpenConcept={(conceptId) => openConcept(conceptId)}
-            onPracticeConcept={(conceptId) => openConcept(conceptId, 'practice')}
-          />
+          <StudentExplore onOpenConcept={modes.onGuide} onPracticeConcept={modes.onQuiz} />
         </div>
-      </main>
-
-      {/* Height and bottom padding are arbitrary values on purpose. The NDL preset
-          extends Tailwind's spacing scale and its `20` key is 20px, not Tailwind's
-          80px -- so `h-20` silently rendered this bar 20px tall. See CLAUDE.md. */}
-      <nav
-        className='fixed inset-x-0 bottom-0 z-50 grid h-[74px] grid-cols-5 border-t border-stone-200 bg-white lg:hidden'
-        aria-label='Mobile navigation'
-      >
-        {mobileTabs.map(({ view, label, icon: Icon }) => (
-          <button
-            type='button'
-            key={view}
-            aria-label={label}
-            aria-current={location.view === view ? 'page' : undefined}
-            onClick={() => goToView(view)}
-            className={`flex min-h-11 flex-col items-center justify-center gap-1 bg-white p-1.5 text-[11px] font-bold ${
-              location.view === view ? 'text-red-600' : 'text-slate-400'
-            }`}
-          >
-            <Icon className='h-6 w-6' />
-            <span>{label}</span>
-          </button>
-        ))}
-      </nav>
-    </div>
+      )}
+    </AppShell>
   );
 };
 
 const StudentApp = () => (
   <ErrorBoundary>
-    <ThemeWrapper>
-      <UserCredentialsWrapper>
-        <SpotlightProvider>
-          <FileContextProvider>
-            <MessageContextWrapper>
-              <StudentLayout />
-            </MessageContextWrapper>
-          </FileContextProvider>
-        </SpotlightProvider>
-      </UserCredentialsWrapper>
-    </ThemeWrapper>
+    <StudentLayout />
   </ErrorBoundary>
 );
 

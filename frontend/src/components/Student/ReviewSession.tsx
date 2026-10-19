@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
-import { HiOutlineCheck } from 'react-icons/hi2';
+import { HiCheck } from 'react-icons/hi2';
+import Button from '../ui-kit/Button';
+import EmptyState from '../ui-kit/EmptyState';
+import InlineError from '../ui-kit/InlineError';
+import ProgressBar from '../ui-kit/ProgressBar';
+import SegmentBar from '../ui-kit/SegmentBar';
+import Skeleton from '../ui-kit/Skeleton';
 import { getReviewQueue, gradeReviewCard, ReviewCard, ReviewGrade } from '../../API/Index';
 import { formatInterval } from './conceptHubModel';
 import { afterGrade, lastSeenLabel, ReviewSessionState, timeLeftLabel } from './reviewModel';
@@ -14,27 +20,15 @@ interface ReviewSessionProps {
   onFindCards: () => void;
 }
 
-const GRADES: ReadonlyArray<{ grade: ReviewGrade; label: string; className: string; key: string }> = [
-  { grade: 'again', label: 'Again', key: '1', className: 'border-red-200 bg-red-50 text-red-700 hover:border-red-300' },
-  {
-    grade: 'hard',
-    label: 'Hard',
-    key: '2',
-    className: 'border-amber-200 bg-amber-50 text-amber-800 hover:border-amber-300',
-  },
-  {
-    grade: 'good',
-    label: 'Good',
-    key: '3',
-    className: 'border-emerald-200 bg-emerald-50 text-emerald-800 hover:border-emerald-300',
-  },
-  {
-    grade: 'easy',
-    label: 'Easy',
-    key: '4',
-    className: 'border-stone-200 bg-white text-slate-700 hover:border-stone-300',
-  },
+/* Grade keys reuse the quiz's `.option` look; the word and the interval carry the meaning, colour only helps. */
+const GRADES: ReadonlyArray<{ grade: ReviewGrade; label: string; key: string; tone: string }> = [
+  { grade: 'again', label: 'Again', key: '1', tone: 'text-red-700' },
+  { grade: 'hard', label: 'Hard', key: '2', tone: 'text-amber-700' },
+  { grade: 'good', label: 'Good', key: '3', tone: 'text-emerald-700' },
+  { grade: 'easy', label: 'Easy', key: '4', tone: 'text-slate-700' },
 ];
+
+const MAX_SEGMENTS = 12;
 
 const errorMessage = (error: unknown, fallback: string) =>
   (error as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? fallback;
@@ -118,23 +112,17 @@ const ReviewSession = ({ conceptId, conceptName, showRail = false, onFindCards }
   }, [current, revealed, grade]);
 
   if (loadError) {
-    return (
-      <div className='rounded-2xl border border-red-200 bg-red-50 p-6'>
-        <p className='text-sm text-slate-700'>{loadError}</p>
-        <button
-          type='button'
-          onClick={() => setAttempt((count) => count + 1)}
-          className='mt-3 text-sm font-semibold text-red-600 hover:text-red-700'
-        >
-          Try again
-        </button>
-      </div>
-    );
+    return <InlineError title={loadError} onRetry={() => setAttempt((count) => count + 1)} />;
   }
 
   if (!session) {
     return (
-      <div className='h-96 animate-pulse rounded-2xl border border-stone-200 bg-white' aria-label='Loading review' />
+      <div className='space-y-4' aria-busy='true' aria-label='Loading review'>
+        <Skeleton className='h-2 w-full' />
+        <Skeleton className='h-6 w-40' />
+        <Skeleton className='h-10 w-3/4' />
+        <Skeleton className='h-[52px] w-48 rounded-[14px]' />
+      </div>
     );
   }
 
@@ -142,69 +130,70 @@ const ReviewSession = ({ conceptId, conceptName, showRail = false, onFindCards }
 
   if (total === 0) {
     return (
-      <div className='rounded-2xl border border-stone-200 bg-white p-8 text-center sm:p-12'>
-        <h2 className='font-display text-xl font-bold text-slate-900'>
-          {conceptName ? `No cards for ${conceptName} yet` : 'Nothing to review yet'}
-        </h2>
-        <p className='mx-auto mt-2 max-w-md text-sm leading-relaxed text-slate-500'>
-          Review cards are made from a concept’s lesson, so they appear once you have opened it.
-        </p>
-        <button
-          type='button'
-          onClick={onFindCards}
-          className='mt-5 rounded-full bg-red-600 px-6 py-2.5 text-sm font-semibold text-white hover:bg-red-700'
-        >
-          {conceptName ? 'Open the lesson' : 'Choose a concept'}
-        </button>
-      </div>
+      <EmptyState
+        icon={<HiCheck className='h-6 w-6' />}
+        tone='emerald'
+        title={conceptName ? `No cards for ${conceptName} yet` : 'All caught up'}
+        actions={<Button onClick={onFindCards}>{conceptName ? 'Open the lesson' : 'Learn something new'}</Button>}
+      >
+        {conceptName
+          ? 'Review cards are made from a concept’s lesson, so they appear once you have opened it.'
+          : 'Nothing is due right now. Cards come back on the day their last grade scheduled.'}
+      </EmptyState>
     );
   }
-
-  const progress = Math.round((graded / total) * 100);
 
   const cardPanel = current ? (
     <div className='min-w-0 flex-1'>
       <div className='flex items-center gap-4'>
-        <p className='shrink-0 text-[11px] font-bold uppercase tracking-[0.09em] text-teal-700'>
-          Card {graded + 1} of {total}
+        {/* One segment per card reads well up to about a dozen; past that a plain bar is clearer. */}
+        {total <= MAX_SEGMENTS ? (
+          <SegmentBar count={total} current={graded} label='Review progress' className='flex-1' />
+        ) : (
+          <div
+            className='flex-1'
+            role='progressbar'
+            aria-label='Review progress'
+            aria-valuemin={0}
+            aria-valuemax={total}
+            aria-valuenow={graded}
+          >
+            <ProgressBar value={(graded / total) * 100} color='#059669' />
+          </div>
+        )}
+        <p className='tabular flex-none text-[13px] font-semibold text-slate-500'>
+          {graded + 1} / {total}
         </p>
-        <div className='h-1.5 flex-1 overflow-hidden rounded-full bg-stone-200'>
-          <div className='h-full rounded-full bg-teal-700 transition-all' style={{ width: `${progress}%` }} />
-        </div>
-        <p className='shrink-0 text-sm text-slate-500'>{timeLeftLabel(session.queue.length)}</p>
       </div>
+      <p className='mt-2 text-[13px] text-slate-500'>{timeLeftLabel(session.queue.length)}</p>
 
-      <article className='mt-8 rounded-2xl border border-stone-200 bg-white p-6 sm:p-10'>
-        <div className='flex flex-wrap items-center gap-3'>
-          <span className='rounded-full bg-red-50 px-3 py-1 text-[11px] font-bold uppercase tracking-[0.08em] text-red-700'>
+      <article className='mt-6'>
+        <div className='flex flex-wrap items-center gap-2'>
+          <span className='rounded-[8px] bg-slate-900 px-2 py-1 font-code text-[11.5px] font-medium uppercase tracking-wide text-white'>
             {current.concept_name}
           </span>
-          <span className='text-sm text-slate-500'>{lastSeenLabel(current.last_reviewed_at)}</span>
+          <span className='text-[13px] text-slate-500'>{lastSeenLabel(current.last_reviewed_at)}</span>
         </div>
-        <h2 className='mt-5 font-display text-2xl font-bold leading-snug tracking-tight text-slate-900'>
+        <h2 className='mt-5 font-display text-[24px] font-bold leading-[1.25] tracking-tight sm:text-[28px]'>
           {current.prompt}
         </h2>
 
         {revealed ? (
-          <div className='mt-6 border-t border-dashed border-stone-300 pt-6'>
-            <p className='text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500'>Answer</p>
-            <p className='mt-2 whitespace-pre-line text-base leading-7 text-slate-700'>{current.answer}</p>
-            <p className='mt-4 text-sm text-slate-500'>{current.source}</p>
+          <div className='enter mt-6'>
+            <p className='text-[12px] font-semibold uppercase tracking-wider text-slate-500'>Answer</p>
+            <p className='passage mt-2 whitespace-pre-line text-[15px]'>{current.answer}</p>
+            <p className='mt-2 font-code text-[12px] text-slate-500'>{current.source}</p>
           </div>
         ) : (
-          <button
-            type='button'
-            onClick={() => setRevealed(true)}
-            className='mt-8 rounded-full bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white hover:bg-slate-700'
-          >
-            Show answer <span className='ml-1 text-slate-400'>(space)</span>
-          </button>
+          <Button size='lg' className='mt-8' onClick={() => setRevealed(true)}>
+            Show answer <kbd className='kbd ml-1'>Space</kbd>
+          </Button>
         )}
       </article>
 
       {revealed && (
-        <div className='mt-6 text-center'>
-          <p className='text-sm text-slate-600'>How well did you know it?</p>
+        <div className='mt-8'>
+          <p className='text-[14px] text-slate-700'>How well did you know it?</p>
           <div className='mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4'>
             {GRADES.map((item) => (
               <button
@@ -215,15 +204,20 @@ const ReviewSession = ({ conceptId, conceptName, showRail = false, onFindCards }
                   // grade() reports its own failure on screen, so nothing is thrown here.
                   grade(item.grade);
                 }}
-                className={`rounded-xl border px-4 py-3 disabled:opacity-60 ${item.className}`}
+                className='option flex-col items-center gap-1 text-center'
               >
-                <span className='block text-base font-semibold'>{item.label}</span>
-                <span className='block text-sm'>{formatInterval(current.intervals[item.grade])}</span>
+                <span className={`block text-[16px] font-semibold ${item.tone}`}>{item.label}</span>
+                <span className='block text-[13px] text-slate-500'>
+                  {formatInterval(current.intervals[item.grade])}
+                </span>
               </button>
             ))}
           </div>
+          <p className='mt-3 text-[13px] text-slate-500'>
+            <kbd className='kbd'>1</kbd>–<kbd className='kbd'>4</kbd> to grade
+          </p>
           {gradeError && (
-            <p className='mt-3 text-sm text-red-700' role='alert'>
+            <p className='error-text' role='alert'>
               {gradeError}
             </p>
           )}
@@ -231,14 +225,10 @@ const ReviewSession = ({ conceptId, conceptName, showRail = false, onFindCards }
       )}
     </div>
   ) : (
-    <div className='min-w-0 flex-1 rounded-2xl border border-stone-200 bg-white p-8 text-center sm:p-12'>
-      <div className='mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-50 text-emerald-600'>
-        <HiOutlineCheck className='h-6 w-6' />
-      </div>
-      <h2 className='mt-4 font-display text-xl font-bold text-slate-900'>Session done</h2>
-      <p className='mt-2 text-sm text-slate-500'>
+    <div className='min-w-0 flex-1'>
+      <EmptyState icon={<HiCheck className='h-6 w-6' />} tone='emerald' title='Session done'>
         {session.known} known, {session.shaky} shaky. Each card comes back on the day its grade scheduled.
-      </p>
+      </EmptyState>
     </div>
   );
 
@@ -249,37 +239,37 @@ const ReviewSession = ({ conceptId, conceptName, showRail = false, onFindCards }
   return (
     <div className='flex flex-col gap-8 lg:flex-row lg:items-start'>
       {cardPanel}
-      <aside className='w-full shrink-0 space-y-5 lg:w-[300px]'>
-        <section className='rounded-2xl border border-stone-200 bg-white p-6'>
-          <p className='text-[11px] font-bold uppercase tracking-[0.09em] text-red-600'>This session</p>
+      <aside className='w-full shrink-0 space-y-4 lg:w-[300px]' aria-label='This session'>
+        <section className='panel p-5'>
+          <h2 className='text-[13px] font-semibold uppercase tracking-wider text-slate-500'>This session</h2>
           <div className='mt-3 flex gap-8'>
             <div>
-              <p className='font-display text-3xl font-bold text-emerald-600'>{session.known}</p>
-              <p className='text-sm text-slate-500'>known</p>
+              <p className='tabular font-display text-[30px] font-bold text-emerald-700'>{session.known}</p>
+              <p className='text-[13px] text-slate-500'>known</p>
             </div>
             <div>
-              <p className='font-display text-3xl font-bold text-amber-700'>{session.shaky}</p>
-              <p className='text-sm text-slate-500'>shaky</p>
+              <p className='tabular font-display text-[30px] font-bold text-amber-700'>{session.shaky}</p>
+              <p className='text-[13px] text-slate-500'>shaky</p>
             </div>
             <div>
-              <p className='font-display text-3xl font-bold text-slate-400'>{session.queue.length}</p>
-              <p className='text-sm text-slate-500'>left</p>
+              <p className='tabular font-display text-[30px] font-bold text-slate-700'>{session.queue.length}</p>
+              <p className='text-[13px] text-slate-500'>left</p>
             </div>
           </div>
         </section>
-        <section className='rounded-2xl border border-stone-200 bg-white p-6'>
-          <p className='text-[11px] font-bold uppercase tracking-[0.09em] text-slate-500'>Queue</p>
-          <ol className='mt-3 space-y-1.5'>
+        <section className='panel-quiet p-5'>
+          <h2 className='text-[13px] font-semibold uppercase tracking-wider text-slate-500'>Queue</h2>
+          <ol className='mt-3 space-y-1'>
             {session.queue.slice(0, 8).map((item, index) => (
               <li
                 key={`${item.card_id}-${index}`}
-                className={`truncate rounded-lg px-3 py-2 text-sm ${index === 0 ? 'bg-red-50 font-semibold text-slate-900' : 'text-slate-600'}`}
+                className={`truncate rounded-[8px] px-3 py-2 text-[13.5px] ${index === 0 ? 'bg-red-50 font-semibold text-slate-900' : 'text-slate-700'}`}
               >
-                {item.concept_name} — {item.prompt}
+                {item.concept_name} · {item.prompt}
               </li>
             ))}
           </ol>
-          <p className='mt-4 border-t border-stone-100 pt-4 text-sm leading-relaxed text-slate-500'>
+          <p className='mt-4 border-t border-slate-100 pt-4 text-[13px] leading-relaxed text-slate-500'>
             Cards come from the same passages as your lessons, so review and study stay in sync.
           </p>
         </section>
