@@ -111,8 +111,8 @@ Guests (no sign-in) get AI through `GUEST_LLM_MODEL`. The start script
 To make guests free with Groq (Mason creates the account at console.groq.com):
 
 1. In `cora-api` → **Environment**, add a secret
-   `LLM_MODEL_CONFIG_GUEST_FREE` = `llama-3.1-8b-instant,https://api.groq.com/openai/v1,<groq key>`
-   (check Groq's current model list).
+   `LLM_MODEL_CONFIG_GUEST_FREE` = `openai/gpt-oss-120b,https://api.groq.com/openai/v1,<groq key>`
+   (tested 2026-10-19: gpt-oss-120b passes lessons, quizzes and chat; gpt-oss-20b failed some quizzes).
 2. Add `GUEST_LLM_MODEL` = `guest_free`. An explicit value beats `GUEST_USES_OPENAI`.
 3. Save. Render redeploys the API.
 
