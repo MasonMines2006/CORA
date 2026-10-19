@@ -11,7 +11,7 @@ import { APP_SOURCES } from '../../utils/Constants';
 import GenericButton from '../WebSources/GenericSourceButton';
 import GenericModal from '../WebSources/GenericSourceModal';
 import { DrawerProps } from '../../types';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSession } from '../../context/session';
 import { useFileContext } from '../../context/UsersFiles';
 const S3Modal = lazy(() => import('../DataSources/AWS/S3Modal'));
 const GCSModal = lazy(() => import('../DataSources/GCS/GCSModal'));
@@ -26,7 +26,7 @@ const DrawerDropzone: React.FC<DrawerProps> = ({
 }) => {
   const { closeAlert, alertState } = useAlertContext();
   const { isReadOnlyUser, isBackendConnected, connectionStatus } = useCredentials();
-  const { loginWithRedirect } = useAuth0();
+  const { signIn } = useSession();
   const isLargeDesktop = useMediaQuery('(min-width:1440px)');
   const { filesData } = useFileContext();
   const isAuthEnabled = import.meta.env.VITE_SKIP_AUTH !== 'true';
@@ -131,7 +131,7 @@ const DrawerDropzone: React.FC<DrawerProps> = ({
               className='cursor-pointer'
               htmlAttributes={{
                 onClick: () => {
-                  loginWithRedirect();
+                  signIn(window.location.pathname);
                 },
               }}
             >
@@ -142,7 +142,7 @@ const DrawerDropzone: React.FC<DrawerProps> = ({
                   : 'You must be logged in to process this data. Please log in to the main application'}
               </span>
             </Typography>
-            <div className={`h-full cursor-pointer`} onClick={() => loginWithRedirect()}>
+            <div className={`h-full cursor-pointer`} onClick={() => signIn(window.location.pathname)}>
               <div className={`resource-sections blur-sm pointer-events-none`}>
                 <Flex gap='6' className='h-full source-container'>
                   {APP_SOURCES.includes('local') && (

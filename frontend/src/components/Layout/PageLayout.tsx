@@ -14,7 +14,7 @@ import useSpeechSynthesis from '../../hooks/useSpeech';
 import FallBackDialog from '../UI/FallBackDialog';
 import { envConnectionAPI } from '../../services/ConnectAPI';
 import { healthStatus } from '../../services/HealthStatus';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSession } from '../../context/session';
 import { showErrorToast } from '../../utils/Toasts';
 import { APP_SOURCES } from '../../utils/Constants';
 import { createDefaultFormData } from '../../API/Index';
@@ -202,7 +202,7 @@ const PageLayout: React.FC = () => {
     setTypeOptions,
   } = useFileContext();
   const navigate = useNavigate();
-  const { user, isAuthenticated } = useAuth0();
+  const { user, isAuthenticated } = useSession();
   const { cancel } = useSpeechSynthesis();
   const { setActiveSpotlight } = useSpotlightContext();
   const isYoutubeOnly = useMemo(
