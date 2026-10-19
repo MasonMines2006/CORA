@@ -73,8 +73,8 @@ const ProgressBody = ({
   return (
     <>
       <StatStrip summary={summary} />
-      <div className='mt-6 grid gap-6 lg:grid-cols-[1fr_340px]'>
-        <div className='space-y-6'>
+      <div className='mt-6 grid grid-cols-1 gap-6 lg:grid-cols-[minmax(0,1fr)_340px]'>
+        <div className='min-w-0 space-y-6'>
           {units.length > 0 ? (
             <UnitMastery rows={units} />
           ) : (
@@ -83,7 +83,7 @@ const ProgressBody = ({
             </p>
           )}
         </div>
-        <div className='space-y-6'>
+        <div className='min-w-0 space-y-6'>
           <NeedsWork items={summary.needsWork} onQuiz={onQuiz} />
           <AccountCard account={account} />
         </div>
