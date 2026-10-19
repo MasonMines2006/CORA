@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CORA redesign · prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body>
+<main id="main" class="mx-auto max-w-[1160px] px-4 py-10 sm:px-8">
+  <div class="flex items-center gap-2.5">
+    <span class="grid h-9 w-9 place-items-center rounded-[11px] bg-red-600 font-display text-[18px] font-extrabold text-white" style="box-shadow:0 3px 0 #7f1d1d">C</span>
+    <span class="font-display text-[21px] font-bold tracking-tight">cora</span>
+    <span class="ml-2 rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[11px] uppercase text-white">Redesign prototype</span>
+  </div>
+  <h1 class="mt-6 max-w-[760px] font-display text-[36px] font-extrabold leading-[1.08] tracking-tight sm:text-[44px]">Duolingo's path and momentum, ChatGPT's conversation, and a citation on every claim.</h1>
+  <p class="mt-4 max-w-[680px] text-[16px] leading-relaxed text-slate-700">Static, clickable HTML. Every screen links to the next, so you can walk the student flow end to end: <span class="font-mono text-[14px]">landing → sign in → path → lesson → quiz → results → progress</span>, with Ask reachable from everywhere. Spec: <span class="font-mono text-[14px]">docs/redesign/DESIGN.md</span>.</p>
+
+  <h2 class="mt-10 eyebrow">Student flow</h2>
+  <ol class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="path.html"><span class="font-mono text-[12px] text-red-700">01</span><span class="mt-1 block font-semibold">Path (Home)</span><span class="block text-[13.5px] text-slate-500">Units → concepts, continue card, daily goal and streak</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="lesson.html"><span class="font-mono text-[12px] text-red-700">02</span><span class="mt-1 block font-semibold">Lesson · Guide me</span><span class="block text-[13.5px] text-slate-500">Focus mode, worked example, source quote, predict prompt</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="ask.html"><span class="font-mono text-[12px] text-red-700">03</span><span class="mt-1 block font-semibold">Ask · Q&amp;A with citations</span><span class="block text-[13.5px] text-slate-500">Streaming answer, citation chips, source drawer, mode switch</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="quiz.html"><span class="font-mono text-[12px] text-red-700">04</span><span class="mt-1 block font-semibold">Quiz · Quiz me</span><span class="block text-[13.5px] text-slate-500">Adaptive difficulty, instant feedback (add <span class="font-mono">#wrong</span> to the URL)</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="quiz-results.html"><span class="font-mono text-[12px] text-red-700">05</span><span class="mt-1 block font-semibold">Quiz results</span><span class="block text-[13.5px] text-slate-500">Mastery update, earned celebration, the miss explained</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="progress.html"><span class="font-mono text-[12px] text-red-700">06</span><span class="mt-1 block font-semibold">Progress and profile</span><span class="block text-[13.5px] text-slate-500">Streak, heatmap, mastery by unit, account</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-slate-200 p-4 hover:border-teal-700" href="explore.html"><span class="font-mono text-[12px] text-teal-700">07</span><span class="mt-1 block font-semibold">Course graph (secondary)</span><span class="block text-[13.5px] text-slate-500">Concept neighbourhood, inspector with the three modes</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-slate-200 p-4 hover:border-slate-900" href="states.html"><span class="font-mono text-[12px] text-slate-500">08</span><span class="mt-1 block font-semibold">Empty, loading, error</span><span class="block text-[13.5px] text-slate-500">Eight state patterns used across screens</span></a></li>
+  </ol>
+
+  <h2 class="mt-10 eyebrow">Public and auth</h2>
+  <ol class="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="landing.html"><span class="font-mono text-[12px] text-red-700">09</span><span class="mt-1 block font-semibold">Landing</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="signin.html"><span class="font-mono text-[12px] text-red-700">10</span><span class="mt-1 block font-semibold">Sign in</span><span class="block text-[13.5px] text-slate-500">SSO "coming soon" · <span class="font-mono">#error</span></span></a></li>
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="join.html"><span class="font-mono text-[12px] text-red-700">11</span><span class="mt-1 block font-semibold">Join by invite</span><span class="block text-[13.5px] text-slate-500">invite link and <span class="font-mono">#no-invite</span></span></a></li>
+    <li><a class="block rounded-2xl border-2 border-red-100 p-4 hover:border-red-600" href="reset.html"><span class="font-mono text-[12px] text-red-700">12</span><span class="mt-1 block font-semibold">Forgot / reset password</span><span class="block text-[13.5px] text-slate-500"><span class="font-mono">#forgot #set #change</span></span></a></li>
+  </ol>
+
+  <h2 class="mt-10 eyebrow">Admin</h2>
+  <ol class="mt-3 grid gap-3 sm:grid-cols-3">
+    <li><a class="block rounded-2xl border-2 border-slate-200 p-4 hover:border-slate-900" href="admin.html"><span class="font-mono text-[12px] text-slate-500">13</span><span class="mt-1 block font-semibold">Materials and publish</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-slate-200 p-4 hover:border-slate-900" href="admin-analytics.html"><span class="font-mono text-[12px] text-slate-500">14</span><span class="mt-1 block font-semibold">Analytics</span></a></li>
+    <li><a class="block rounded-2xl border-2 border-slate-200 p-4 hover:border-slate-900" href="admin-users.html"><span class="font-mono text-[12px] text-slate-500">15</span><span class="mt-1 block font-semibold">Users</span></a></li>
+  </ol>
+
+  <p class="mt-10 text-[13px] text-slate-500">All course copy is sample text for layout. In the app, every fact, passage and question comes from the published corpus (docs/STUDENT_UI.md). Screenshots of every screen at 1440 and 375 px are in <span class="font-mono">docs/redesign/screenshots/</span>.</p>
+</main>
+</body>
+</html>

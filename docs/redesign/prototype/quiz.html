@@ -1,0 +1,104 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quiz · Reactor period · CORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body class="bg-white">
+<a class="skip-link" href="#main">Skip to question</a>
+
+<header class="sticky top-0 z-30 border-b border-red-100 bg-white/95 backdrop-blur">
+  <div class="mx-auto flex h-16 max-w-[760px] items-center gap-4 px-4 sm:px-6">
+    <a href="path.html" class="grid h-11 w-11 flex-none place-items-center rounded-xl text-slate-500 hover:bg-slate-50" aria-label="End quiz and return to your path"><svg data-icon="x" class="h-6 w-6"></svg></a>
+    <div class="seg flex-1" role="progressbar" aria-label="Quiz progress" aria-valuemin="1" aria-valuemax="5" aria-valuenow="3"><i class="done"></i><i class="done"></i><i class="on"></i><i></i><i></i></div>
+    <p class="tabular flex-none text-[13px] font-semibold text-slate-500">3 / 5</p>
+  </div>
+</header>
+
+<main id="main" class="mx-auto max-w-[760px] px-4 pb-56 pt-8 sm:px-6 sm:pt-12">
+  <div class="flex flex-wrap items-center gap-2">
+    <span class="rounded-lg bg-slate-900 px-2 py-1 font-mono text-[11.5px] font-medium uppercase tracking-wide text-white">Reactor period</span>
+    <span class="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-[12.5px] font-semibold text-amber-700">Medium <span class="font-normal text-amber-700">· picked from your 60% mastery</span></span>
+  </div>
+
+  <h1 class="mt-5 font-display text-[24px] font-bold leading-[1.25] tracking-tight sm:text-[28px]" id="q">A reactor is scrammed from 100% power. After the prompt drop, power decreases on a stable negative period of approximately:</h1>
+
+  <div class="mt-7 space-y-3" role="radiogroup" aria-labelledby="q" id="options">
+    <button type="button" class="option" role="radio" aria-checked="false" data-v="a"><span class="letter">A</span><span>−8 seconds</span></button>
+    <button type="button" class="option" role="radio" aria-checked="false" data-v="b"><span class="letter">B</span><span>−80 seconds</span></button>
+    <button type="button" class="option" role="radio" aria-checked="false" data-v="c"><span class="letter">C</span><span>−180 seconds</span></button>
+    <button type="button" class="option" role="radio" aria-checked="false" data-v="d"><span class="letter">D</span><span>−800 seconds</span></button>
+  </div>
+  <p class="mt-5 text-[13px] text-slate-500">Generated from 2 published passages · <kbd class="kbd">1</kbd>–<kbd class="kbd">4</kbd> to choose, <kbd class="kbd">Enter</kbd> to check</p>
+</main>
+
+<!-- Footer: neutral before checking, becomes the feedback sheet after -->
+<div id="footer" class="fixed inset-x-0 bottom-0 z-30 border-t-2 border-slate-100 bg-white pb-[env(safe-area-inset-bottom)]">
+  <div class="mx-auto max-w-[760px] px-4 py-4 sm:px-6">
+    <div id="feedback" class="hidden pb-4" aria-live="polite"></div>
+    <div class="flex items-center gap-3">
+      <a href="ask.html" id="secondary" class="btn btn-ghost btn-lg">I don't know yet</a>
+      <span class="flex-1"></span>
+      <button type="button" id="check" class="btn btn-primary btn-lg min-w-[160px] sm:min-w-[200px]" disabled>Check</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  const CORRECT = 'b';
+  const opts = [...document.querySelectorAll('.option')];
+  const check = document.getElementById('check');
+  let picked = null, done = false;
+  function pick(v) {
+    if (done) return;
+    picked = v;
+    opts.forEach((o) => o.setAttribute('aria-checked', String(o.dataset.v === v)));
+    check.disabled = false;
+  }
+  opts.forEach((o) => o.addEventListener('click', () => pick(o.dataset.v)));
+  document.addEventListener('keydown', (e) => {
+    if (['1', '2', '3', '4'].includes(e.key)) pick('abcd'[+e.key - 1]);
+    if (e.key === 'Enter' && picked && !done) grade();
+  });
+  function grade() {
+    done = true;
+    const right = picked === CORRECT;
+    opts.forEach((o) => {
+      o.disabled = true;
+      if (o.dataset.v === CORRECT) o.classList.add('is-correct');
+      else if (o.dataset.v === picked) o.classList.add('is-wrong');
+    });
+    const footer = document.getElementById('footer');
+    footer.classList.remove('bg-white', 'border-slate-100');
+    footer.classList.add(right ? 'bg-emerald-50' : 'bg-red-50', right ? 'border-emerald-300' : 'border-red-200');
+    const fb = document.getElementById('feedback');
+    fb.classList.remove('hidden');
+    fb.innerHTML = `<div class="enter flex gap-3">
+      <span class="grid h-10 w-10 flex-none place-items-center rounded-full ${right ? 'bg-emerald-600' : 'bg-red-600'} text-white">${coraIcon(right ? 'check' : 'x', 'h-6 w-6')}</span>
+      <div>
+        <p class="font-display text-[20px] font-bold ${right ? 'text-emerald-800' : 'text-red-700'}">${right ? 'Correct.' : 'Not quite. It is −80 seconds.'}</p>
+        <p class="mt-1 text-[14.5px] leading-relaxed text-slate-700">Once the prompt neutrons die away, the only neutrons left come from the longest-lived delayed-neutron precursor group, with a half-life of about 55 s. That decay sets the limiting period of about −80 s, no matter how much negative reactivity the rods added. <button type="button" class="cite" aria-label="Source: Reactor Theory Manual chapter 4 passage 167">RTM ch.4 · ¶167</button></p>
+        <a href="ask.html" class="mt-2 inline-flex min-h-[32px] items-center gap-1 text-[14px] font-semibold ${right ? 'text-emerald-800' : 'text-red-700'} hover:underline">Ask why it can't go faster ${coraIcon('right', 'h-4 w-4')}</a>
+      </div></div>`;
+    check.textContent = 'Continue';
+    check.className = right ? 'btn btn-success btn-lg min-w-[160px] sm:min-w-[200px]' : 'btn btn-primary btn-lg min-w-[160px] sm:min-w-[200px]';
+    check.onclick = () => { location.href = 'quiz-results.html'; };
+    document.getElementById('secondary').classList.add('invisible');
+    check.focus();
+  }
+  check.addEventListener('click', () => { if (!done) grade(); });
+  // #answered opens the page in its feedback state (used for screenshots).
+  // Wait for chrome.js (deferred) so coraIcon exists.
+  addEventListener('DOMContentLoaded', () => {
+    if (location.hash === '#answered') { pick('b'); grade(); }
+    if (location.hash === '#wrong') { pick('c'); grade(); }
+  });
+</script>
+</body>
+</html>

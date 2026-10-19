@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Users · CORA Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body data-shell="admin" data-page="users">
+<a class="skip-link" href="#main">Skip to content</a>
+<main id="main" class="px-4 pb-10 pt-6 sm:px-8 lg:pt-8">
+  <div class="mx-auto max-w-[1080px]">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div><h1 class="font-display text-[28px] font-bold tracking-tight">Users</h1><p class="text-[14px] text-slate-500">41 accounts · 3 invites pending · sign-in is email and password</p></div>
+      <button type="button" class="btn btn-primary" data-open-invite><svg data-icon="plus"></svg>Invite people</button>
+    </div>
+
+    <!-- Invite panel (open in this state) -->
+    <section id="invite" class="mt-5 rounded-[20px] border-2 border-red-100 bg-red-50 p-5" aria-labelledby="inv-h">
+      <div class="flex items-start justify-between gap-3"><h2 id="inv-h" class="font-semibold">Invite by email</h2><button type="button" class="grid h-9 w-9 place-items-center rounded-lg text-slate-500 hover:bg-white" aria-label="Close invite panel" onclick="document.getElementById('invite').classList.add('hidden')"><svg data-icon="x"></svg></button></div>
+      <div class="mt-3 grid gap-4 md:grid-cols-[1fr_200px]">
+        <div>
+          <label class="label" for="emails">School emails, one per line or comma-separated</label>
+          <textarea id="emails" rows="3" class="field py-3 font-mono text-[13.5px]">aokafor@university.edu, lchen@university.edu
+dpatel@university.edu</textarea>
+          <p class="hint">3 valid addresses. Paste a column from your class roster.</p>
+        </div>
+        <div>
+          <label class="label" for="role">Role</label>
+          <select id="role" class="field"><option>Student</option><option>TA</option><option>Admin</option></select>
+          <p class="hint">TAs can publish material. Admins also manage users.</p>
+        </div>
+      </div>
+      <div class="mt-4 flex flex-wrap items-center gap-3">
+        <button class="btn btn-primary">Create 3 invite links</button>
+        <p class="text-[13px] text-slate-500">Links are single-use and expire in 7 days. Until email sending is set up, copy them into a course announcement.</p>
+      </div>
+    </section>
+
+    <div class="mt-6 flex flex-wrap items-center gap-3">
+      <label for="user-search" class="sr-only">Search users</label>
+      <div class="relative min-w-[220px] flex-1"><svg data-icon="search" class="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500"></svg><input id="user-search" class="field !min-h-[44px] pl-10 text-[14px]" placeholder="Search name or email"></div>
+      <div class="mode" role="group" aria-label="Filter by role"><button type="button" aria-pressed="true">All</button><button type="button" aria-pressed="false">Students</button><button type="button" aria-pressed="false">Staff</button><button type="button" aria-pressed="false">Pending</button></div>
+    </div>
+
+    <div class="mt-4 overflow-x-auto rounded-2xl border border-slate-200">
+      <table class="table min-w-[760px]">
+        <caption class="sr-only">Users and invites</caption>
+        <thead><tr><th scope="col">Person</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Last active</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+        <tbody>
+          <tr><td><p class="font-medium">Mason Mines</p><p class="text-[12.5px] text-slate-500">mmines@university.edu · you</p></td><td>Admin</td><td><span class="badge badge-live">Active</span></td><td class="text-slate-500">Now</td><td class="text-right text-[12.5px] text-slate-500">Can't change your own role</td></tr>
+          <tr><td><p class="font-medium">Priya Natarajan</p><p class="text-[12.5px] text-slate-500">pnatarajan@university.edu</p></td><td><select class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[13.5px]" aria-label="Role for Priya Natarajan"><option>Student</option><option selected>TA</option><option>Admin</option></select></td><td><span class="badge badge-live">Active</span></td><td class="text-slate-500">2 h ago</td><td class="text-right"><button class="btn btn-sm btn-ghost" aria-haspopup="menu" aria-label="More actions for Priya Natarajan">•••</button></td></tr>
+          <tr><td><p class="font-medium">Jordan Reyes</p><p class="text-[12.5px] text-slate-500">jreyes@university.edu</p></td><td><select class="rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-[13.5px]" aria-label="Role for Jordan Reyes"><option selected>Student</option><option>TA</option><option>Admin</option></select></td><td><span class="badge badge-live">Active</span></td><td class="text-slate-500">12 min ago</td><td class="relative text-right">
+            <button class="btn btn-sm btn-secondary" aria-haspopup="menu" aria-expanded="true" aria-label="More actions for Jordan Reyes">•••</button>
+            <div role="menu" class="absolute right-3 top-[calc(100%-6px)] z-10 w-[240px] rounded-xl border border-slate-200 bg-white p-1.5 text-left shadow-[0_12px_32px_-12px_rgba(15,23,42,.3)]">
+              <button role="menuitem" class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[14px] hover:bg-slate-50"><svg data-icon="key" class="h-4 w-4 text-slate-500"></svg>Issue password reset link</button>
+              <button role="menuitem" class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[14px] hover:bg-slate-50"><svg data-icon="chart" class="h-4 w-4 text-slate-500"></svg>View progress</button>
+              <button role="menuitem" class="flex w-full items-center gap-2 rounded-lg px-3 py-2.5 text-[14px] text-red-700 hover:bg-red-50"><svg data-icon="lock" class="h-4 w-4"></svg>Deactivate account</button>
+            </div>
+          </td></tr>
+          <tr><td><p class="font-medium">Ada Okafor</p><p class="text-[12.5px] text-slate-500">aokafor@university.edu</p></td><td>Student</td><td><span class="badge badge-review">Invited · expires Oct 26</span></td><td class="text-slate-500">–</td><td class="text-right"><button class="btn btn-sm btn-ghost"><svg data-icon="copy"></svg>Copy link</button></td></tr>
+          <tr><td><p class="font-medium">Sam Whitfield</p><p class="text-[12.5px] text-slate-500">swhitfield@university.edu</p></td><td>Student</td><td><span class="badge badge-draft">Deactivated</span></td><td class="text-slate-500">Sep 30</td><td class="text-right"><button class="btn btn-sm btn-ghost">Reactivate</button></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-3 text-[12.5px] text-slate-500">Deactivating signs the person out everywhere and keeps their progress, so it can be undone. University SSO is planned; accounts will link by email when it arrives.</p>
+  </div>
+</main>
+<script>document.querySelector('[data-open-invite]').addEventListener('click', () => document.getElementById('invite').classList.remove('hidden'));</script>
+</body>
+</html>

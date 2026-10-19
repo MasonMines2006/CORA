@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ask · CORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body data-shell="student" data-page="ask" data-no-tabbar>
+<a class="skip-link" href="#composer-input">Skip to message box</a>
+<main id="main" class="flex h-[calc(100vh-56px)] lg:h-screen">
+  <!-- Conversation column -->
+  <div class="flex min-w-0 flex-1 flex-col">
+    <div class="flex h-14 flex-none items-center gap-3 border-b border-slate-100 px-4 sm:px-6">
+      <h1 class="min-w-0 flex-1 truncate text-[15px] font-semibold">Why decay heat matters after a scram</h1>
+      <button type="button" class="hidden items-center gap-1.5 rounded-lg border border-slate-200 px-2.5 py-1.5 text-[13px] text-slate-700 sm:inline-flex" aria-haspopup="listbox">
+        <span class="text-slate-500">Scope:</span> All published material <svg data-icon="chev" class="h-3.5 w-3.5 rotate-90 text-slate-500"></svg>
+      </button>
+      <button type="button" id="toggle-sources" class="btn btn-sm btn-soft" aria-controls="sources" aria-expanded="true"><svg data-icon="doc"></svg>Sources <span class="tabular">3</span></button>
+    </div>
+
+    <div class="scroll-thin min-h-0 flex-1 overflow-y-auto" id="thread">
+      <div class="mx-auto max-w-[720px] px-4 pb-10 pt-8 sm:px-6">
+
+        <!-- user turn -->
+        <div class="flex justify-end">
+          <p class="max-w-[85%] rounded-[20px] rounded-br-md bg-slate-100 px-4 py-3 text-[15.5px] leading-relaxed">The reactor is already subcritical after a scram. Why do we still care so much about decay heat?</p>
+        </div>
+
+        <!-- assistant turn -->
+        <article class="mt-8 flex gap-3 sm:gap-4" aria-label="CORA's answer">
+          <span class="mt-0.5 grid h-8 w-8 flex-none place-items-center rounded-[10px] bg-red-600 font-display text-[15px] font-extrabold text-white" style="box-shadow:0 2px 0 #7f1d1d" aria-hidden="true">C</span>
+          <div class="min-w-0 flex-1">
+            <div class="mb-2 flex flex-wrap items-center gap-2 text-[12.5px]">
+              <span class="badge badge-live">Grounded in 3 published passages</span>
+              <span class="font-mono text-slate-500">Ask mode</span>
+            </div>
+            <div class="prose-cora" id="answer">
+              <p>Because shutting down the chain reaction does not shut down the heat. Fission stops within seconds of the rods going in, but the fission products already in the fuel keep decaying, and that decay deposits energy in the core.</p>
+              <p><strong>How much:</strong> right after a trip from full power, decay heat is roughly <strong>6–7% of the previous thermal power</strong>, falling to about <strong>1% within an hour</strong> <button type="button" class="cite" data-src="1" aria-expanded="false" aria-label="Source 1">1</button>. On a large reactor, 1% is still tens of megawatts, which is why heat removal has to keep working long after the reactor is subcritical <button type="button" class="cite" data-src="2" aria-expanded="true" aria-label="Source 2">2</button>.</p>
+              <p id="stream-target"></p>
+            </div>
+
+            <!-- Source cards under the answer -->
+            <div class="mt-4 grid gap-2 sm:grid-cols-3" id="source-cards">
+              <button type="button" class="rounded-xl border border-slate-200 p-3 text-left hover:border-red-200" data-src="1"><span class="font-mono text-[11px] text-red-700">[1] NE235 L11</span><span class="mt-1 block text-[13px] font-medium leading-snug">Decay heat after shutdown</span><span class="block text-[12px] text-slate-500">slide 14</span></button>
+              <button type="button" class="rounded-xl border-2 border-red-600 bg-red-50 p-3 text-left" data-src="2"><span class="font-mono text-[11px] text-red-700">[2] RTM ch.5</span><span class="mt-1 block text-[13px] font-medium leading-snug">Core cooling after a trip</span><span class="block text-[12px] text-slate-500">passage 211</span></button>
+              <button type="button" class="rounded-xl border border-slate-200 p-3 text-left hover:border-red-200" data-src="3"><span class="font-mono text-[11px] text-red-700">[3] GFE Q&amp;A</span><span class="mt-1 block text-[13px] font-medium leading-snug">Heat transfer · decay heat</span><span class="block text-[12px] text-slate-500">item 38</span></button>
+            </div>
+
+            <div class="mt-3 flex flex-wrap items-center gap-1 text-slate-500">
+              <button type="button" class="grid h-9 w-9 place-items-center rounded-lg hover:bg-slate-100" aria-label="Copy answer"><svg data-icon="copy" class="h-[18px] w-[18px]"></svg></button>
+              <button type="button" class="grid h-9 w-9 place-items-center rounded-lg hover:bg-slate-100" aria-label="Helpful"><svg data-icon="thumb" class="h-[18px] w-[18px]"></svg></button>
+              <button type="button" class="grid h-9 w-9 place-items-center rounded-lg hover:bg-slate-100" aria-label="Report a problem with this answer"><svg data-icon="flag" class="h-[18px] w-[18px]"></svg></button>
+            </div>
+
+            <!-- Mode hand-offs: the same concept, another way -->
+            <div class="mt-5 rounded-2xl border border-red-100 bg-red-50 p-4">
+              <p class="text-[13.5px] font-semibold">Keep going on <span class="text-red-700">Decay heat</span></p>
+              <div class="mt-3 flex flex-wrap gap-2">
+                <a href="quiz.html" class="btn btn-sm btn-secondary"><svg data-icon="bolt"></svg>Quiz me · 3 questions</a>
+                <a href="lesson.html" class="btn btn-sm btn-secondary"><svg data-icon="book"></svg>Guide me through it</a>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+
+    <!-- Composer -->
+    <div class="flex-none bg-white px-4 pb-4 pt-2 sm:px-6">
+      <form class="composer mx-auto max-w-[720px] p-2" onsubmit="return false">
+        <label for="composer-input" class="sr-only">Message CORA</label>
+        <textarea id="composer-input" rows="2" class="block w-full px-2 py-1.5 text-[15.5px] placeholder:text-slate-500" placeholder="Ask a follow-up, e.g. how long until decay heat is under 0.5%?"></textarea>
+        <div class="mt-1 flex items-center gap-2">
+          <div class="mode" role="group" aria-label="How CORA should respond">
+            <button type="button" aria-pressed="true"><svg data-icon="chat"></svg>Ask</button>
+            <button type="button" aria-pressed="false"><svg data-icon="book"></svg>Guide<span class="hidden sm:inline">&nbsp;me</span></button>
+            <button type="button" aria-pressed="false"><svg data-icon="bolt"></svg>Quiz<span class="hidden sm:inline">&nbsp;me</span></button>
+          </div>
+          <span class="flex-1"></span>
+          <button class="btn btn-primary !min-h-[40px] !w-[40px] !rounded-xl !px-0" aria-label="Send"><svg data-icon="up" data-stroke="2.2"></svg></button>
+        </div>
+      </form>
+      <p class="mx-auto mt-2 max-w-[720px] text-center text-[12px] text-slate-500">CORA answers only from published course material and cites it. It is a study aid: your facility's procedures and qualified instructors are the authority.</p>
+    </div>
+  </div>
+
+  <!-- Source drawer (desktop: side panel; phone: bottom sheet) -->
+  <aside id="sources" class="fixed inset-x-0 bottom-0 z-40 max-h-[70vh] overflow-y-auto rounded-t-3xl border-t border-red-100 bg-white p-5 shadow-[0_-12px_40px_-12px_rgba(15,23,42,.25)] lg:static lg:z-auto lg:max-h-none lg:w-[380px] lg:flex-none lg:rounded-none lg:border-l lg:border-t-0 lg:shadow-none" aria-labelledby="src-h">
+    <div class="mx-auto mb-3 h-1.5 w-10 rounded-full bg-slate-200 lg:hidden" aria-hidden="true"></div>
+    <div class="flex items-start justify-between gap-3">
+      <div>
+        <p class="font-mono text-[12px] text-red-700" id="src-tag">[2] Source</p>
+        <h2 id="src-h" class="mt-1 font-display text-[19px] font-bold leading-snug">Reactor Theory Manual, ch. 5: Core cooling after a trip</h2>
+      </div>
+      <button type="button" id="close-sources" class="grid h-10 w-10 flex-none place-items-center rounded-lg text-slate-500 hover:bg-slate-100" aria-label="Close sources"><svg data-icon="x"></svg></button>
+    </div>
+    <dl class="mt-3 grid grid-cols-[auto_1fr] gap-x-3 gap-y-1 text-[13px]">
+      <dt class="text-slate-500">File</dt><dd class="font-mono text-[12.5px]">Reactor_Theory_Manual_r3.pdf</dd>
+      <dt class="text-slate-500">Passage</dt><dd class="tabular">211 of 486 · p. 5-14</dd>
+      <dt class="text-slate-500">Published</dt><dd>Oct 2 by Mason Mines (admin)</dd>
+    </dl>
+    <blockquote class="passage mt-4" id="src-text">Following a reactor trip, the heat generated by the decay of fission products must continue to be removed. Although this <mark>decay heat is a small fraction of rated power</mark>, it is sufficient to damage the fuel if core cooling is lost. For this reason, a path for heat removal must be maintained in every shutdown condition.</blockquote>
+    <p class="mt-3 text-[12.5px] text-slate-500">Highlighted text is what CORA used for the sentence marked [2]. Sample passage for the prototype.</p>
+    <div class="mt-4 flex gap-2">
+      <a href="#" class="btn btn-sm btn-secondary">Open in document</a>
+      <a href="explore.html" class="btn btn-sm btn-ghost text-teal-700">Concept: Decay heat</a>
+    </div>
+    <hr class="my-5 border-slate-100">
+    <p class="text-[12px] font-semibold uppercase tracking-wider text-slate-500">All sources in this answer</p>
+    <ul class="mt-2 space-y-2 text-[13.5px]">
+      <li><button type="button" class="flex w-full items-start gap-2 rounded-lg p-2 text-left hover:bg-slate-50" data-src="1"><span class="cite">1</span><span>NE235 Lecture 11, slide 14: decay heat fraction vs. time</span></button></li>
+      <li><button type="button" class="flex w-full items-start gap-2 rounded-lg bg-red-50 p-2 text-left" data-src="2"><span class="cite">2</span><span>Reactor Theory Manual, ch. 5, passage 211</span></button></li>
+      <li><button type="button" class="flex w-full items-start gap-2 rounded-lg p-2 text-left hover:bg-slate-50" data-src="3"><span class="cite">3</span><span>NRC GFE Q&amp;A, Heat transfer, item 38</span></button></li>
+    </ul>
+  </aside>
+</main>
+
+<script>
+  // Sources: clicking any [n] chip or card swaps the drawer content.
+  const SOURCES = {
+    1: { tag: '[1] Source', title: 'NE 235 Lecture 11: Decay heat after shutdown', file: 'NE235_L11_DecayHeat.pdf', pass: 'slide 14', text: 'Immediately after shutdown, <mark>decay heat is approximately 6 to 7 percent of the operating power</mark>. It falls to roughly 1 percent after one hour and continues to decrease slowly for months.' },
+    2: null,
+    3: { tag: '[3] Source', title: 'NRC GFE Q&A: Heat transfer, item 38', file: 'NRC_GFE_QA_Thermo.pdf', pass: 'item 38', text: 'Q: Which one of the following is the primary reason for maintaining forced or natural circulation following a reactor trip? A: To <mark>remove decay heat from the core</mark> and prevent exceeding fuel design limits.' },
+  };
+  const orig = { tag: document.getElementById('src-tag').textContent, title: document.getElementById('src-h').textContent, text: document.getElementById('src-text').innerHTML };
+  const drawer = document.getElementById('sources');
+  function show(n) {
+    const s = SOURCES[n] || { tag: orig.tag, title: orig.title, text: orig.text };
+    document.getElementById('src-tag').textContent = s.tag;
+    document.getElementById('src-h').textContent = s.title;
+    document.getElementById('src-text').innerHTML = s.text;
+    document.querySelectorAll('.cite[data-src]').forEach((c) => c.setAttribute('aria-expanded', c.dataset.src === String(n) ? 'true' : 'false'));
+    drawer.classList.remove('hidden');
+    document.getElementById('toggle-sources').setAttribute('aria-expanded', 'true');
+  }
+  document.querySelectorAll('[data-src]').forEach((b) => b.addEventListener('click', () => show(b.dataset.src)));
+  document.getElementById('close-sources').addEventListener('click', () => { drawer.classList.add('hidden'); document.getElementById('toggle-sources').setAttribute('aria-expanded', 'false'); });
+  document.getElementById('toggle-sources').addEventListener('click', (e) => { const open = drawer.classList.toggle('hidden'); e.currentTarget.setAttribute('aria-expanded', String(!open)); });
+  // On phones the sheet starts closed so the answer is readable.
+  if (window.matchMedia('(max-width: 1023px)').matches && !location.hash.includes('sheet')) { drawer.classList.add('hidden'); document.getElementById('toggle-sources').setAttribute('aria-expanded', 'false'); }
+
+  // Mode switch
+  document.querySelectorAll('.mode button').forEach((b) => b.addEventListener('click', () => {
+    document.querySelectorAll('.mode button').forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    const ph = { Ask: 'Ask a follow-up, e.g. how long until decay heat is under 0.5%?', 'Guide me': 'Name a topic and CORA will walk you through it step by step', 'Quiz me': 'Name a topic, e.g. decay heat, and get questions at your level' };
+    document.getElementById('composer-input').placeholder = ph[b.textContent.replace(/\s+/g,' ').trim().replace('Guide','Guide me').replace('Quiz','Quiz me').replace(' me me',' me')];
+  }));
+
+  // Streaming: the last paragraph arrives token by token, citations land as chips.
+  const tail = [
+    'In practice that means: ',
+    { b: 'keep forced or natural circulation going' }, ' after the trip ', { c: 3 }, ', and treat any loss of heat sink while shut down as a fuel-damage threat, not an inconvenience. ',
+    'Three Mile Island in 1979 is the standard example: the reactor scrammed correctly, and the core was damaged afterwards by decay heat that was not removed.',
+  ];
+  const target = document.getElementById('stream-target');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let i = 0, j = 0, node = null;
+  target.classList.add('caret');
+  function step() {
+    if (i >= tail.length) { target.classList.remove('caret'); return; }
+    const part = tail[i];
+    if (typeof part === 'object' && part.c) {
+      target.insertAdjacentHTML('beforeend', `<button type="button" class="cite enter" data-src="${part.c}" aria-label="Source ${part.c}">${part.c}</button>`);
+      target.lastElementChild.addEventListener('click', () => show(part.c));
+      i++; node = null; return setTimeout(step, 60);
+    }
+    const text = typeof part === 'string' ? part : part.b;
+    if (!node) { node = typeof part === 'string' ? document.createTextNode('') : document.createElement('strong'); target.appendChild(node); }
+    const chunk = reduce ? text.length : 3;
+    if (node.nodeType === 3) node.data += text.slice(j, j + chunk); else node.textContent += text.slice(j, j + chunk);
+    j += chunk;
+    if (j >= text.length) { i++; j = 0; node = null; }
+    setTimeout(step, reduce ? 0 : 16);
+  }
+  setTimeout(step, 500);
+</script>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Join your course · CORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body>
+<main id="main" class="grid min-h-screen lg:grid-cols-[1fr_520px]">
+  <div class="flex flex-col px-4 py-6 sm:px-10">
+    <a href="landing.html" class="flex items-center gap-2.5 self-start" aria-label="CORA home">
+      <span class="grid h-8 w-8 place-items-center rounded-[10px] bg-red-600 font-display text-[17px] font-extrabold text-white" style="box-shadow:0 3px 0 #7f1d1d">C</span>
+      <span class="font-display text-[19px] font-bold tracking-tight">cora</span>
+    </a>
+
+    <!-- State A (default): arrived from an invite link, so the email is known and locked -->
+    <div id="invite" class="mx-auto my-auto w-full max-w-[420px] py-10">
+      <div class="flex items-center gap-3 rounded-2xl border border-red-100 bg-red-50 px-4 py-3">
+        <span class="grid h-10 w-10 flex-none place-items-center rounded-full bg-slate-900 text-[13px] font-bold text-white">MM</span>
+        <p class="text-[14px] leading-snug"><span class="font-semibold">Mason Mines</span> invited you to <span class="font-semibold">NE 235 · Fall 2026</span> as a <span class="font-semibold">student</span>.</p>
+      </div>
+      <h1 class="mt-6 font-display text-[32px] font-bold tracking-tight">Set up your account.</h1>
+      <p class="mt-1 text-[15px] text-slate-500">Takes a minute. Your progress is saved to this account.</p>
+      <form class="mt-6 space-y-4" novalidate onsubmit="event.preventDefault(); location.href='path.html'">
+        <div>
+          <label class="label" for="email">School email</label>
+          <input class="field bg-slate-50 text-slate-700" id="email" type="email" value="jreyes@university.edu" readonly aria-describedby="email-hint">
+          <p id="email-hint" class="hint">From your invite. Wrong address? Ask your instructor to re-send it.</p>
+        </div>
+        <div>
+          <label class="label" for="name">Your name</label>
+          <input class="field" id="name" autocomplete="name" value="Jordan Reyes">
+        </div>
+        <div>
+          <label class="label" for="pw">Create a password</label>
+          <input class="field" id="pw" type="password" autocomplete="new-password" value="reactor" aria-describedby="pw-rules" aria-invalid="true">
+          <ul id="pw-rules" class="mt-2 space-y-1 text-[13px]" aria-live="polite">
+            <li class="flex items-center gap-2 text-red-700"><svg data-icon="x" data-stroke="2.4" class="h-4 w-4"></svg>At least 12 characters (7 so far)</li>
+            <li class="flex items-center gap-2 text-emerald-700"><svg data-icon="check" data-stroke="2.4" class="h-4 w-4"></svg>Not a common password</li>
+          </ul>
+        </div>
+        <button class="btn btn-primary btn-lg btn-block">Create account</button>
+        <p class="text-center text-[12.5px] text-slate-500">Invite link expires Oct 26. One account per invite.</p>
+      </form>
+      <p class="mt-8 text-center text-[14.5px] text-slate-700">Already have an account? <a href="signin.html" class="font-semibold text-red-700 hover:underline">Sign in</a></p>
+    </div>
+
+    <!-- State B: no invite link. Explain how to get in instead of a dead-end form -->
+    <div id="no-invite" class="mx-auto my-auto hidden w-full max-w-[420px] py-10">
+      <h1 class="font-display text-[32px] font-bold tracking-tight">CORA is invite-only.</h1>
+      <p class="mt-2 text-[15.5px] leading-relaxed text-slate-700">Your instructor or TA adds you by school email and sends you a link. Open that link to set up your account.</p>
+      <ol class="mt-6 space-y-3 text-[14.5px]">
+        <li class="flex gap-3"><span class="grid h-7 w-7 flex-none place-items-center rounded-lg bg-red-50 font-mono text-[13px] font-semibold text-red-700">1</span>Check your course announcements or email for a CORA invite link.</li>
+        <li class="flex gap-3"><span class="grid h-7 w-7 flex-none place-items-center rounded-lg bg-red-50 font-mono text-[13px] font-semibold text-red-700">2</span>No link? Ask your instructor to add <span class="font-mono text-[13px]">you@university.edu</span> in CORA.</li>
+      </ol>
+      <a href="signin.html" class="btn btn-secondary btn-lg btn-block mt-8">I already have an account</a>
+    </div>
+  </div>
+  <aside class="hidden bg-red-50 lg:flex lg:flex-col lg:justify-center lg:px-12" aria-label="What you get">
+    <p class="eyebrow">What you get</p>
+    <ul class="mt-5 space-y-5">
+      <li class="flex gap-4"><span class="grid h-10 w-10 flex-none place-items-center rounded-xl bg-white text-amber-700"><svg data-icon="book"></svg></span><div><p class="font-semibold">A path through the course</p><p class="text-[14px] text-slate-500">24 concepts in 5 units, from k<sub>eff</sub> to tech specs.</p></div></li>
+      <li class="flex gap-4"><span class="grid h-10 w-10 flex-none place-items-center rounded-xl bg-white text-red-700"><svg data-icon="chat"></svg></span><div><p class="font-semibold">Answers with sources</p><p class="text-[14px] text-slate-500">From published course material only.</p></div></li>
+      <li class="flex gap-4"><span class="grid h-10 w-10 flex-none place-items-center rounded-xl bg-white text-teal-700"><svg data-icon="bolt"></svg></span><div><p class="font-semibold">Quizzes at your level</p><p class="text-[14px] text-slate-500">Easy, medium or hard, from your own results.</p></div></li>
+    </ul>
+  </aside>
+</main>
+<script>if (location.hash === '#no-invite') { document.getElementById('invite').classList.add('hidden'); document.getElementById('no-invite').classList.remove('hidden'); }</script>
+</body>
+</html>

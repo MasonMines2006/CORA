@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Course graph · CORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body data-streak="7" data-goal="3" data-shell="student" data-page="explore">
+<a class="skip-link" href="#concept-search">Skip to concept search</a>
+<main id="main" class="pb-24 lg:pb-0">
+  <div class="flex flex-col lg:h-screen lg:flex-row">
+    <!-- Concept list -->
+    <section class="flex-none border-b border-red-100 p-4 lg:w-[290px] lg:overflow-y-auto lg:border-b-0 lg:border-r scroll-thin" aria-labelledby="list-h">
+      <h1 id="list-h" class="font-display text-[22px] font-bold tracking-tight">Course graph</h1>
+      <p class="mt-1 text-[13px] text-slate-500">24 concepts from 26 published documents</p>
+      <label for="concept-search" class="sr-only">Search concepts</label>
+      <div class="relative mt-3">
+        <svg data-icon="search" class="pointer-events-none absolute left-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-slate-500"></svg>
+        <input id="concept-search" class="field !min-h-[44px] pl-10 text-[14px]" placeholder="Search, e.g. xenon">
+      </div>
+      <div class="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Filter by state">
+        <button type="button" class="rounded-lg bg-slate-900 px-2.5 py-1.5 text-[12.5px] font-semibold text-white" aria-pressed="true">All</button>
+        <button type="button" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12.5px] font-semibold text-emerald-700" aria-pressed="false">Mastered 6</button>
+        <button type="button" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12.5px] font-semibold text-amber-700" aria-pressed="false">In progress 3</button>
+        <button type="button" class="rounded-lg border border-slate-200 px-2.5 py-1.5 text-[12.5px] font-semibold text-slate-500" aria-pressed="false">New 15</button>
+      </div>
+      <ul class="mt-4 hidden space-y-0.5 text-[14px] lg:block">
+        <li class="px-2 pb-1 pt-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Unit 2 · Kinetics</li>
+        <li><a href="#" class="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-slate-50"><span>Delayed neutron fraction (β)</span><span class="tabular text-[12.5px] font-semibold text-emerald-700">92%</span></a></li>
+        <li><a href="#" class="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-slate-50"><span>Prompt criticality</span><span class="tabular text-[12.5px] font-semibold text-emerald-700">85%</span></a></li>
+        <li><a href="#" aria-current="true" class="flex items-center justify-between rounded-lg bg-red-50 px-2 py-2 font-semibold text-red-700"><span>Reactor period</span><span class="tabular text-[12.5px] text-amber-700">70%</span></a></li>
+        <li><a href="#" class="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-slate-50"><span>Startup rate (SUR)</span><span class="text-[12.5px] text-slate-500">new</span></a></li>
+        <li><a href="#" class="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-slate-50"><span>Subcritical multiplication</span><span class="text-[12.5px] text-slate-500">new</span></a></li>
+        <li><a href="#" class="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-slate-50"><span>Power after a scram</span><span class="text-[12.5px] text-slate-500">new</span></a></li>
+        <li class="px-2 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Unit 3 · Coefficients and poisons</li>
+        <li><a href="#" class="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-slate-50"><span>Moderator temp. coefficient</span><span class="tabular text-[12.5px] font-semibold text-amber-700">38%</span></a></li>
+        <li><a href="#" class="flex items-center justify-between rounded-lg px-2 py-2 hover:bg-slate-50"><span>Xenon-135 transients</span><span class="text-[12.5px] text-slate-500">new</span></a></li>
+      </ul>
+    </section>
+
+    <!-- Neighbourhood graph -->
+    <section class="relative min-h-[420px] flex-1 bg-red-50/60" aria-labelledby="graph-h">
+      <div class="flex flex-wrap items-start justify-between gap-3 p-4 lg:absolute lg:inset-x-0 lg:top-0 lg:z-10">
+      <div class="max-w-[420px]">
+        <h2 id="graph-h" class="text-[14px] font-semibold">Reactor period and its neighbours</h2>
+        <p class="text-[12.5px] text-slate-500">Showing 7 of 24 concepts. Edges come from the published passages.</p>
+      </div>
+      <div class="flex gap-1" role="group" aria-label="View">
+        <button type="button" class="rounded-lg bg-white px-2.5 py-1.5 text-[12.5px] font-semibold shadow-sm ring-1 ring-slate-200" aria-pressed="true">Neighbourhood</button>
+        <button type="button" class="rounded-lg px-2.5 py-1.5 text-[12.5px] font-semibold text-slate-500" aria-pressed="false">Whole course</button>
+      </div>
+      </div>
+      <svg viewBox="0 0 720 520" class="h-[330px] w-full lg:h-full" role="img" aria-labelledby="graph-desc" preserveAspectRatio="xMidYMid meet">
+        <desc id="graph-desc">Reactor period is linked to: delayed neutron fraction (prerequisite, mastered), prompt criticality (related, mastered), reactivity (prerequisite, mastered), startup rate (builds on it, not started), power after a scram (builds on it, not started), subcritical multiplication (appears with, not started), and delayed neutron precursors (appears with, not started). The same list is in the panel on the right.</desc>
+        <g stroke="#0f766e" stroke-opacity=".45" stroke-width="2">
+          <line x1="360" y1="270" x2="170" y2="130"/><line x1="360" y1="270" x2="360" y2="80"/><line x1="360" y1="270" x2="560" y2="130"/>
+          <line x1="360" y1="270" x2="600" y2="330"/><line x1="360" y1="270" x2="470" y2="450"/><line x1="360" y1="270" x2="220" y2="450"/>
+          <line x1="360" y1="270" x2="120" y2="320" stroke-dasharray="5 5"/>
+        </g>
+        <g font-family="IBM Plex Mono" font-size="10.5" fill="#0f766e">
+          <text x="235" y="190">PREREQUISITE</text><text x="368" y="160">PREREQUISITE</text><text x="455" y="185">RELATED</text>
+          <text x="470" y="292">BUILDS_ON</text><text x="420" y="375">BUILDS_ON</text><text x="236" y="372">APPEARS_WITH</text>
+        </g>
+        <g font-family="IBM Plex Sans" font-size="13" font-weight="600" text-anchor="middle" fill="#0f172a">
+          <circle cx="170" cy="130" r="26" fill="#059669"/><text x="170" y="178">Reactivity (ρ)</text>
+          <circle cx="360" cy="80" r="26" fill="#059669"/><text x="360" y="128">Delayed neutron fraction</text>
+          <circle cx="560" cy="130" r="26" fill="#059669"/><text x="560" y="178">Prompt criticality</text>
+          <circle cx="600" cy="330" r="24" fill="#fff" stroke="#cbd5e1" stroke-width="3"/><text x="600" y="376">Startup rate</text>
+          <circle cx="470" cy="450" r="24" fill="#fff" stroke="#cbd5e1" stroke-width="3"/><text x="470" y="496">Power after a scram</text>
+          <circle cx="220" cy="450" r="22" fill="#fff" stroke="#cbd5e1" stroke-width="3"/><text x="220" y="494">Subcritical multiplication</text>
+          <circle cx="120" cy="320" r="20" fill="#fff" stroke="#cbd5e1" stroke-width="3" stroke-dasharray="4 3"/><text x="120" y="362">Precursor groups</text>
+          <circle cx="360" cy="270" r="44" fill="#dc2626"/><circle cx="360" cy="270" r="54" fill="none" stroke="#fecaca" stroke-width="3"/>
+          <text x="360" y="266" fill="#fff" font-size="13">Reactor</text><text x="360" y="283" fill="#fff" font-size="13">period</text>
+          <path d="M152 124 l12 12 l22 -22" stroke="#fff" stroke-width="0" fill="none"/>
+        </g>
+      </svg>
+      <div class="mx-4 mb-4 flex w-fit flex-wrap gap-3 lg:absolute lg:bottom-4 lg:left-4 lg:m-0 rounded-xl bg-white/90 px-3 py-2 text-[12px] ring-1 ring-slate-200">
+        <span class="inline-flex items-center gap-1.5"><i class="h-3 w-3 rounded-full bg-red-600"></i>Selected</span>
+        <span class="inline-flex items-center gap-1.5"><i class="h-3 w-3 rounded-full bg-emerald-600"></i>Mastered</span>
+        <span class="inline-flex items-center gap-1.5"><i class="h-3 w-3 rounded-full border-[3px] border-slate-300 bg-white"></i>Not started</span>
+        <span class="inline-flex items-center gap-1.5"><i class="h-0.5 w-4 bg-teal-700"></i>Link in the sources</span>
+      </div>
+    </section>
+
+    <!-- Inspector -->
+    <aside class="flex-none border-t border-red-100 p-5 lg:w-[330px] lg:overflow-y-auto lg:border-l lg:border-t-0" aria-labelledby="insp-h">
+      <span class="state state-progress">In progress · 70%</span>
+      <h2 id="insp-h" class="mt-3 font-display text-[24px] font-bold tracking-tight">Reactor period (τ)</h2>
+      <p class="mt-2 text-[14px] leading-relaxed text-slate-700">The time for neutron population, and so power, to change by a factor of <em>e</em>. Set mostly by delayed neutrons while ρ is well below β.</p>
+      <p class="mt-2 text-[12.5px] text-slate-500">9 passages in 3 documents · 7 linked concepts</p>
+      <div class="mt-4 grid grid-cols-3 gap-2">
+        <a href="lesson.html" class="btn btn-primary btn-sm flex-col !h-auto gap-1 py-2.5"><svg data-icon="book"></svg>Guide me</a>
+        <a href="ask.html" class="btn btn-secondary btn-sm flex-col !h-auto gap-1 py-2.5"><svg data-icon="chat"></svg>Ask</a>
+        <a href="quiz.html" class="btn btn-secondary btn-sm flex-col !h-auto gap-1 py-2.5"><svg data-icon="bolt"></svg>Quiz me</a>
+      </div>
+      <h3 class="mt-6 text-[12px] font-semibold uppercase tracking-wider text-slate-500">Linked concepts</h3>
+      <ul class="mt-2 divide-y divide-slate-100 text-[14px]">
+        <li class="flex items-center justify-between py-2"><span>Delayed neutron fraction <span class="block font-mono text-[11px] text-teal-700">PREREQUISITE</span></span><span class="tabular font-semibold text-emerald-700">92%</span></li>
+        <li class="flex items-center justify-between py-2"><span>Reactivity (ρ) <span class="block font-mono text-[11px] text-teal-700">PREREQUISITE</span></span><span class="tabular font-semibold text-emerald-700">88%</span></li>
+        <li class="flex items-center justify-between py-2"><span>Startup rate (SUR) <span class="block font-mono text-[11px] text-teal-700">BUILDS_ON</span></span><span class="text-slate-500">new</span></li>
+        <li class="flex items-center justify-between py-2"><span>Power after a scram <span class="block font-mono text-[11px] text-teal-700">BUILDS_ON</span></span><span class="text-slate-500">new</span></li>
+      </ul>
+      <h3 class="mt-5 text-[12px] font-semibold uppercase tracking-wider text-slate-500">Sources</h3>
+      <ul class="mt-2 space-y-1.5 font-mono text-[12px] text-slate-700">
+        <li>NE235_L07_Kinetics.pdf · 4 passages</li>
+        <li>Reactor_Theory_Manual_r3.pdf · 4 passages</li>
+        <li>NRC_GFE_QA_Theory.pdf · 1 passage</li>
+      </ul>
+    </aside>
+  </div>
+</main>
+</body>
+</html>

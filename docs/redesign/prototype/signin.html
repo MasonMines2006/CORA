@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in · CORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body>
+<main id="main" class="grid min-h-screen lg:grid-cols-[1fr_520px]">
+  <div class="flex flex-col px-4 py-6 sm:px-10">
+    <a href="landing.html" class="flex items-center gap-2.5 self-start" aria-label="CORA home">
+      <span class="grid h-8 w-8 place-items-center rounded-[10px] bg-red-600 font-display text-[17px] font-extrabold text-white" style="box-shadow:0 3px 0 #7f1d1d">C</span>
+      <span class="font-display text-[19px] font-bold tracking-tight">cora</span>
+    </a>
+    <div class="mx-auto my-auto w-full max-w-[400px] py-10">
+      <h1 class="font-display text-[32px] font-bold tracking-tight">Welcome back.</h1>
+      <p class="mt-1 text-[15px] text-slate-500">Sign in to pick up where you left off.</p>
+
+      <div id="err" class="mt-6 hidden rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-[14px] text-red-700" role="alert">
+        <p class="font-semibold">Email or password is incorrect.</p>
+        <p class="mt-0.5 text-slate-700">Check for typos, or <a href="reset.html" class="font-semibold text-red-700 underline">reset your password</a>. After 5 tries, sign-in pauses for 15 minutes.</p>
+      </div>
+
+      <form class="mt-6 space-y-4" novalidate onsubmit="event.preventDefault(); location.href='path.html'">
+        <div>
+          <label class="label" for="email">School email</label>
+          <input class="field" id="email" type="email" autocomplete="username" value="jreyes@university.edu" required>
+        </div>
+        <div>
+          <div class="flex items-baseline justify-between"><label class="label" for="pw">Password</label><a href="reset.html" class="text-[13.5px] font-semibold text-red-700 hover:underline">Forgot password?</a></div>
+          <div class="relative">
+            <input class="field pr-16" id="pw" type="password" autocomplete="current-password" value="correct-horse-battery" required>
+            <button type="button" class="absolute right-1.5 top-1/2 -translate-y-1/2 rounded-lg px-2.5 py-2 text-[13px] font-semibold text-slate-700 hover:bg-slate-100" aria-controls="pw" aria-pressed="false" onclick="const p=document.getElementById('pw');const s=p.type==='password';p.type=s?'text':'password';this.textContent=s?'Hide':'Show';this.setAttribute('aria-pressed',s)">Show</button>
+          </div>
+        </div>
+        <label class="flex min-h-[44px] items-center gap-3 text-[14px]"><input type="checkbox" class="h-5 w-5 accent-red-600" checked> Keep me signed in on this device</label>
+        <button class="btn btn-primary btn-lg btn-block">Sign in</button>
+      </form>
+
+      <div class="my-6 flex items-center gap-3 text-[12px] font-semibold uppercase tracking-wider text-slate-500"><span class="h-px flex-1 bg-slate-200"></span>or<span class="h-px flex-1 bg-slate-200"></span></div>
+      <button type="button" class="btn btn-secondary btn-lg btn-block" disabled aria-describedby="sso-note"><svg data-icon="building"></svg>Sign in with university SSO</button>
+      <p id="sso-note" class="mt-2 text-center text-[13px] text-slate-500"><span class="rounded-md bg-slate-100 px-1.5 py-0.5 font-mono text-[11px] font-medium uppercase">Coming soon</span> Single sign-on with your university account.</p>
+
+      <p class="mt-8 text-center text-[14.5px] text-slate-700">New to CORA? <a href="join.html" class="font-semibold text-red-700 hover:underline">Join with your invite</a></p>
+    </div>
+  </div>
+  <aside class="relative hidden overflow-hidden bg-red-50 lg:block" aria-hidden="true">
+    <div class="absolute inset-x-10 top-[18%]">
+      <p class="eyebrow">Today on your path</p>
+      <div class="mt-4 space-y-4">
+        <div class="flex items-center gap-4"><span class="node node-mastered"><svg data-icon="check" data-stroke="2.6"></svg></span><span class="font-semibold">Delayed neutron fraction</span></div>
+        <div class="ml-12 flex items-center gap-4"><span class="node node-current"><svg data-icon="book" data-stroke="2"></svg></span><span class="font-semibold">Reactor period</span></div>
+        <div class="ml-6 flex items-center gap-4"><span class="node node-new"><span class="font-mono text-[13px] font-semibold">SUR</span></span><span class="font-semibold text-slate-500">Startup rate</span></div>
+      </div>
+      <div class="mt-10 rounded-2xl bg-white p-5">
+        <p class="text-[15px] leading-relaxed text-slate-700">“Decay heat is roughly 6–7% of prior power right after a trip, and about 1% an hour later <span class="cite">NE235 L11</span>.”</p>
+      </div>
+    </div>
+  </aside>
+</main>
+<script>if (location.hash === '#error') { document.getElementById('err').classList.remove('hidden'); document.getElementById('pw').setAttribute('aria-invalid', 'true'); }</script>
+</body>
+</html>

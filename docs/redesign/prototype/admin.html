@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Materials · CORA Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body data-shell="admin" data-page="materials">
+<a class="skip-link" href="#main">Skip to content</a>
+<main id="main">
+  <div class="flex flex-col xl:h-screen xl:flex-row">
+    <div class="min-w-0 flex-1 overflow-y-auto px-4 pb-10 pt-6 sm:px-8 lg:pt-8">
+      <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 class="font-display text-[28px] font-bold tracking-tight">Materials</h1>
+          <p class="text-[14px] text-slate-500">Students only ever see <strong class="font-semibold text-slate-900">published</strong> material. Everything else is private to admins and TAs.</p>
+        </div>
+        <a href="#" class="btn btn-primary"><svg data-icon="upload"></svg>Upload</a>
+      </div>
+
+      <!-- Status summary doubles as a filter -->
+      <div class="mt-5 flex flex-wrap gap-2" role="group" aria-label="Filter by status">
+        <button type="button" class="rounded-xl border-2 border-slate-900 bg-white px-3 py-2 text-left text-[13px]" aria-pressed="true"><span class="block font-semibold">All</span><span class="tabular text-slate-500">31</span></button>
+        <button type="button" class="rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-left text-[13px]" aria-pressed="false"><span class="block font-semibold text-emerald-700">Published</span><span class="tabular text-slate-500">26</span></button>
+        <button type="button" class="rounded-xl border-2 border-amber-300 bg-amber-50 px-3 py-2 text-left text-[13px]" aria-pressed="false"><span class="block font-semibold text-amber-700">Needs review</span><span class="tabular text-slate-500">2</span></button>
+        <button type="button" class="rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-left text-[13px]" aria-pressed="false"><span class="block font-semibold text-slate-700">Processing</span><span class="tabular text-slate-500">1</span></button>
+        <button type="button" class="rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-left text-[13px]" aria-pressed="false"><span class="block font-semibold text-red-700">Failed</span><span class="tabular text-slate-500">1</span></button>
+        <button type="button" class="rounded-xl border-2 border-slate-200 bg-white px-3 py-2 text-left text-[13px]" aria-pressed="false"><span class="block font-semibold text-slate-500">Unpublished</span><span class="tabular text-slate-500">1</span></button>
+      </div>
+
+      <div class="mt-5 overflow-x-auto rounded-2xl border border-slate-200">
+        <table class="table min-w-[640px]">
+          <caption class="sr-only">Uploaded materials and their publication status</caption>
+          <thead><tr><th scope="col">Document</th><th scope="col">Status</th><th scope="col" class="text-right">Passages</th><th scope="col" class="text-right">Concepts</th><th scope="col">Updated</th><th scope="col"><span class="sr-only">Actions</span></th></tr></thead>
+          <tbody>
+            <tr aria-selected="true"><td><p class="font-medium">NE235_L12_Xenon_Samarium.pdf</p><p class="text-[12.5px] text-slate-500">Lecture · 34 pages</p></td><td><span class="badge badge-review">Needs review</span></td><td class="tabular text-right">41</td><td class="tabular text-right">6</td><td class="whitespace-nowrap text-slate-500">2:14 pm</td><td class="text-right"><button class="btn btn-sm btn-soft">Review</button></td></tr>
+            <tr><td><p class="font-medium">Tech_Specs_Section_3.1_SDM.pdf</p><p class="text-[12.5px] text-slate-500">Facility doc · 12 pages</p></td><td><span class="badge badge-review">Needs review</span></td><td class="tabular text-right">18</td><td class="tabular text-right">3</td><td class="whitespace-nowrap text-slate-500">1:50 pm</td><td class="text-right"><button class="btn btn-sm btn-soft">Review</button></td></tr>
+            <tr><td><p class="font-medium">NE235_L13_DecayHeat_Part2.pdf</p><p class="text-[12.5px] text-slate-500">Lecture</p></td><td><span class="badge badge-draft">Processing · 64%</span></td><td class="text-right text-slate-500">–</td><td class="text-right text-slate-500">–</td><td class="whitespace-nowrap text-slate-500">2:20 pm</td><td class="text-right"><button class="btn btn-sm btn-ghost" disabled>Review</button></td></tr>
+            <tr><td><p class="font-medium">Scanned_Lab2_Handout.pdf</p><p class="text-[12.5px] text-red-700">No text layer. Upload a searchable PDF.</p></td><td><span class="badge badge-fail">Failed</span></td><td class="text-right text-slate-500">0</td><td class="text-right text-slate-500">0</td><td class="text-slate-500">Yesterday</td><td class="text-right"><button class="btn btn-sm btn-secondary"><svg data-icon="retry"></svg>Retry</button></td></tr>
+            <tr><td><p class="font-medium">Reactor_Theory_Manual_r3.pdf</p><p class="text-[12.5px] text-slate-500">Manual · 212 pages</p></td><td><span class="badge badge-live">Published</span></td><td class="tabular text-right">486</td><td class="tabular text-right">19</td><td class="text-slate-500">Oct 2</td><td class="text-right"><button class="btn btn-sm btn-ghost">Manage</button></td></tr>
+            <tr><td><p class="font-medium">NE235_L07_Kinetics.pdf</p><p class="text-[12.5px] text-slate-500">Lecture · 41 pages</p></td><td><span class="badge badge-live">Published</span></td><td class="tabular text-right">52</td><td class="tabular text-right">8</td><td class="text-slate-500">Sep 28</td><td class="text-right"><button class="btn btn-sm btn-ghost">Manage</button></td></tr>
+            <tr><td><p class="font-medium">NRC_GFE_QA_Theory.pdf</p><p class="text-[12.5px] text-slate-500">Question bank</p></td><td><span class="badge badge-live">Published</span></td><td class="tabular text-right">180</td><td class="tabular text-right">21</td><td class="text-slate-500">Sep 20</td><td class="text-right"><button class="btn btn-sm btn-ghost">Manage</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Review panel: preview what students will be taught from, then publish -->
+    <aside class="flex-none border-t border-red-100 bg-white px-5 py-6 xl:w-[380px] xl:overflow-y-auto xl:border-l xl:border-t-0" aria-labelledby="rev-h">
+      <span class="badge badge-review">Needs review</span>
+      <h2 id="rev-h" class="mt-3 font-display text-[20px] font-bold leading-snug">NE235_L12_Xenon_Samarium.pdf</h2>
+      <p class="mt-1 text-[13.5px] text-slate-500">Uploaded by Priya Natarajan (TA) · 41 passages · 6 concepts found</p>
+
+      <h3 class="mt-5 text-[12px] font-semibold uppercase tracking-wider text-slate-500">Concepts it adds or extends</h3>
+      <div class="mt-2 flex flex-wrap gap-1.5 text-[13px]">
+        <span class="rounded-lg bg-teal-50 px-2 py-1 font-medium text-teal-700">Xenon-135 transients · new</span>
+        <span class="rounded-lg bg-teal-50 px-2 py-1 font-medium text-teal-700">Samarium-149 · new</span>
+        <span class="rounded-lg bg-slate-100 px-2 py-1 text-slate-700">Reactivity +3 passages</span>
+        <span class="rounded-lg bg-slate-100 px-2 py-1 text-slate-700">Decay heat +1</span>
+      </div>
+
+      <h3 class="mt-5 text-[12px] font-semibold uppercase tracking-wider text-slate-500">Extracted passages <span class="tabular font-normal normal-case tracking-normal">· 3 of 41</span></h3>
+      <ol class="mt-2 space-y-2 text-[13.5px] leading-relaxed text-slate-700">
+        <li class="rounded-xl border border-slate-200 p-3"><span class="font-mono text-[11px] text-slate-500">¶7 · p.4</span><br>Following a shutdown from equilibrium full power, Xe-135 concentration rises because I-135 continues to decay while burnout by neutron absorption has stopped. The peak occurs roughly 10 hours after shutdown.</li>
+        <li class="rounded-xl border border-slate-200 p-3"><span class="font-mono text-[11px] text-slate-500">¶8 · p.4</span><br>Iodine-135 has a half-life of about 6.6 hours; xenon-135 about 9.1 hours.</li>
+        <li class="rounded-xl border-2 border-amber-300 bg-amber-50 p-3"><span class="font-mono text-[11px] text-amber-700">¶23 · p.11 · low text quality</span><br>F i g . 6 . 3 X e n o n w o r t h v s . t i m e ( h r ) 0 2 4 6 8 1 0 …</li>
+      </ol>
+      <a href="#" class="mt-2 inline-flex min-h-[32px] items-center text-[13.5px] font-semibold text-red-700 hover:underline">See all 41 passages</a>
+
+      <fieldset class="mt-5 space-y-2 text-[14px]">
+        <legend class="text-[12px] font-semibold uppercase tracking-wider text-slate-500">Before publishing</legend>
+        <label class="flex min-h-[40px] items-start gap-3"><input type="checkbox" checked class="mt-0.5 h-5 w-5 accent-red-600">Passages read correctly (1 figure caption is garbled and will be skipped)</label>
+        <label class="flex min-h-[40px] items-start gap-3"><input type="checkbox" class="mt-0.5 h-5 w-5 accent-red-600">This is the current revision, not a draft</label>
+      </fieldset>
+      <div class="mt-5 flex gap-2">
+        <button class="btn btn-secondary">Keep private</button>
+        <button class="btn btn-primary flex-1">Publish to students</button>
+      </div>
+      <p class="mt-3 text-[12.5px] text-slate-500">Publishing makes these passages available to Ask, lessons, quizzes and review cards within a minute. You can unpublish at any time.</p>
+    </aside>
+  </div>
+</main>
+</body>
+</html>

@@ -1,0 +1,146 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CORA · Reactor operator training, with sources</title>
+<meta name="description" content="CORA turns published NE 235, reactor manual and NRC GFE material into short lessons, a cited AI tutor and adaptive quizzes.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body>
+<a class="skip-link" href="#main">Skip to content</a>
+<header class="sticky top-0 z-30 border-b border-red-100 bg-white/95 backdrop-blur">
+  <div class="mx-auto flex h-16 max-w-[1160px] items-center gap-6 px-4 sm:px-6">
+    <a href="landing.html" class="flex items-center gap-2.5" aria-label="CORA home">
+      <span class="grid h-8 w-8 place-items-center rounded-[10px] bg-red-600 font-display text-[17px] font-extrabold text-white" style="box-shadow:0 3px 0 #7f1d1d">C</span>
+      <span class="font-display text-[19px] font-bold tracking-tight">cora</span>
+    </a>
+    <nav class="hidden gap-6 text-[14px] text-slate-700 md:flex" aria-label="Page sections">
+      <a href="#modes" class="hover:text-red-700">How it teaches</a><a href="#sources" class="hover:text-red-700">Sources</a><a href="#library" class="hover:text-red-700">Library</a>
+    </nav>
+    <span class="flex-1"></span>
+    <a href="signin.html" class="btn btn-ghost btn-sm">Sign in</a>
+    <a href="join.html" class="btn btn-primary btn-sm hidden sm:inline-flex">Join your course</a>
+  </div>
+</header>
+
+<main id="main">
+  <!-- Hero: left-aligned claim + the actual product, not an illustration -->
+  <section class="bg-red-50">
+    <div class="mx-auto grid max-w-[1160px] items-center gap-10 px-4 py-12 sm:px-6 lg:grid-cols-[1fr_520px] lg:py-[80px]">
+      <div>
+        <p class="eyebrow">For NE 235 students and trainee operators</p>
+        <h1 class="mt-4 font-display text-[40px] font-extrabold leading-[1.02] tracking-tight sm:text-[56px]">Study reactor theory with a tutor that shows its work.</h1>
+        <p class="mt-5 max-w-[540px] text-[17px] leading-relaxed text-slate-700">CORA turns your course's published material (lecture notes, the reactor manual, the NRC GFE question bank) into short lessons, cited answers and quizzes that get harder as you get better.</p>
+        <div class="mt-8 flex flex-wrap gap-3">
+          <a href="join.html" class="btn btn-primary btn-lg">Join with your invite</a>
+          <a href="signin.html" class="btn btn-secondary btn-lg">Sign in</a>
+        </div>
+        <p class="mt-4 text-[13.5px] text-slate-500">Accounts are invite-only. Your instructor adds your school email.</p>
+      </div>
+
+      <!-- Product composite -->
+      <div class="relative" aria-label="Example of a CORA answer with a source citation">
+        <div class="rounded-[22px] border-2 border-red-100 bg-white p-5 shadow-[0_24px_48px_-24px_rgba(15,23,42,.25)]">
+          <p class="ml-auto w-fit max-w-[90%] rounded-[18px] rounded-br-md bg-slate-100 px-4 py-2.5 text-[14.5px]">What sets the −80 s period after a scram?</p>
+          <div class="mt-4 flex gap-3">
+            <span class="grid h-7 w-7 flex-none place-items-center rounded-[9px] bg-red-600 font-display text-[13px] font-extrabold text-white" aria-hidden="true">C</span>
+            <p class="text-[14.5px] leading-relaxed text-slate-700">The longest-lived delayed-neutron precursor group. Its ~55 s half-life means power can't fall faster than about −80 s once the prompt drop is over <span class="cite" aria-expanded="true">RTM ch.4 · ¶167</span>.</p>
+          </div>
+          <div class="passage mt-4 text-[13px]">“…the rate of power decrease is <mark>limited by the decay of the longest-lived precursor group</mark>, resulting in a period of approximately −80 seconds.”</div>
+          <div class="mt-4 flex flex-wrap gap-2">
+            <span class="btn btn-sm btn-secondary"><svg data-icon="bolt"></svg>Quiz me · 3</span>
+            <span class="btn btn-sm btn-secondary"><svg data-icon="book"></svg>Guide me</span>
+          </div>
+        </div>
+        <div class="absolute -bottom-8 right-4 hidden items-center gap-3 rounded-2xl border-2 border-emerald-300 bg-white px-4 py-3 shadow-lg sm:flex">
+          <span class="grid h-9 w-9 place-items-center rounded-full bg-emerald-600 text-white"><svg data-icon="check" data-stroke="2.6" class="h-5 w-5"></svg></span>
+          <span class="text-[13.5px]"><span class="block font-semibold">Reactor period</span><span class="tabular text-emerald-700">60% → 70% mastery</span></span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Three modes, demonstrated on one concept -->
+  <section id="modes" class="bg-white">
+    <div class="mx-auto max-w-[1160px] px-4 py-14 sm:px-6 lg:py-[80px]">
+      <p class="eyebrow">How it teaches</p>
+      <h2 class="mt-2 max-w-[640px] font-display text-[30px] font-bold leading-tight tracking-tight sm:text-[36px]">One concept, three ways in. Switch whenever you're stuck.</h2>
+      <p class="mt-3 max-w-[640px] text-[16px] text-slate-500">Every concept in the course works in all three modes. Nobody is sorted into a "type" of learner; what adapts is the difficulty, driven by what you actually get right.</p>
+
+      <div class="mt-10 grid gap-5 lg:grid-cols-3">
+        <article class="rounded-[20px] border-2 border-slate-200 p-5">
+          <p class="flex items-center gap-2 font-semibold"><span class="grid h-8 w-8 place-items-center rounded-lg bg-amber-50 text-amber-700"><svg data-icon="book" class="h-[18px] w-[18px]"></svg></span>Guide me</p>
+          <p class="mt-1 text-[14px] text-slate-500">Four short steps: idea, mechanism, application, check.</p>
+          <div class="mt-4 rounded-xl bg-slate-50 p-4">
+            <div class="seg" aria-hidden="true"><i class="done"></i><i class="done"></i><i class="on"></i><i></i></div>
+            <p class="mt-3 font-mono text-[15px]">τ ≈ (β̄ − ρ) / (λ·ρ)</p>
+            <p class="mt-2 text-[13.5px] text-slate-700">ρ = +0.001 gives τ ≈ 55 s, about 0.47 DPM on the startup-rate meter.</p>
+          </div>
+        </article>
+        <article class="rounded-[20px] border-2 border-slate-200 p-5">
+          <p class="flex items-center gap-2 font-semibold"><span class="grid h-8 w-8 place-items-center rounded-lg bg-red-50 text-red-700"><svg data-icon="chat" class="h-[18px] w-[18px]"></svg></span>Ask</p>
+          <p class="mt-1 text-[14px] text-slate-500">Talk it through. Every claim links to the passage behind it.</p>
+          <div class="mt-4 rounded-xl bg-slate-50 p-4 text-[13.5px] leading-relaxed text-slate-700">
+            <p class="font-medium text-slate-900">“Why use λ<sub>eff</sub> = 0.1 and not 0.08?”</p>
+            <p class="mt-2">For a positive insertion the short-lived groups dominate, so the effective constant is larger <span class="cite">NE235 L7 · s.22</span>.</p>
+          </div>
+        </article>
+        <article class="rounded-[20px] border-2 border-slate-200 p-5">
+          <p class="flex items-center gap-2 font-semibold"><span class="grid h-8 w-8 place-items-center rounded-lg bg-teal-50 text-teal-700"><svg data-icon="bolt" class="h-[18px] w-[18px]"></svg></span>Quiz me</p>
+          <p class="mt-1 text-[14px] text-slate-500">Questions picked for your level, graded instantly, explained with sources.</p>
+          <div class="mt-4 space-y-2 rounded-xl bg-slate-50 p-4 text-[13.5px]">
+            <p class="font-medium">Doubling ρ from 0.001 to 0.002 makes τ…</p>
+            <p class="rounded-lg border-2 border-slate-200 bg-white px-3 py-2">roughly half as long</p>
+            <p class="rounded-lg border-2 border-emerald-600 bg-emerald-50 px-3 py-2 font-medium text-emerald-800">less than half as long (≈23 s)</p>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- Traceability -->
+  <section id="sources" class="bg-red-50">
+    <div class="mx-auto grid max-w-[1160px] gap-10 px-4 py-14 sm:px-6 lg:grid-cols-2 lg:py-[80px]">
+      <div>
+        <p class="eyebrow">Sources</p>
+        <h2 class="mt-2 font-display text-[30px] font-bold leading-tight tracking-tight sm:text-[36px]">Every answer has a receipt.</h2>
+        <p class="mt-3 text-[16px] leading-relaxed text-slate-700">In nuclear training, "the AI said so" is not good enough. CORA only answers from material an instructor has reviewed and published, and it cites the exact passage. If the material doesn't cover your question, it tells you that instead of guessing.</p>
+      </div>
+      <ul class="space-y-3">
+        <li class="flex gap-4 rounded-2xl bg-white p-4"><span class="font-mono text-[13px] font-semibold text-red-700">01</span><div><p class="font-semibold">Instructors publish, students learn</p><p class="text-[14px] text-slate-500">Uploads stay private until an admin previews the extracted passages and publishes them.</p></div></li>
+        <li class="flex gap-4 rounded-2xl bg-white p-4"><span class="font-mono text-[13px] font-semibold text-red-700">02</span><div><p class="font-semibold">Citations you can open</p><p class="text-[14px] text-slate-500">Tap any citation to read the passage, its document and its page.</p></div></li>
+        <li class="flex gap-4 rounded-2xl bg-white p-4"><span class="font-mono text-[13px] font-semibold text-red-700">03</span><div><p class="font-semibold">Says "not in the material"</p><p class="text-[14px] text-slate-500">No source, no answer. Gaps go to your TA so the material gets better.</p></div></li>
+      </ul>
+    </div>
+  </section>
+
+  <section id="library" class="bg-white">
+    <div class="mx-auto max-w-[1160px] px-4 py-14 sm:px-6 lg:py-[80px]">
+      <p class="eyebrow">What's in the library this term</p>
+      <dl class="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4">
+        <div><dt class="text-[14px] text-slate-500">Published documents</dt><dd class="tabular font-display text-[40px] font-bold">26</dd></div>
+        <div><dt class="text-[14px] text-slate-500">Passages</dt><dd class="tabular font-display text-[40px] font-bold">314</dd></div>
+        <div><dt class="text-[14px] text-slate-500">Concepts on the path</dt><dd class="tabular font-display text-[40px] font-bold">24</dd></div>
+        <div><dt class="text-[14px] text-slate-500">GFE-style questions</dt><dd class="tabular font-display text-[40px] font-bold">180+</dd></div>
+      </dl>
+      <div class="mt-10 flex flex-wrap items-center justify-between gap-4 rounded-[20px] bg-slate-900 px-6 py-6 text-white">
+        <p class="font-display text-[22px] font-bold">Got an invite from your instructor?</p>
+        <a href="join.html" class="btn btn-primary btn-lg">Set up your account</a>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="border-t border-red-100 bg-white">
+  <div class="mx-auto flex max-w-[1160px] flex-wrap items-center justify-between gap-3 px-4 py-6 text-[13px] text-slate-500 sm:px-6">
+    <p>CORA, the Cognitive Operator Readiness Assistant</p>
+    <p>A study aid. Facility procedures and qualified instructors are the authority.</p>
+  </div>
+</footer>
+</body>
+</html>

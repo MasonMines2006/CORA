@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Reset password · CORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body class="bg-red-50">
+<main id="main" class="flex min-h-screen flex-col px-4 py-6 sm:px-10">
+  <a href="landing.html" class="flex items-center gap-2.5 self-start" aria-label="CORA home">
+    <span class="grid h-8 w-8 place-items-center rounded-[10px] bg-red-600 font-display text-[17px] font-extrabold text-white" style="box-shadow:0 3px 0 #7f1d1d">C</span>
+    <span class="font-display text-[19px] font-bold tracking-tight">cora</span>
+  </a>
+
+  <div class="mx-auto my-auto w-full max-w-[440px] py-10">
+    <nav class="mb-4 flex flex-wrap gap-1 text-[12.5px]" aria-label="Prototype states">
+      <a href="#forgot" class="rounded-md bg-white px-2 py-1 font-mono text-slate-500 ring-1 ring-slate-200">forgot</a>
+      <a href="#set" class="rounded-md bg-white px-2 py-1 font-mono text-slate-500 ring-1 ring-slate-200">reset link</a>
+      <a href="#change" class="rounded-md bg-white px-2 py-1 font-mono text-slate-500 ring-1 ring-slate-200">change (signed in)</a>
+    </nav>
+
+    <!-- 1. Forgot: admin-issued resets for now, so this explains who to ask -->
+    <section id="forgot" class="rounded-[22px] border-2 border-red-100 bg-white p-6 sm:p-8">
+      <span class="grid h-12 w-12 place-items-center rounded-2xl bg-red-50 text-red-600"><svg data-icon="key" class="h-6 w-6"></svg></span>
+      <h1 class="mt-4 font-display text-[28px] font-bold tracking-tight">Forgot your password?</h1>
+      <p class="mt-2 text-[15px] leading-relaxed text-slate-700">For now, your instructor or TA resets it for you. They'll send you a one-time link that works for 24 hours.</p>
+      <div class="mt-5 rounded-xl bg-slate-50 p-4 text-[14px]">
+        <p class="font-semibold">Course admins for NE 235</p>
+        <ul class="mt-2 space-y-1 text-slate-700"><li>Mason Mines · admin</li><li>Priya Natarajan · TA</li></ul>
+      </div>
+      <p class="mt-4 text-[13px] text-slate-500">Email resets are coming. When they arrive, this page will ask for your email instead.</p>
+      <a href="signin.html" class="btn btn-secondary btn-lg btn-block mt-6"><svg data-icon="left"></svg>Back to sign in</a>
+    </section>
+
+    <!-- 2. Arrived from an admin-issued reset link -->
+    <section id="set" class="hidden rounded-[22px] border-2 border-red-100 bg-white p-6 sm:p-8">
+      <h1 class="font-display text-[28px] font-bold tracking-tight">Choose a new password</h1>
+      <p class="mt-2 text-[15px] text-slate-700">For <span class="font-semibold">jreyes@university.edu</span>. Link issued by Priya Natarajan, expires in 23 h.</p>
+      <form class="mt-6 space-y-4" onsubmit="event.preventDefault(); location.href='signin.html'">
+        <div><label class="label" for="np">New password</label><input class="field" id="np" type="password" autocomplete="new-password" aria-describedby="np-hint"><p id="np-hint" class="hint">At least 12 characters. A short sentence works well.</p></div>
+        <button class="btn btn-primary btn-lg btn-block">Save and sign in</button>
+      </form>
+      <p class="mt-4 text-[13px] text-slate-500">This signs you out on other devices.</p>
+    </section>
+
+    <!-- 3. Signed-in change from Progress → Account -->
+    <section id="change" class="hidden rounded-[22px] border-2 border-red-100 bg-white p-6 sm:p-8">
+      <h1 class="font-display text-[28px] font-bold tracking-tight">Change password</h1>
+      <form class="mt-6 space-y-4" onsubmit="event.preventDefault(); location.href='progress.html'">
+        <div><label class="label" for="cp">Current password</label><input class="field" id="cp" type="password" autocomplete="current-password"></div>
+        <div><label class="label" for="cn">New password</label><input class="field" id="cn" type="password" autocomplete="new-password" aria-describedby="cn-hint"><p id="cn-hint" class="hint">At least 12 characters.</p></div>
+        <div class="flex gap-3"><a href="progress.html" class="btn btn-secondary btn-lg">Cancel</a><button class="btn btn-primary btn-lg flex-1">Update password</button></div>
+      </form>
+    </section>
+  </div>
+</main>
+<script>
+  function route() {
+    const id = (location.hash || '#forgot').slice(1);
+    ['forgot', 'set', 'change'].forEach((s) => document.getElementById(s).classList.toggle('hidden', s !== id));
+  }
+  addEventListener('hashchange', route); route();
+</script>
+</body>
+</html>

@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lesson · Reactor period · CORA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<!-- Focus mode: no sidebar, no tab bar. Lessons and quizzes take the whole screen. -->
+<body class="bg-white">
+<a class="skip-link" href="#main">Skip to lesson</a>
+
+<header class="sticky top-0 z-30 border-b border-red-100 bg-white/95 backdrop-blur">
+  <div class="mx-auto flex h-16 max-w-[1240px] items-center gap-4 px-4 sm:px-6">
+    <a href="path.html" class="grid h-11 w-11 flex-none place-items-center rounded-xl text-slate-500 hover:bg-slate-50" aria-label="Leave lesson and return to your path"><svg data-icon="x" class="h-6 w-6"></svg></a>
+    <div class="min-w-0 flex-1">
+      <div class="flex items-center justify-between gap-3">
+        <p class="truncate text-[14px] font-semibold">Reactor period <span class="font-normal text-slate-500">· Guided</span></p>
+        <p class="tabular flex-none text-[13px] text-slate-500">Step 3 of 4</p>
+      </div>
+      <div class="seg mt-2" role="progressbar" aria-label="Lesson progress" aria-valuemin="1" aria-valuemax="4" aria-valuenow="3"><i class="done"></i><i class="done"></i><i class="on"></i><i></i></div>
+    </div>
+    <a href="ask.html" class="btn btn-secondary btn-sm hidden md:inline-flex"><svg data-icon="chat"></svg>Switch to Ask</a>
+  </div>
+</header>
+
+<div class="mx-auto flex max-w-[1240px] gap-10 px-4 sm:px-6">
+  <main id="main" class="mx-auto w-full max-w-[680px] pb-40 pt-8 sm:pt-12">
+    <p class="eyebrow">Step 3 · Apply it</p>
+    <h1 class="mt-2 font-display text-[30px] font-bold leading-[1.12] tracking-tight sm:text-[38px]">What period does a small positive insertion give you?</h1>
+
+    <div class="prose-cora mt-6">
+      <p>When the reactivity you add is small compared with β̄<sub>eff</sub>, the prompt neutrons barely matter. The period is set by how fast the delayed-neutron precursors decay, so you can use the short form:</p>
+    </div>
+
+    <figure class="my-6 rounded-2xl border-2 border-slate-200 bg-white px-5 py-5 text-center" aria-label="Reactor period approximation: tau is approximately beta-bar-eff minus rho, over lambda-eff times rho">
+      <p class="font-mono text-[20px] font-medium tracking-tight sm:text-[24px]">τ ≈ (β̄<sub class="text-[0.6em]">eff</sub> − ρ) / (λ<sub class="text-[0.6em]">eff</sub> · ρ)</p>
+      <figcaption class="mt-2 text-[13px] text-slate-500">Valid while ρ ≪ β̄<sub>eff</sub>. Use λ<sub>eff</sub> ≈ 0.1 s⁻¹ for positive reactivity.</figcaption>
+    </figure>
+
+    <div class="prose-cora">
+      <p><strong>Worked example.</strong> Add ρ = +0.001 Δk/k with β̄<sub>eff</sub> = 0.0065:</p>
+    </div>
+    <ol class="my-3 space-y-2 rounded-2xl bg-red-50 px-5 py-4 font-mono text-[14.5px] text-slate-700">
+      <li><span class="mr-3 text-slate-500">1</span>τ ≈ (0.0065 − 0.001) / (0.1 × 0.001)</li>
+      <li><span class="mr-3 text-slate-500">2</span>τ ≈ 0.0055 / 0.0001 = <strong class="text-slate-900">55 s</strong></li>
+      <li><span class="mr-3 text-slate-500">3</span>SUR = 26.06 / τ ≈ <strong class="text-slate-900">0.47 DPM</strong></li>
+    </ol>
+    <div class="prose-cora mt-4">
+      <p>Power rises by a factor of <em>e</em> every 55 seconds, a little under half a decade per minute. That is the number the startup-rate meter shows you, and it is the arithmetic behind the SUR limits written into startup procedures.</p>
+    </div>
+
+    <figure class="mt-6">
+      <div class="flex items-center justify-between gap-3">
+        <p class="text-[12px] font-semibold uppercase tracking-wider text-slate-500">From the source</p>
+        <button type="button" class="cite" aria-label="Source 1: Reactor Theory Manual, chapter 4, passage 142">RTM ch.4 · ¶142</button>
+      </div>
+      <blockquote class="passage mt-2">“When the reactivity added is small compared with the delayed neutron fraction, the prompt term may be neglected, and the period is <mark>governed by the decay of the delayed neutron precursors</mark>.”</blockquote>
+      <figcaption class="mt-2 text-[12.5px] text-slate-500">Reactor Theory Manual (published by M. Mines, Oct 2) · sample passage</figcaption>
+    </figure>
+
+    <!-- Predict-before-reveal: a light retrieval prompt inside the lesson -->
+    <section class="mt-8 rounded-2xl border-2 border-amber-300 bg-amber-50 p-5" aria-labelledby="predict-h">
+      <p id="predict-h" class="text-[13px] font-semibold uppercase tracking-wider text-amber-700">Before you continue</p>
+      <p class="mt-1 font-semibold">If you doubled the insertion to ρ = +0.002, would the period roughly halve, or shrink by more than half?</p>
+      <div class="mt-3 flex flex-wrap gap-2" role="group" aria-label="Your prediction">
+        <button type="button" class="btn btn-secondary btn-sm" data-predict="a">About half</button>
+        <button type="button" class="btn btn-secondary btn-sm" data-predict="b">More than half</button>
+      </div>
+      <p class="mt-3 hidden text-[14.5px] text-slate-700" id="predict-out" aria-live="polite"><strong class="text-emerald-700">More than half.</strong> τ ≈ 0.0045 / 0.0002 ≈ 23 s. The numerator shrinks too, so the period falls faster than 1/ρ.</p>
+    </section>
+
+    <p class="mt-8 text-[13.5px] text-slate-500">Is something in this step wrong or unclear? <a href="#" class="font-medium text-red-700 underline-offset-2 hover:underline">Flag it for your TA</a></p>
+  </main>
+
+  <!-- Ask-about-this-step rail (desktop). On phones this is a bottom sheet behind the "Ask" button. -->
+  <aside class="sticky top-16 hidden h-[calc(100vh-64px)] w-[320px] flex-none flex-col border-l border-red-100 py-8 pl-6 xl:flex" aria-labelledby="ask-rail-h">
+    <h2 id="ask-rail-h" class="flex items-center gap-2 font-semibold"><svg data-icon="chat" class="h-5 w-5 text-red-600"></svg>Ask about this step</h2>
+    <p class="mt-1 text-[13.5px] text-slate-500">Answers stay inside this concept's 9 published passages.</p>
+    <div class="mt-4 space-y-2">
+      <a href="ask.html" class="block rounded-xl border border-slate-200 px-3 py-2.5 text-[14px] hover:border-red-200 hover:bg-red-50">Why can I drop the prompt term here?</a>
+      <a href="ask.html" class="block rounded-xl border border-slate-200 px-3 py-2.5 text-[14px] hover:border-red-200 hover:bg-red-50">What happens as ρ approaches β?</a>
+      <a href="ask.html" class="block rounded-xl border border-slate-200 px-3 py-2.5 text-[14px] hover:border-red-200 hover:bg-red-50">Why is λ<sub>eff</sub> smaller for negative reactivity?</a>
+    </div>
+    <form class="composer mt-auto flex items-end gap-2 p-2 pl-3" action="ask.html">
+      <label for="rail-ask" class="sr-only">Ask about this step</label>
+      <textarea id="rail-ask" rows="2" class="min-w-0 flex-1 py-1.5 text-[14px] placeholder:text-slate-500" placeholder="Ask anything about reactor period…"></textarea>
+      <button class="btn btn-primary btn-sm !min-h-[36px] !px-2.5" aria-label="Send"><svg data-icon="up" data-stroke="2.2"></svg></button>
+    </form>
+  </aside>
+</div>
+
+<!-- Sticky action bar: big tactile buttons, thumb-reachable on phones -->
+<div class="fixed inset-x-0 bottom-0 z-30 border-t-2 border-slate-100 bg-white pb-[env(safe-area-inset-bottom)]">
+  <div class="mx-auto flex max-w-[680px] items-center gap-3 px-4 py-4 xl:max-w-[1240px] xl:px-6">
+    <a href="#" class="btn btn-secondary btn-lg"><svg data-icon="left"></svg><span class="hidden sm:inline">Back</span><span class="sr-only sm:hidden">Back</span></a>
+    <a href="ask.html" class="btn btn-ghost btn-lg xl:hidden" aria-label="Ask about this step"><svg data-icon="chat"></svg><span class="hidden sm:inline">Ask</span></a>
+    <span class="flex-1"></span>
+    <a href="quiz.html" class="btn btn-primary btn-lg min-w-[160px] sm:min-w-[220px]">Continue</a>
+  </div>
+</div>
+
+<script>
+  document.querySelectorAll('[data-predict]').forEach((b) => b.addEventListener('click', () => {
+    document.getElementById('predict-out').classList.remove('hidden');
+    document.querySelectorAll('[data-predict]').forEach((x) => x.setAttribute('aria-pressed', x === b ? 'true' : 'false'));
+  }));
+</script>
+</body>
+</html>

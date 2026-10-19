@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Analytics · CORA Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdn.tailwindcss.com"></script><script src="assets/tw.js"></script>
+<link rel="stylesheet" href="assets/cora.css">
+<script src="assets/chrome.js" defer></script>
+</head>
+<body data-shell="admin" data-page="analytics">
+<a class="skip-link" href="#main">Skip to content</a>
+<main id="main" class="px-4 pb-10 pt-6 sm:px-8 lg:pt-8">
+  <div class="mx-auto max-w-[1080px]">
+    <div class="flex flex-wrap items-end justify-between gap-3">
+      <div><h1 class="font-display text-[28px] font-bold tracking-tight">Analytics</h1><p class="text-[14px] text-slate-500">NE 235 · Fall 2026 · 38 students</p></div>
+      <div class="mode" role="group" aria-label="Time range"><button type="button" aria-pressed="false">Today</button><button type="button" aria-pressed="true">7 days</button><button type="button" aria-pressed="false">Term</button></div>
+    </div>
+
+    <section class="mt-6 grid grid-cols-2 gap-3 lg:grid-cols-4" aria-label="Headline numbers">
+      <div class="panel p-4"><p class="text-[13px] text-slate-500">Active students</p><p class="tabular font-display text-[30px] font-bold">31 <span class="text-[14px] font-medium text-slate-500">/ 38</span></p></div>
+      <div class="panel p-4"><p class="text-[13px] text-slate-500">Questions asked</p><p class="tabular font-display text-[30px] font-bold">412</p></div>
+      <div class="panel p-4"><p class="text-[13px] text-slate-500">Quiz checks answered</p><p class="tabular font-display text-[30px] font-bold">1,946</p></div>
+      <div class="panel p-4"><p class="text-[13px] text-slate-500">Unanswerable from material</p><p class="tabular font-display text-[30px] font-bold text-red-700">17</p></div>
+    </section>
+
+    <div class="mt-6 grid gap-6 lg:grid-cols-2">
+      <section class="panel p-5" aria-labelledby="hard-h">
+        <h2 id="hard-h" class="font-semibold">Hardest concepts</h2>
+        <p class="text-[13px] text-slate-500">Class-wide % correct, lowest first. Worth a review in lecture.</p>
+        <ul class="mt-4 space-y-3 text-[14px]">
+          <li><div class="flex justify-between"><span>Moderator temperature coefficient</span><span class="tabular font-semibold text-red-700">41%</span></div><div class="bar mt-1"><span style="width:41%;background:#dc2626"></span></div></li>
+          <li><div class="flex justify-between"><span>Subcritical multiplication and 1/M</span><span class="tabular font-semibold text-red-700">48%</span></div><div class="bar mt-1"><span style="width:48%;background:#dc2626"></span></div></li>
+          <li><div class="flex justify-between"><span>Xenon-135 transients</span><span class="tabular font-semibold text-amber-700">57%</span></div><div class="bar mt-1"><span style="width:57%;background:#d97706"></span></div></li>
+          <li><div class="flex justify-between"><span>Reactor period</span><span class="tabular font-semibold text-amber-700">63%</span></div><div class="bar mt-1"><span style="width:63%;background:#d97706"></span></div></li>
+          <li><div class="flex justify-between"><span>Delayed neutron fraction (β)</span><span class="tabular font-semibold text-emerald-700">86%</span></div><div class="bar mt-1"><span style="width:86%;background:#059669"></span></div></li>
+        </ul>
+      </section>
+
+      <section class="panel p-5" aria-labelledby="gap-h">
+        <h2 id="gap-h" class="font-semibold">Questions the material couldn't answer</h2>
+        <p class="text-[13px] text-slate-500">CORA declined these because no published passage covered them. Each is a hint about what to upload.</p>
+        <ul class="mt-4 divide-y divide-slate-100 text-[14px]">
+          <li class="flex items-start gap-3 py-3"><span class="tabular w-6 flex-none font-mono text-[12.5px] font-semibold text-red-700">×6</span><span class="flex-1">What's the shutdown margin limit in Mode 3 at our plant?</span><span class="badge badge-teal">Tech specs</span></li>
+          <li class="flex items-start gap-3 py-3"><span class="tabular w-6 flex-none font-mono text-[12.5px] font-semibold text-red-700">×4</span><span class="flex-1">How does boron dilution show up on the 1/M plot during startup?</span><span class="badge badge-teal">1/M</span></li>
+          <li class="flex items-start gap-3 py-3"><span class="tabular w-6 flex-none font-mono text-[12.5px] font-semibold text-red-700">×3</span><span class="flex-1">Which trips are bypassed below P-7?</span><span class="badge badge-teal">Protection</span></li>
+        </ul>
+        <a href="admin.html" class="btn btn-sm btn-soft mt-2"><svg data-icon="upload"></svg>Upload material for these</a>
+      </section>
+
+      <section class="panel p-5 lg:col-span-2" aria-labelledby="flag-h">
+        <div class="flex items-baseline justify-between"><h2 id="flag-h" class="font-semibold">Flagged by students</h2><span class="tabular text-[13px] text-slate-500">3 open</span></div>
+        <div class="mt-3 overflow-x-auto"><table class="table min-w-[640px]">
+          <thead><tr><th>Where</th><th>Student note</th><th>Source</th><th></th></tr></thead>
+          <tbody>
+            <tr><td>Lesson · Reactor period, step 3</td><td>"λeff for negative reactivity isn't explained anywhere"</td><td class="font-mono text-[12.5px]">RTM ch.4 ¶142</td><td class="text-right"><button class="btn btn-sm btn-ghost">Open</button></td></tr>
+            <tr><td>Quiz · MTC, Q2</td><td>"Two answers look right at BOL"</td><td class="font-mono text-[12.5px]">NE235 L09 s.18</td><td class="text-right"><button class="btn btn-sm btn-ghost">Open</button></td></tr>
+          </tbody>
+        </table></div>
+      </section>
+    </div>
+  </div>
+</main>
+</body>
+</html>
