@@ -10,11 +10,16 @@
  */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { setAuthTokenGetter } from '../../API/Index';
-import { AuthApiError, getMe, logout, SessionResponse } from '../../API/authApi';
+import { AuthApiError, getMe, logout, SessionResponse, SessionUser as ApiUser } from '../../API/authApi';
 import { Session, SessionContext, SessionUser, signInPath } from '../../context/session';
 import { clearStoredSession, readStoredSession, writeStoredSession } from './tokenStore';
 
 type Status = 'loading' | 'signed-in' | 'signed-out';
+
+/** The server sends `name: null` for people without a name; screens expect it to be absent. */
+function toSessionUser(user: ApiUser): SessionUser {
+  return { id: user.id, email: user.email, role: user.role, name: user.name ?? undefined };
+}
 
 function sendTokenWithRequests(token: string | null) {
   setAuthTokenGetter(token ? () => Promise.resolve(token) : null);
@@ -37,7 +42,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
         if (cancelled) {
           return;
         }
-        setUser(me);
+        setUser(toSessionUser(me));
         setStatus('signed-in');
       })
       .catch((error) => {
@@ -60,7 +65,7 @@ export const SessionProvider: React.FC<{ children: React.ReactNode }> = ({ child
   const startSession = useCallback((response: SessionResponse, keepSignedIn: boolean) => {
     writeStoredSession(response, keepSignedIn);
     sendTokenWithRequests(response.token);
-    setUser(response.user);
+    setUser(toSessionUser(response.user));
     setStatus('signed-in');
   }, []);
 

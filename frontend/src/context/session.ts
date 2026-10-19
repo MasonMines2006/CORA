@@ -13,7 +13,7 @@ import type { SessionResponse } from '../API/authApi';
 
 export interface SessionUser {
   id?: number;
-  name?: string | null;
+  name?: string;
   email?: string;
   role?: string;
 }
