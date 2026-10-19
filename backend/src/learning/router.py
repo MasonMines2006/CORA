@@ -16,6 +16,7 @@ from src.learning.graph import (
     get_source_context,
     get_source_passages,
     get_suggested_concepts,
+    get_course_stats,
     list_concepts,
 )
 from src.learning.models import (
@@ -89,13 +90,14 @@ async def dashboard(learner: dict = Depends(get_learner)):
     """Return one cohesive home-screen view of course concepts and progress."""
     learner_id = _learner_id(learner)
     try:
-        graph, mastery_rows, review, last_lesson = await asyncio.gather(
+        graph, course, mastery_rows, review, last_lesson = await asyncio.gather(
             asyncio.to_thread(list_concepts, get_learning_graph(), 50),
+            asyncio.to_thread(get_course_stats, get_learning_graph()),
             asyncio.to_thread(list_mastery, learner_id),
             load_review_summary(learner_id),
             load_last_lesson(learner_id),
         )
-        return build_dashboard(graph, mastery_rows).model_copy(
+        return build_dashboard(graph, mastery_rows, course).model_copy(
             update={"review": review, "last_lesson": last_lesson}
         )
     except Exception as exc:

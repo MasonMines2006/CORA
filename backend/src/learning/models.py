@@ -36,7 +36,21 @@ class DashboardRecommendation(ConceptProgress):
     reason: str
 
 
+class CourseStats(BaseModel):
+    """Whole-course counts for Home, over published material only.
+
+    Counted directly in Neo4j rather than derived from the dashboard's concept
+    sample, which is truncated and would undercount documents and double-count
+    passages shared by several concepts.
+    """
+
+    documents: int = 0
+    passages: int = 0
+    concepts: int = 0
+
+
 class LearningDashboard(BaseModel):
+    # Every concept in the published course, not just the ones in `concepts`.
     total_concepts: int
     started_concepts: int
     mastered_concepts: int
@@ -46,6 +60,7 @@ class LearningDashboard(BaseModel):
     # Home's "cards due" card and "pick up where you left off" card.
     review: ReviewSummary = Field(default_factory=ReviewSummary)
     last_lesson: LastLesson | None = None
+    course: CourseStats = Field(default_factory=CourseStats)
 
 
 class SourcePassage(BaseModel):

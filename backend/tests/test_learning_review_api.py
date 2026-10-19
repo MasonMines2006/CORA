@@ -19,6 +19,7 @@ from fastapi.testclient import TestClient
 from src.auth import get_auth_settings
 from src.learning import review_router as review_router_module
 from src.learning import review_service
+from src.learning.models import CourseStats
 from src.learning.models import Concept, GeneratedFlashcard, GeneratedFlashcards
 from src.learning.flashcards import make_card_id
 from src.learning.review import DAY
@@ -339,6 +340,8 @@ class DashboardTests(ReviewApiTestCase):
             "src.learning.router",
             get_learning_graph=lambda: object(),
             list_concepts=lambda graph, limit: [fake_get_concept(None, "Reactivity")],
+            # Whole-course counts for a one-concept course.
+            get_course_stats=lambda graph: CourseStats(documents=1, passages=1, concepts=1),
         )
         patcher.start()
         self.addCleanup(patcher.stop)

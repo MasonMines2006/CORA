@@ -8,7 +8,7 @@ import os
 from functools import lru_cache
 from typing import TYPE_CHECKING
 
-from src.learning.models import Concept
+from src.learning.models import Concept, CourseStats
 from src.shared.common_fn import get_value_from_env
 from src.shared.published_corpus import published_document
 
@@ -229,6 +229,42 @@ RETURN coalesce(toString(entity.id), toString(entity.name), elementId(entity)) A
        [source IN sources WHERE source IS NOT NULL] AS sources
 LIMIT 1
 """
+
+
+# Whole-course counts for Home, all over published material only.
+#  - documents: published documents.
+#  - passages:  DISTINCT chunks, so a passage mentioning three concepts counts once.
+#  - concepts:  the same population `_LIST_CONCEPTS_QUERY` ranks (same document
+#               predicate, label filter and connectivity floor), just counted.
+# The concept count lives in its own CALL {} subquery so its MATCH does not
+# multiply the document rows above it.
+_COURSE_STATS_QUERY = """
+MATCH (document:Document)
+WHERE """ + published_document("document") + """
+OPTIONAL MATCH (chunk:Chunk)-[:PART_OF]->(document)
+WITH count(DISTINCT document) AS documents, count(DISTINCT chunk) AS passages
+CALL {
+  MATCH (entity:__Entity__)<-[:HAS_ENTITY]-(:Chunk)-[:PART_OF]->(source:Document)
+  WHERE """ + published_document("source") + """
+""" + _LABEL_FILTER_CLAUSE + """
+  WITH DISTINCT entity
+  WHERE COUNT { (entity)--() } >= $min_connectivity
+  RETURN count(entity) AS concepts
+}
+RETURN documents, passages, concepts
+"""
+
+
+def get_course_stats(graph: Neo4jGraph) -> CourseStats:
+    """Count the published course: documents, passages and listable concepts."""
+    rows = graph.query(
+        _COURSE_STATS_QUERY,
+        params={
+            "excluded_labels": sorted(excluded_entity_labels()),
+            "min_connectivity": min_concept_connectivity(),
+        },
+    )
+    return CourseStats(**rows[0]) if rows else CourseStats()
 
 
 def list_concepts(graph: Neo4jGraph, limit: int = 18) -> list[Concept]:

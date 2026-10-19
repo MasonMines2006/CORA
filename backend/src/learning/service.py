@@ -8,6 +8,7 @@ from src.learning.models import (
     ConceptRef,
     ConceptSuggestion,
     ConceptSuggestions,
+    CourseStats,
     DashboardRecommendation,
     LearningDashboard,
     Mastery,
@@ -105,9 +106,15 @@ def build_suggestions(items: list[dict]) -> ConceptSuggestions:
 
 
 def build_dashboard(
-    concepts: list[Concept], mastery_rows: dict[str, dict]
+    concepts: list[Concept],
+    mastery_rows: dict[str, dict],
+    course: CourseStats | None = None,
 ) -> LearningDashboard:
-    """Combine graph concepts with learner progress into the student home model."""
+    """Combine graph concepts with learner progress into the student home model.
+
+    `concepts` is a ranked sample (Home shows the top few). `course` carries the
+    real whole-course counts; without it, the sample is all we know.
+    """
     progress = [
         ConceptProgress(
             concept=concept,
@@ -145,8 +152,10 @@ def build_dashboard(
             else None
         )
 
+    course = course or CourseStats(concepts=len(progress))
     return LearningDashboard(
-        total_concepts=len(progress),
+        total_concepts=course.concepts,
+        course=course,
         started_concepts=len(started),
         mastered_concepts=len(mastered),
         average_mastery=average,
