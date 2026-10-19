@@ -52,7 +52,25 @@ Scope: DESIGN.md §10 Phases 0, 1 (Path only), 2, 3, and from Phase 4 the Progre
   - **The source drawer shows a real passage only when Ask is about a concept** (it uses `/learning/sources/{concept}` and the passage from that document). Otherwise it says the passage text isn't available yet. See Backend requests.
 - Known issues: in Ask, the first answer of a brand-new session is announced/animated normally; answers restored from storage appear instantly (by design).
 
+## Phase 3: Lesson, Quiz, Results, Review (done)
+
+- `quiz/quizModel.ts` (tested): reducer `answering → grading → feedback → results` (+ `gradeError` that keeps answers, `reset` for a new quiz); `keyToAction` (1–4 choose, Enter checks/continues, ignored while grading or on results); `masteryChange`, `shouldCelebrate` (only when the score rose: never flat or falling), `resultsHeadline`, `difficultyNote`.
+- `quiz/`: QuizPlayer (focus mode, option keys as `role=radio` in a `radiogroup`, difficulty chip "Medium · picked from your 60% mastery", "I don't know yet" → Ask, states: generating skeleton, not enough material (Guide/Ask instead), signed out, grading failed with retry), FeedbackSheet (emerald / red-50 footer, icon + words + letter fill), QuizResults (true delta headline, MasteryDelta bar with the 80% marker, Celebration burst only on a rise and off under reduced motion, correct + time tiles, every missed question with Talk it through / Re-read), `useQuizSession`.
+- `lesson/`: LessonPlayer (focus mode, `Step n of 4` + progressbar, markdown beats so formulas / worked examples in code fences get the red-50 block, quick check that reveals on tap with words, "Written from" source files, AskRail at ≥1280px, sticky Back / Ask / Continue → "Quiz me on it"), `useLesson` (saves progress on every step), states (writing skeleton, too few passages → Ask, signed out, failure → Retry/Ask), `lessonModel.ts` (tested).
+- `Student/loadError.ts` (tested): 409 → not enough material, 404 → not found, 401 → signed out.
+- ReviewSession re-skinned with the quiz chrome (segments or a bar past 12 cards, dark concept tag, display-type prompt, `.option` grade keys with intervals, kbd hints, All caught up). Logic and its tests unchanged.
+- StudentApp: lesson / quiz / results render in FocusLayout outside the shell; X returns to the screen you came from; lesson → quiz and quiz → results replace history so Back doesn't land on a graded quiz; Guide/Quiz sessions recorded in the sidebar; dashboard reloads after a quiz. Results after a refresh show an explanation and a link to Progress (no fake numbers). Retired ConceptHub, ConceptHubRail, ConceptLesson, StudentAssess, ConceptSources, ConceptNeighbourhoodGraph (+ tests). `conceptHubModel.ts` stays (Review uses `formatInterval`).
+- Checked in a browser as a guest: lesson shows the failure state with Retry / Ask instead (guest AI is off in this dev stack, so content generation 503s).
+- Commits: `cfcddf2`, `8a27940`, `0b065e3`, `fa62835`, `7ca2e1b`.
+- Results: `yarn test` 26 files / 182 tests green; `yarn build` passes; eslint clean.
+- Decisions:
+  - **Feedback after the last answer, not after each one.** `/learning/quiz/grade` grades the whole quiz once (a second call is a 409) and the answer key is never sent early, so per-question "Check" can't know the answer. The button says "Next question" / "Check answers", the first question says "You'll see how you did after the last question", and then each question gets its feedback sheet in turn. See Backend requests.
+  - **No streak tile on Results** and no "Added to your review cards" line: there is no streak data, and quiz grading doesn't itself create review cards.
+  - **Lesson "Flag it for your TA" left out**: no endpoint.
+
 ## Backend requests
 
 1. **Chat sources with passage text.** `/chat_bot` returns `info.sources` (filenames) and `info.nodedetails.chunkdetails` (`{id, score}` only). The source drawer needs, per chunk: document filename, chunk text, page/position. Either add those to `chunkdetails`, or add a learner-safe `GET /learning/passages/{chunk_id}` (published only). `/fetch_chunktext` and `/chunk_entities` are admin-only.
 2. **`/learning/sources/{concept}` passages have no `id`** although the frontend type says `id: string`. Harmless today; worth adding chunk ids so chat chunks and concept passages can be matched.
+3. **Per-question quiz checking.** For the immediate feedback in DESIGN.md 5.6: e.g. `POST /learning/quiz/{quiz_id}/check {question_id, selected_index}` → `{is_correct, correct_index, explanation}`, recording the answer, with mastery updated once at the end as today.
+4. **Lesson and quiz generation for guests** returns 503 "Learning content is temporarily unavailable" when no guest model is configured. The UI shows a retry; a distinct status or message (like chat's guest-unavailable 503) would let it say "sign in to use lessons" instead.
