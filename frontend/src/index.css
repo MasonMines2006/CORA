@@ -18,8 +18,19 @@
    tokens call for, generated no CSS at all and every card rendered flat. Declaring
    them here restores the standard scale; NDL's own shadows are untouched. */
 @theme {
-  /* `font-display` class: headings and numerals, per docs/artboards. Falls back to system sans offline. */
-  --font-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  /* Redesign fonts (docs/redesign/DESIGN.md 6.2). These are NEW names on purpose:
+     the NDL preset replaces theme.fontFamily (sans = "Public Sans", mono = "Fira Code"),
+     so `font-sans` / `font-mono` do NOT mean Plex in this app. Use
+     `font-display`, `font-body` and `font-code` instead. */
+  --font-display: 'Bricolage Grotesque', ui-sans-serif, system-ui, sans-serif;
+  --font-body: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-code: 'IBM Plex Mono', ui-monospace, SFMono-Regular, monospace;
+
+  /* Key-button edges (the solid "Duolingo" bottom edge) and floating surfaces. */
+  --shadow-key-red: 0 4px 0 #7f1d1d;
+  --shadow-key-slate: 0 3px 0 #e2e8f0;
+  --shadow-key-emerald: 0 4px 0 #065f46;
+  --shadow-float: 0 12px 32px -16px rgb(15 23 42 / 0.25);
   --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
   --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
   --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
@@ -43,4 +54,725 @@ body {
 
 .ndl-progress-bar-wrapper .ndl-header .ndl-heading::after{
   animation: none !important;
+}
+
+/* ------------------------------------------------------------------------
+   CORA redesign base + components (ported from docs/redesign/prototype/assets/cora.css).
+
+   Everything below lives in a cascade layer on purpose. Unlayered CSS beats
+   every Tailwind utility no matter how specific, so an unlayered `.btn` would
+   stop `className='btn btn-primary mt-4'` from ever getting its margin.
+   `components` sits under `utilities`, so a utility on the same element wins.
+   ------------------------------------------------------------------------ */
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  /* Set explicitly; `font-sans` is NDL's Public Sans, not Plex (see @theme above). */
+  body {
+    font-family: var(--font-body);
+  }
+  /* One focus style everywhere: 2px red-600 ring, offset so it never sits on a fill. */
+  :focus-visible {
+    outline: 2px solid #dc2626;
+    outline-offset: 2px;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    ::before,
+    ::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+@layer components {
+  /* Hex values are the stock Tailwind palette, written out because the
+     component layer can't use utility classes. */
+  :root {
+    --cora-red-50: #fef2f2;
+    --cora-red-100: #fee2e2;
+    --cora-red-200: #fecaca;
+    --cora-red-600: #dc2626;
+    --cora-red-700: #b91c1c;
+    --cora-red-900: #7f1d1d;
+    --cora-slate-50: #f8fafc;
+    --cora-slate-100: #f1f5f9;
+    --cora-slate-200: #e2e8f0;
+    --cora-slate-300: #cbd5e1;
+    --cora-slate-500: #64748b;
+    --cora-slate-700: #334155;
+    --cora-slate-900: #0f172a;
+    --cora-emerald-50: #ecfdf5;
+    --cora-emerald-300: #6ee7b7;
+    --cora-emerald-600: #059669;
+    --cora-emerald-700: #047857;
+    --cora-emerald-800: #065f46;
+    --cora-amber-50: #fffbeb;
+    --cora-amber-300: #fcd34d;
+    --cora-amber-700: #b45309;
+    --cora-teal-50: #f0fdfa;
+    --cora-teal-700: #0f766e;
+  }
+
+  .cora-root h1,
+  .cora-root h2,
+  .cora-root h3 {
+    text-wrap: balance;
+  }
+  .cora-root p,
+  .cora-root li {
+    text-wrap: pretty;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  .skip-link {
+    position: absolute;
+    left: 12px;
+    top: -48px;
+    z-index: 100;
+    background: var(--cora-slate-900);
+    color: #fff;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+    font-size: 14px;
+  }
+  .skip-link:focus {
+    top: 12px;
+  }
+
+  /* ---------- Buttons: tactile "key" buttons ---------- */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    min-height: 44px;
+    padding: 0 18px;
+    border-radius: 12px;
+    font-weight: 600;
+    font-size: 15px;
+    line-height: 1;
+    white-space: nowrap;
+    border: 2px solid transparent;
+    cursor: pointer;
+    user-select: none;
+    text-decoration: none;
+    transition-property: transform, box-shadow, background-color, border-color, color;
+    transition-duration: 120ms;
+    transition-timing-function: ease-out;
+  }
+  .btn svg {
+    width: 18px;
+    height: 18px;
+    flex: none;
+  }
+  .btn-lg {
+    min-height: 52px;
+    padding: 0 24px;
+    border-radius: 14px;
+    font-size: 16px;
+  }
+  .btn-sm {
+    min-height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+    font-size: 13px;
+  }
+  .btn-block {
+    width: 100%;
+  }
+  .btn-primary {
+    background: var(--cora-red-600);
+    color: #fff;
+    box-shadow: 0 4px 0 var(--cora-red-900);
+  }
+  .btn-primary:hover {
+    background: var(--cora-red-700);
+  }
+  .btn-primary:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--cora-red-900);
+  }
+  .btn-secondary {
+    background: #fff;
+    color: var(--cora-slate-900);
+    border-color: var(--cora-slate-200);
+    box-shadow: 0 3px 0 var(--cora-slate-200);
+  }
+  .btn-secondary:hover {
+    border-color: var(--cora-slate-300);
+    box-shadow: 0 3px 0 var(--cora-slate-300);
+  }
+  .btn-secondary:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--cora-slate-300);
+  }
+  .btn-soft {
+    background: var(--cora-red-50);
+    color: var(--cora-red-700);
+    border-color: var(--cora-red-100);
+  }
+  .btn-soft:hover {
+    border-color: var(--cora-red-200);
+  }
+  .btn-ghost {
+    background: transparent;
+    color: var(--cora-slate-700);
+  }
+  .btn-ghost:hover {
+    background: var(--cora-slate-50);
+  }
+  .btn-success {
+    background: var(--cora-emerald-600);
+    color: #fff;
+    box-shadow: 0 4px 0 var(--cora-emerald-800);
+  }
+  .btn-success:active {
+    transform: translateY(3px);
+    box-shadow: 0 1px 0 var(--cora-emerald-800);
+  }
+  .btn[disabled],
+  .btn[aria-disabled='true'] {
+    background: var(--cora-slate-100);
+    color: var(--cora-slate-500);
+    border-color: var(--cora-slate-200);
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .btn:active,
+    .node:active,
+    .option:active {
+      transform: none;
+    }
+  }
+
+  /* ---------- Surfaces ---------- */
+  .panel {
+    background: #fff;
+    border: 1px solid var(--cora-red-100);
+    border-radius: 16px;
+  }
+  .panel-quiet {
+    background: #fff;
+    border: 1px solid var(--cora-slate-200);
+    border-radius: 16px;
+  }
+  .eyebrow {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--cora-red-700);
+  }
+  .kbd {
+    font-family: var(--font-code);
+    font-size: 11px;
+    padding: 1px 6px;
+    border-radius: 6px;
+    border: 1px solid var(--cora-slate-200);
+    border-bottom-width: 2px;
+    color: var(--cora-slate-500);
+    background: #fff;
+  }
+
+  /* ---------- Mastery state chips (colour + word, never colour alone) ---------- */
+  .state {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+  }
+  .state::before {
+    content: '';
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .state-mastered {
+    background: var(--cora-emerald-50);
+    color: var(--cora-emerald-700);
+  }
+  .state-progress {
+    background: var(--cora-amber-50);
+    color: var(--cora-amber-700);
+  }
+  .state-new {
+    background: var(--cora-slate-100);
+    color: var(--cora-slate-500);
+  }
+
+  /* ---------- Citation chip ---------- */
+  .cite {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-family: var(--font-code);
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1;
+    padding: 3px 6px;
+    margin: 0 1px;
+    border-radius: 6px;
+    vertical-align: 1px;
+    color: var(--cora-red-700);
+    background: var(--cora-red-50);
+    border: 1px solid var(--cora-red-100);
+    cursor: pointer;
+    transition-property: background-color, border-color;
+    transition-duration: 120ms;
+  }
+  .cite:hover,
+  .cite[aria-expanded='true'] {
+    background: #fff;
+    border-color: var(--cora-red-600);
+  }
+  /* Expand the hit area to 24px+ without changing the visual size (WCAG 2.5.8). */
+  .cite::after {
+    content: '';
+    position: absolute;
+    inset: -7px -3px;
+  }
+
+  /* ---------- Learning path nodes ---------- */
+  .node {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 999px;
+    border: 0;
+    cursor: pointer;
+    flex: none;
+    transition-property: transform, box-shadow;
+    transition-duration: 120ms;
+  }
+  .node svg {
+    width: 28px;
+    height: 28px;
+  }
+  .node:active {
+    transform: translateY(3px);
+  }
+  .node-mastered {
+    background: var(--cora-emerald-600);
+    color: #fff;
+    box-shadow: 0 5px 0 var(--cora-emerald-800);
+  }
+  .node-progress {
+    background: #fff;
+    color: var(--cora-amber-700);
+    box-shadow:
+      0 5px 0 var(--cora-amber-300),
+      inset 0 0 0 3px var(--cora-amber-300);
+  }
+  .node-current {
+    background: var(--cora-red-600);
+    color: #fff;
+    box-shadow: 0 5px 0 var(--cora-red-900);
+  }
+  .node-new {
+    background: var(--cora-slate-100);
+    color: var(--cora-slate-500);
+    box-shadow: 0 5px 0 var(--cora-slate-300);
+  }
+  .node-current::before {
+    content: '';
+    position: absolute;
+    inset: -9px;
+    border-radius: 999px;
+    border: 3px solid var(--cora-red-200);
+    animation: cora-ring 2.4s ease-out infinite;
+  }
+  @keyframes cora-ring {
+    0% {
+      opacity: 1;
+      transform: scale(0.92);
+    }
+    80%,
+    100% {
+      opacity: 0;
+      transform: scale(1.12);
+    }
+  }
+
+  /* ---------- Quiz options ---------- */
+  .option {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    width: 100%;
+    text-align: left;
+    padding: 14px 16px;
+    border-radius: 14px;
+    background: #fff;
+    cursor: pointer;
+    border: 2px solid var(--cora-slate-200);
+    box-shadow: 0 3px 0 var(--cora-slate-200);
+    font-size: 15px;
+    line-height: 1.45;
+    color: var(--cora-slate-900);
+    transition-property: transform, box-shadow, border-color, background-color;
+    transition-duration: 120ms;
+  }
+  .option:hover {
+    border-color: var(--cora-slate-300);
+  }
+  .option:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 var(--cora-slate-200);
+  }
+  .option .letter {
+    flex: none;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 8px;
+    border: 2px solid var(--cora-slate-200);
+    font-family: var(--font-code);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cora-slate-500);
+  }
+  .option[aria-checked='true'] {
+    border-color: var(--cora-red-600);
+    background: var(--cora-red-50);
+    box-shadow: 0 3px 0 var(--cora-red-200);
+  }
+  .option[aria-checked='true'] .letter {
+    border-color: var(--cora-red-600);
+    color: var(--cora-red-700);
+  }
+  .option.is-correct {
+    border-color: var(--cora-emerald-600);
+    background: var(--cora-emerald-50);
+    box-shadow: 0 3px 0 var(--cora-emerald-300);
+  }
+  .option.is-correct .letter {
+    border-color: var(--cora-emerald-600);
+    background: var(--cora-emerald-600);
+    color: #fff;
+  }
+  .option.is-wrong {
+    border-color: var(--cora-red-600);
+    background: var(--cora-red-50);
+    box-shadow: 0 3px 0 var(--cora-red-200);
+  }
+  .option.is-wrong .letter {
+    border-color: var(--cora-red-600);
+    background: var(--cora-red-600);
+    color: #fff;
+  }
+  .option[disabled] {
+    cursor: default;
+  }
+
+  /* ---------- Progress bits ---------- */
+  .bar {
+    height: 8px;
+    border-radius: 999px;
+    background: var(--cora-slate-100);
+    overflow: hidden;
+  }
+  .bar > span {
+    display: block;
+    height: 100%;
+    border-radius: 999px;
+  }
+  .seg {
+    display: flex;
+    gap: 4px;
+  }
+  .seg > i {
+    flex: 1;
+    height: 6px;
+    border-radius: 999px;
+    background: var(--cora-slate-200);
+  }
+  .seg > i.on {
+    background: var(--cora-red-600);
+  }
+  .seg > i.done {
+    background: var(--cora-emerald-600);
+  }
+
+  /* ---------- Chat ---------- */
+  .composer {
+    border: 2px solid var(--cora-slate-200);
+    border-radius: 20px;
+    background: #fff;
+    box-shadow:
+      0 1px 2px rgb(15 23 42 / 0.04),
+      0 8px 24px -12px rgb(15 23 42 / 0.12);
+    transition-property: border-color;
+    transition-duration: 120ms;
+  }
+  .composer:focus-within {
+    border-color: var(--cora-red-600);
+  }
+  .composer textarea,
+  .composer input {
+    resize: none;
+    outline: none;
+    background: transparent;
+    border: 0;
+  }
+  .composer textarea:focus-visible,
+  .composer input:focus-visible {
+    outline: none;
+  }
+  .mode {
+    display: inline-flex;
+    padding: 3px;
+    background: var(--cora-slate-100);
+    border-radius: 12px;
+    gap: 2px;
+  }
+  .mode button {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 32px;
+    padding: 0 12px;
+    border-radius: 9px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--cora-slate-500);
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    white-space: nowrap;
+    transition-property: background-color, color, box-shadow;
+    transition-duration: 120ms;
+  }
+  .mode button svg {
+    width: 15px;
+    height: 15px;
+  }
+  .mode button[aria-pressed='true'] {
+    background: #fff;
+    color: var(--cora-slate-900);
+    box-shadow:
+      0 1px 0 var(--cora-slate-200),
+      0 1px 3px rgb(15 23 42 / 0.08);
+  }
+  .caret::after {
+    content: '';
+    display: inline-block;
+    width: 8px;
+    height: 1.1em;
+    margin-left: 2px;
+    vertical-align: -3px;
+    background: var(--cora-red-600);
+    animation: cora-blink 1s steps(2) infinite;
+  }
+  @keyframes cora-blink {
+    50% {
+      opacity: 0;
+    }
+  }
+
+  .prose-cora p {
+    margin: 0 0 12px;
+    line-height: 1.7;
+    font-size: 16px;
+    color: var(--cora-slate-700);
+  }
+  .prose-cora strong {
+    color: var(--cora-slate-900);
+    font-weight: 600;
+  }
+  .prose-cora ul,
+  .prose-cora ol {
+    margin: 0 0 12px;
+    padding-left: 20px;
+    color: var(--cora-slate-700);
+    line-height: 1.7;
+  }
+  .prose-cora ul {
+    list-style: disc;
+  }
+  .prose-cora ol {
+    list-style: decimal;
+  }
+  .prose-cora h1,
+  .prose-cora h2,
+  .prose-cora h3 {
+    margin: 16px 0 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: var(--cora-slate-900);
+  }
+  .prose-cora code {
+    font-family: var(--font-code);
+    font-size: 0.92em;
+  }
+  /* Fenced code in lessons is how formulas and worked examples arrive. */
+  .prose-cora pre {
+    margin: 16px 0;
+    padding: 14px 18px;
+    border-radius: 16px;
+    background: var(--cora-red-50);
+    font-family: var(--font-code);
+    font-size: 14.5px;
+    line-height: 1.6;
+    color: var(--cora-slate-700);
+    overflow-x: auto;
+    white-space: pre-wrap;
+  }
+  .prose-cora blockquote {
+    margin: 12px 0;
+    border-left: 3px solid var(--cora-red-600);
+    background: var(--cora-red-50);
+    padding: 10px 14px;
+    border-radius: 0 10px 10px 0;
+  }
+
+  /* Source drawer / passage quote */
+  .passage {
+    border-left: 3px solid var(--cora-red-600);
+    background: var(--cora-red-50);
+    padding: 12px 14px;
+    border-radius: 0 10px 10px 0;
+    font-size: 14px;
+    line-height: 1.65;
+    color: var(--cora-slate-700);
+  }
+  .passage mark {
+    background: #fff3c4;
+    color: inherit;
+    padding: 0 2px;
+    border-radius: 3px;
+  }
+
+  /* Entrance for new blocks: quiet and short. */
+  .enter {
+    animation: cora-enter 260ms ease-out both;
+  }
+  @keyframes cora-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+      filter: none;
+    }
+  }
+
+  /* Skeleton loading */
+  .skel {
+    background: linear-gradient(90deg, #f1f5f9 0%, #f8fafc 50%, #f1f5f9 100%);
+    background-size: 200% 100%;
+    animation: cora-shimmer 1.4s linear infinite;
+    border-radius: 8px;
+  }
+  @keyframes cora-shimmer {
+    to {
+      background-position: -200% 0;
+    }
+  }
+
+  .scroll-thin {
+    scrollbar-width: thin;
+    scrollbar-color: var(--cora-slate-200) transparent;
+  }
+
+  /* Form fields */
+  .field {
+    display: block;
+    width: 100%;
+    min-height: 48px;
+    padding: 0 14px;
+    border-radius: 12px;
+    border: 2px solid var(--cora-slate-200);
+    background: #fff;
+    font-size: 15px;
+    color: var(--cora-slate-900);
+    transition-property: border-color;
+    transition-duration: 120ms;
+  }
+  .field:focus {
+    outline: none;
+    border-color: var(--cora-red-600);
+  }
+  .field[aria-invalid='true'] {
+    border-color: var(--cora-red-600);
+    background: var(--cora-red-50);
+  }
+  /* Form text, used by the sign-in / join / reset screens. */
+  .label {
+    display: block;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--cora-slate-900);
+    margin-bottom: 6px;
+  }
+  .hint {
+    font-size: 13px;
+    color: var(--cora-slate-500);
+    margin-top: 6px;
+  }
+  .error-text {
+    font-size: 13px;
+    color: var(--cora-red-700);
+    margin-top: 6px;
+    font-weight: 500;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    padding: 3px 9px;
+    border-radius: 999px;
+    white-space: nowrap;
+  }
+  .badge::before {
+    content: '';
+    width: 6px;
+    height: 6px;
+    border-radius: 999px;
+    background: currentColor;
+  }
+  .badge-live {
+    background: var(--cora-emerald-50);
+    color: var(--cora-emerald-700);
+  }
+  .badge-review {
+    background: var(--cora-amber-50);
+    color: var(--cora-amber-700);
+  }
+  .badge-draft {
+    background: var(--cora-slate-100);
+    color: var(--cora-slate-500);
+  }
+  .badge-fail {
+    background: var(--cora-red-50);
+    color: var(--cora-red-700);
+  }
+  .badge-teal {
+    background: var(--cora-teal-50);
+    color: var(--cora-teal-700);
+  }
 }
