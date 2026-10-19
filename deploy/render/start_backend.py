@@ -28,33 +28,40 @@ def configure_neo4j() -> None:
     os.environ["NEO4J_URI"] = f"bolt://{neo4j_host}:7687"
 
 
+def model_key_for(model: str) -> str:
+    """The key CORA uses for an OpenAI model, e.g. "gpt-4.1-mini" -> "openai_gpt_4_1_mini".
+
+    backend/src/llm.py finds a model's settings by upper-casing its key and turning
+    "." into "_" (and nothing else). So the key must not contain "-": an env name
+    like LLM_MODEL_CONFIG_OPENAI_GPT-4_1_MINI can never be set.
+    """
+    return f"openai_{model}".lower().replace("-", "_").replace(".", "_")
+
+
 def configure_openai() -> None:
     api_key = os.environ.get("OPENAI_API_KEY")
     model = os.environ.get("OPENAI_MODEL", "gpt-4.1-mini")
     if not api_key:
         raise RuntimeError("OPENAI_API_KEY is required")
 
-    # get_llm() normalizes model names before looking up their configuration.
-    model_key = f"openai_{model}".upper().replace(".", "_").replace("-", "_")
-    os.environ[f"LLM_MODEL_CONFIG_{model_key}"] = f"{model},{api_key}"
-    os.environ.setdefault("LEARNING_MODEL", f"openai_{model}")
-    os.environ.setdefault("INGESTION_MODEL", f"openai_{model}")
-    os.environ.setdefault("DEFAULT_DIFFBOT_CHAT_MODEL", f"openai_{model}")
-    os.environ.setdefault("GRAPH_CLEANUP_MODEL", f"openai_{model}")
-
-
-def configure_temporary_auth0() -> None:
-    """Keep the current branch deployable until in-house auth replaces Auth0."""
-    domain = os.environ.get("AUTH0_DOMAIN", "").strip().rstrip("/")
-    if domain and not os.environ.get("AUTH0_ISSUER"):
-        os.environ["AUTH0_ISSUER"] = f"https://{domain}/"
+    model_key = model_key_for(model)
+    # The settings line get_llm() reads: "<model name>,<api key>".
+    os.environ[f"LLM_MODEL_CONFIG_{model_key.upper()}"] = f"{model},{api_key}"
+    # Every feature uses this one model unless the dashboard sets something else.
+    for setting in ("LEARNING_MODEL", "LEARNER_CHAT_MODEL", "INGESTION_MODEL", "DEFAULT_DIFFBOT_CHAT_MODEL",
+                    "GRAPH_CLEANUP_MODEL"):
+        os.environ.setdefault(setting, model_key)
+    # Guests (no login): off unless the dashboard says otherwise. GUEST_USES_OPENAI=true
+    # puts them on this paid model; GUEST_LLM_MODEL=guest_free plus a
+    # LLM_MODEL_CONFIG_GUEST_FREE line puts them on a free provider (see docs/DEPLOYMENT.md).
+    if os.environ.get("GUEST_USES_OPENAI", "").strip().lower() == "true":
+        os.environ.setdefault("GUEST_LLM_MODEL", model_key)
 
 
 def main() -> None:
     configure_postgres()
     configure_neo4j()
     configure_openai()
-    configure_temporary_auth0()
 
     port = os.environ.get("PORT", "10000")
     workers = os.environ.get("WEB_CONCURRENCY", "1")

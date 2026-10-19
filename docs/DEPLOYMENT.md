@@ -62,11 +62,11 @@ Required gates:
    shared Git history without coordinating with every active checkout.
 2. Replace the rejected OpenAI key. Test only the status code from `GET /v1/models`; never
    print the key.
-3. Confirm the deployment commit includes the guest-model tier (merged into
-   `demo/friday-readiness` as `deee0f9`) and configure its provider variables. Without that
-   code, guest AI calls can still use the paid OpenAI path.
-4. Finish or deliberately retain the current Auth0 setup. The present branch still needs
-   Auth0 values; the planned in-house auth work will replace them.
+3. ~~Guest-model tier~~ Included (`deee0f9`). Guests use the paid OpenAI model
+   (`GUEST_USES_OPENAI=true` in `render.yaml`) until a free provider is configured. See
+   "Guest AI" below.
+4. ~~Auth0~~ Replaced by CORA's own email + password sign-in (`backend/src/local_auth`).
+   No Auth0 values are needed. Render generates `CORA_JWT_SECRET`.
 5. Run backend tests, frontend tests, and the frontend production build on the exact commit
    that will become `production`.
 6. Decide which approved course documents may leave the laptop. The cloud Neo4j database
@@ -81,13 +81,13 @@ last step.
 2. In Render, choose **New → Blueprint** and connect
    `MasonMines2006/CORA-test`.
 3. Select the `production` branch and the root `render.yaml` file.
-4. Supply the prompted secrets:
-   - `OPENAI_API_KEY` for `cora-api`
-   - `AUTH0_DOMAIN` for `cora-api` while Auth0 is still present
-   - `VITE_AUTH0_DOMAIN` and `VITE_AUTH0_CLIENT_ID` for `cora-web` while Auth0 is still present
+4. Supply the one prompted secret: `OPENAI_API_KEY` for `cora-api`. Paste it into Render's
+   form yourself. Never commit it or paste it into chat.
 5. Review the resources and monthly estimate, then deploy the Blueprint.
-6. If Auth0 is retained temporarily, add the new `cora-web` URL to Auth0's allowed callback,
-   logout, and web-origin lists. The callback path is `/callback`.
+6. Create the first admin. In the Render dashboard, open `cora-api` → **Shell** and run:
+   `python -m src.local_auth.create_invite you@school.edu --role admin`
+   Open the printed link (it points at the `cora-web` URL), choose a password, and you're in.
+   Invite everyone else from **Admin → Users**.
 
 Render generates and shares the Neo4j password internally. It also supplies the private
 Postgres connection string. Neither secret belongs in Git.
@@ -101,6 +101,23 @@ It contains CPU-only PyTorch, OCR tools, LibreOffice, document parsers, and the 
 embedding model. A first build or a cold rebuild will therefore take several minutes; do
 not remove those packages without checking the ingestion formats CORA still promises to
 support.
+
+## Guest AI
+
+Guests (no sign-in) get AI through `GUEST_LLM_MODEL`. The start script
+(`deploy/render/start_backend.py`) sets it to the paid OpenAI model while
+`GUEST_USES_OPENAI=true`, capped at `GUEST_CHAT_HOURLY_LIMIT` questions per guest per hour.
+
+To make guests free with Groq (Mason creates the account at console.groq.com):
+
+1. In `cora-api` → **Environment**, add a secret
+   `LLM_MODEL_CONFIG_GUEST_FREE` = `llama-3.1-8b-instant,https://api.groq.com/openai/v1,<groq key>`
+   (check Groq's current model list).
+2. Add `GUEST_LLM_MODEL` = `guest_free`. An explicit value beats `GUEST_USES_OPENAI`.
+3. Save. Render redeploys the API.
+
+To switch guest AI off entirely, set `GUEST_USES_OPENAI=false` and remove `GUEST_LLM_MODEL`.
+Guests then get a polite "sign in to continue" instead of a paid model.
 
 ## Seed the public course
 
@@ -155,7 +172,17 @@ The Blueprint deliberately includes a small but important baseline:
 - The frontend sends basic clickjacking, MIME-sniffing, referrer, and browser-permission
   headers.
 
+In-house auth adds: argon2id passwords, invite-only sign-up, 5-try / 15-minute lockout,
+per-address limits on sign-in and links, and bearer tokens (not cookies, so open CORS doesn't
+expose sessions to other sites).
+
+Known limits:
+- `WEB_CONCURRENCY=1` keeps the in-memory rate limits exact. With more workers, move them to
+  Postgres.
+- Behind Render's proxy, every request shares one address for those limits. The budgets are
+  generous for that reason. Trusting `X-Forwarded-For` would make them spoofable, so it is off.
+- Logout doesn't revoke a token server-side; tokens expire (8 hours, or 14 days with
+  "Keep me signed in").
+
 Before broad public use, add CI-gated deploys, restrict backend CORS to the public frontend,
-add login and guest rate limits from the auth/model-tier work, automate database backups,
-and add monitoring/alerts. If in-house auth uses cookies, correct CORS and cookie settings
-are a launch blocker, not an optional hardening task.
+automate database backups, and add monitoring/alerts.

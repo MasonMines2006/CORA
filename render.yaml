@@ -29,11 +29,6 @@ services:
         value: local,youtube,wiki,s3,web
       - key: VITE_LLM_MODELS_PROD
         value: openai_gpt_4.1_mini
-      # Temporary until the in-house auth branch replaces Auth0.
-      - key: VITE_AUTH0_DOMAIN
-        sync: false
-      - key: VITE_AUTH0_CLIENT_ID
-        sync: false
     headers:
       - path: /*
         name: X-Frame-Options
@@ -97,11 +92,23 @@ services:
         value: gpt-4.1-mini
       - key: OPENAI_API_KEY
         sync: false
-      # Temporary until the in-house auth branch replaces Auth0.
-      - key: AUTH0_DOMAIN
-        sync: false
-      - key: AUTH0_AUDIENCE
-        value: https://api.cora.com
+      # In-house sign-in (backend/src/local_auth). Render generates a random secret
+      # once and keeps it; changing it signs everyone out.
+      - key: CORA_JWT_SECRET
+        generateValue: true
+      # Where invite and reset links point (python -m src.local_auth.create_invite).
+      - key: FRONTEND_URL
+        fromService:
+          name: cora-web
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      # Guests (no login) use the paid OpenAI model, capped per guest per hour.
+      # To make guests free: add LLM_MODEL_CONFIG_GUEST_FREE and GUEST_LLM_MODEL=guest_free
+      # in the dashboard (docs/DEPLOYMENT.md). Set this to "false" to switch guest AI off.
+      - key: GUEST_USES_OPENAI
+        value: "true"
+      - key: GUEST_CHAT_HOURLY_LIMIT
+        value: "10"
       - key: EMBEDDING_MODEL
         value: sentence_transformer
       - key: IS_EMBEDDING
