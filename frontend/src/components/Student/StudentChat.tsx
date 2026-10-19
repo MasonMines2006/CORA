@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSession } from '../../context/session';
 import { useMessageContext } from '../../context/UserMessages';
 import { useCredentials } from '../../context/UserCredentials';
 import Chatbot from '../ChatBot/Chatbot';
@@ -20,7 +20,7 @@ interface StudentChatProps {
 const StudentChat: React.FC<StudentChatProps> = ({ externalPrompt, onExternalPromptConsumed }) => {
   const { clearHistoryData, messages, setMessages, setClearHistoryData, isDeleteChatLoading } = useMessageContext();
   const { setUserCredentials, setConnectionStatus, connectionStatus, setShowDisconnectButton } = useCredentials();
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useSession();
   const { setchatModes } = useFileContext();
   const [suggestedPrompts, setSuggestedPrompts] = useState<string[]>([]);
   const [pendingPrompt, setPendingPrompt] = useState<string>('');
