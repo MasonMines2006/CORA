@@ -61,6 +61,7 @@ from src.learning import router as learning_router
 from src.learning.review_router import router as review_router
 from src.learning.review_store import ensure_review_tables
 from src.publication import router as publication_router
+from src import dev_auth
 from src.publication import publication_fingerprint
 from src.user_store import close_pool, ensure_learning_tables
 
@@ -142,6 +143,8 @@ def _init_user_store():
     ensure_users_table()
     ensure_learning_tables()
     ensure_review_tables()
+    # Logs a loud warning if the local-dev login shortcut is switched on.
+    dev_auth.log_startup_status()
 
 
 @app.on_event("shutdown")

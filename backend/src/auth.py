@@ -6,6 +6,7 @@ from uuid import UUID
 import requests
 from fastapi import Depends, HTTPException, Request, status
 from jose import jwt
+from src import dev_auth
 from src.shared.common_fn import get_value_from_env
 from src.user_store import (
     consume_guest_chat_quota,
@@ -95,6 +96,13 @@ def get_bearer_token(request: Request) -> str:
 # --- FastAPI dependencies ---
 
 def get_current_user(request: Request, settings: AuthSettings = Depends(get_auth_settings)) -> dict:
+    # Local-dev login shortcut. Returns None when the request has no X-Dev-User
+    # header, and raises 401 when it has one but dev login is switched off.
+    # See src/dev_auth.py for the two switches that must both be on.
+    dev_user = dev_auth.resolve_dev_user(request)
+    if dev_user is not None:
+        return dev_user
+
     token = get_bearer_token(request)
     payload = verify_jwt_token(token, settings)
     auth0_sub = payload.get("sub")
@@ -109,7 +117,9 @@ def get_current_user(request: Request, settings: AuthSettings = Depends(get_auth
 def get_learner(request: Request, settings: AuthSettings = Depends(get_auth_settings)) -> dict:
     """Resolve either a verified Auth0 user or a scoped anonymous learner."""
     auth_header: Optional[str] = request.headers.get("Authorization")
-    if auth_header:
+    # A dev-login header is handled like a token: get_current_user accepts it or
+    # rejects it with 401. It never falls through to guest mode.
+    if auth_header or dev_auth.has_dev_header(request):
         user = get_current_user(request, settings)
         return {**user, "learner_id": user["auth0_sub"]}
 

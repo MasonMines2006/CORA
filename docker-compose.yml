@@ -23,6 +23,11 @@ services:
       - POSTGRES_DB=${POSTGRES_DB-cora_users}
       - POSTGRES_USER=${POSTGRES_USER-cora}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-cora}
+      # The local-dev login shortcut (backend/src/dev_auth.py) must never run here.
+      # These are hard-coded, not ${...}, so neither backend/.env (env_file) nor a
+      # shell variable can switch it on: `environment:` wins over `env_file:`.
+      - APP_ENV=production
+      - DEV_AUTH_BYPASS=false
     container_name: backend
     extra_hosts:
       - host.docker.internal:host-gateway

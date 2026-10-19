@@ -49,6 +49,13 @@ services:
       - POSTGRES_DB=${POSTGRES_DB-cora_users}
       - POSTGRES_USER=${POSTGRES_USER-cora}
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD-cora}
+      # Local-dev login shortcut (backend/src/dev_auth.py). It needs BOTH lines.
+      # APP_ENV=development is set only here, never in docker-compose.yml.
+      # DEV_AUTH_BYPASS is OFF unless you opt in when starting the stack:
+      #   DEV_AUTH_BYPASS=true docker compose -f docker-compose.dev.yml up -d --force-recreate backend
+      # While it is on, anyone who can reach ports 8000/8080 can act as admin.
+      - APP_ENV=development
+      - DEV_AUTH_BYPASS=${DEV_AUTH_BYPASS-false}
     container_name: backend-dev
     extra_hosts:
       - host.docker.internal:host-gateway
