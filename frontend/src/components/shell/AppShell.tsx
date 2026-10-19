@@ -7,6 +7,8 @@ import TabBar from './TabBar';
 import { SessionSummary } from './types';
 
 interface AppShellProps extends SidebarProps {
+  /** Ask fills the screen and handles the tab bar itself, so it gets no bottom padding. */
+  fullHeight?: boolean;
   children: ReactNode;
 }
 
@@ -15,7 +17,7 @@ interface AppShellProps extends SidebarProps {
  * a bottom tab bar and a slide-in menu below that (DESIGN.md 3.2, 4.2).
  * Lessons and quizzes use FocusLayout instead, with no chrome at all.
  */
-const AppShell = ({ children, ...sidebar }: AppShellProps) => {
+const AppShell = ({ children, fullHeight = false, ...sidebar }: AppShellProps) => {
   const [isMenuOpen, setMenuOpen] = useState(false);
 
   // Anything picked in the mobile menu should also close it.
@@ -44,9 +46,13 @@ const AppShell = ({ children, ...sidebar }: AppShellProps) => {
         <Sidebar {...sidebar} />
       </aside>
       <div className='min-w-0 flex-1'>
-        <MobileTopBar isMenuOpen={isMenuOpen} onOpenMenu={() => setMenuOpen(true)} onHome={() => sidebar.onNavigate('path')} />
+        <MobileTopBar
+          isMenuOpen={isMenuOpen}
+          onOpenMenu={() => setMenuOpen(true)}
+          onHome={() => sidebar.onNavigate('path')}
+        />
         {/* pb-24 clears the fixed tab bar on phones so the last card is never hidden behind it. */}
-        <main id='main' tabIndex={-1} className='pb-24 outline-none lg:pb-0'>
+        <main id='main' tabIndex={-1} className={`outline-none lg:pb-0 ${fullHeight ? '' : 'pb-24'}`}>
           {children}
         </main>
       </div>
