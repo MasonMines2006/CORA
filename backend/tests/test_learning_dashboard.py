@@ -1,6 +1,6 @@
 import unittest
 
-from src.learning.models import Concept
+from src.learning.models import Concept, CourseStats
 from src.learning.service import build_dashboard
 
 
@@ -60,6 +60,24 @@ class LearningDashboardTests(unittest.TestCase):
 
         self.assertEqual(dashboard.review.model_dump(), {"due_count": 0, "new_count": 0})
         self.assertIsNone(dashboard.last_lesson)
+
+    def test_total_concepts_is_the_course_count_not_the_sample_size(self):
+        # Home loads only the top concepts. Its "N concepts" must still be the
+        # whole published course, not the length of that sample (which capped at
+        # 50 and printed "50 concepts" for a course with 1,231).
+        sample = [concept("Reactivity", 50), concept("Criticality", 40)]
+        course = CourseStats(documents=17, passages=282, concepts=1231)
+
+        dashboard = build_dashboard(sample, {}, course)
+
+        self.assertEqual(dashboard.total_concepts, 1231)
+        self.assertEqual(dashboard.course.model_dump(), {"documents": 17, "passages": 282, "concepts": 1231})
+        self.assertEqual(len(dashboard.concepts), 2)
+
+    def test_without_course_stats_total_falls_back_to_the_list(self):
+        dashboard = build_dashboard([concept("Reactivity", 50)], {})
+
+        self.assertEqual(dashboard.total_concepts, 1)
 
 
 if __name__ == "__main__":
