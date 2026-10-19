@@ -22,7 +22,7 @@ from sse_starlette.sse import EventSourceResponse
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.types import ASGIApp, Receive, Scope, Send
 
-from src.QA_integration import QA_RAG, clear_chat_history
+from src.QA_integration import CHAT_ERROR_MESSAGE, QA_RAG, clear_chat_history
 from src.api_response import create_api_response
 from src.chunkid_entities import get_entities_from_chunkids
 from src.communities import create_communities
@@ -496,14 +496,11 @@ async def chat_bot(
         logger.log_struct(json_obj, "INFO")
         
         return create_api_response('Success',data=result)
-    except Exception as e:
-        job_status = "Failed"
-        message="Unable to get chat response"
-        error_message = str(e)
-        logging.exception(f'Exception in chat bot:{error_message}')
-        # Raw errors can name settings and providers; only staff see them.
-        public_error = error_message if can_read_unpublished(user["role"]) else None
-        return create_api_response(job_status, message=message, error=public_error,data=mode)
+    except Exception:
+        # Raw errors can quote part of an API key and name internals, so the full
+        # exception goes to the server log only. Staff read it there too.
+        logging.exception('Exception in chat bot')
+        return create_api_response("Failed", message=CHAT_ERROR_MESSAGE, error=CHAT_ERROR_MESSAGE, data=mode)
     finally:
         gc.collect()
 
@@ -606,12 +603,11 @@ async def clear_chat_bot(
         json_obj = {'api_name':'clear_chat_bot', 'db_url':credentials.uri, 'userName':credentials.userName, 'database':credentials.database, 'session_id':session_id, 'logging_time': formatted_time(datetime.now(timezone.utc)), 'elapsed_api_time':f'{elapsed_time:.2f}','email':credentials.email}
         logger.log_struct(json_obj, "INFO")
         return create_api_response('Success',data=result)
-    except Exception as e:
-        job_status = "Failed"
-        message="Unable to clear chat History"
-        error_message = str(e)
-        logging.exception(f'Exception in chat bot:{error_message}')
-        return create_api_response(job_status, message=message, error=error_message)
+    except Exception:
+        # Full exception in the server log only; see chat_bot above.
+        logging.exception('Exception in clear chat bot')
+        message = "Unable to clear chat history"
+        return create_api_response("Failed", message=message, error=message)
     finally:
         gc.collect()
             
