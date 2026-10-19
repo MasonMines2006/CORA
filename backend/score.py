@@ -62,7 +62,12 @@ from src.learning.review_router import router as review_router
 from src.learning.review_store import ensure_review_tables
 from src.publication import router as publication_router
 from src import dev_auth
-from src.publication import publication_fingerprint
+from src.publication import (
+    can_read_unpublished,
+    learner_chat_scope,
+    publication_fingerprint,
+    published_session_id,
+)
 from src.user_store import close_pool, ensure_learning_tables
 
 load_dotenv()
@@ -436,25 +441,24 @@ async def chat_bot(
     logging.info(f"QA_RAG called at {datetime.now()}")
     qa_rag_start_time = time.time()
     try:
-        # Students and guests use the published-only vector retrieval path.
+        # Students, TAs and guests use the published-only vector retrieval path.
         # The upstream graph/community modes can traverse unpublished entities.
-        if user["role"] not in ALLOWED_ADMIN_ROLES:
-            mode = "vector"
-            document_names = "[]"
+        is_learner = not can_read_unpublished(user["role"])
+        mode, document_names = learner_chat_scope(user["role"], mode, document_names)
         if mode == "graph":
             graph = Neo4jGraph(url=credentials.uri, username=credentials.userName, password=credentials.password, database=credentials.database, sanitize=True, refresh_schema=True)
         else:
             graph = create_graph_database_connection(credentials)
         client_session_id = session_id or str(uuid4())
-        if user["role"] not in ALLOWED_ADMIN_ROLES:
+        if is_learner:
             # Old conversation summaries can mention a source that has since
             # been unpublished. Keep each published-corpus revision separate.
-            session_id = f"{client_session_id.split(':pub:', 1)[0]}:pub:{publication_fingerprint(graph)}"
+            session_id = published_session_id(client_session_id, publication_fingerprint(graph))
         
         graphDb_data_Access = graphDBdataAccess(graph)
         write_access = graphDb_data_Access.check_account_access(database=credentials.database)
         result = await asyncio.to_thread(QA_RAG, graph=graph, model=model, question=question, document_names=document_names, session_id=session_id, mode=mode, write_access=write_access, email=credentials.email, uri=credentials.uri)
-        if user["role"] not in ALLOWED_ADMIN_ROLES:
+        if is_learner:
             result["session_id"] = client_session_id
 
         total_call_time = time.time() - qa_rag_start_time

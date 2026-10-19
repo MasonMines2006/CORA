@@ -14,10 +14,51 @@ from pydantic import BaseModel, Field
 
 from src.auth import require_role
 from src.learning.graph import get_learning_graph
+from src.shared.constants import CHAT_VECTOR_MODE
+from src.shared.published_corpus import published_document
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/admin/materials", tags=["admin materials"])
-admin_only = require_role(["admin", "test_full"])
+
+# Only these roles may see draft material, anywhere. Everyone else -- students,
+# TAs, guests, and any role added later -- is held to the published corpus. It
+# is an allowlist on purpose: an unknown role fails closed.
+PUBLICATION_ADMIN_ROLES = ("admin", "test_full")
+admin_only = require_role(list(PUBLICATION_ADMIN_ROLES))
+
+# The one Chat mode whose retrieval query is filtered to published documents
+# (VECTOR_SEARCH_QUERY). The graph and community modes walk entities and
+# communities that unpublished documents also feed, so learners never get them.
+LEARNER_CHAT_MODE = CHAT_VECTOR_MODE
+_SESSION_REVISION_MARKER = ":pub:"
+
+
+def can_read_unpublished(role: str | None) -> bool:
+    """True only for roles allowed to see draft, failed or retired material."""
+    return role in PUBLICATION_ADMIN_ROLES
+
+
+def learner_chat_scope(role: str | None, mode: str | None, document_names: str | None) -> tuple[str | None, str | None]:
+    """Return the (mode, document_names) a Chat request may actually use.
+
+    Learners get published-only vector retrieval over the whole published
+    corpus, whatever they asked for. Selecting documents by name is an admin
+    tool, so a learner's list is dropped rather than trusted.
+    """
+    if can_read_unpublished(role):
+        return mode, document_names
+    return LEARNER_CHAT_MODE, "[]"
+
+
+def published_session_id(client_session_id: str, fingerprint: str) -> str:
+    """Key a learner's chat history to one revision of the published corpus.
+
+    Old turns can quote a source that has since been unpublished, and the LLM
+    reads them back as context. A new revision therefore starts a new history.
+    Any marker the client sent is stripped so it cannot pick a revision.
+    """
+    base = client_session_id.split(_SESSION_REVISION_MARKER, 1)[0]
+    return f"{base}{_SESSION_REVISION_MARKER}{fingerprint}"
 
 
 class MaterialAction(BaseModel):
@@ -86,16 +127,18 @@ def _query(query: str, params: dict | None = None) -> list[dict]:
     return get_learning_graph().query(query, params=params or {})
 
 
+_PUBLISHED_FINGERPRINT_QUERY = """
+MATCH (document:Document)
+WHERE """ + published_document("document") + """
+RETURN document.fileName AS file_name,
+       toString(document.publishedAt) AS published_at
+ORDER BY file_name
+"""
+
+
 def publication_fingerprint(graph) -> str:
     """Separate chat histories whenever the visible document set changes."""
-    rows = graph.query("""
-        MATCH (document:Document)
-        WHERE document.status = 'Completed'
-          AND document.publicationStatus = 'published'
-        RETURN document.fileName AS file_name,
-               toString(document.publishedAt) AS published_at
-        ORDER BY file_name
-    """)
+    rows = graph.query(_PUBLISHED_FINGERPRINT_QUERY)
     visible = "\n".join(f"{row['file_name']}:{row['published_at']}" for row in rows)
     return hashlib.sha256(visible.encode("utf-8")).hexdigest()[:16]
 
