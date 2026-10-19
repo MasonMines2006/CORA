@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { LearningQuiz } from '../../API/Index';
 import { ModeActions } from '../shell/types';
 import FocusLayout from '../shell/FocusLayout';
@@ -37,6 +37,13 @@ const CAPITALISED = { easy: 'Easy', medium: 'Medium', hard: 'Hard' } as const;
 const QuizPlayer = ({ conceptId, onClose, onAsk, onGuide, onLoaded, onFinished, onSignIn }: QuizPlayerProps) => {
   const { load, quiz, state, dispatch, startedAt, regenerate } = useQuizSession(conceptId);
   const question = quiz?.questions[state.index];
+  // When the question changes, move focus to it so keyboard and screen-reader users start there.
+  const questionHeading = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (state.index > 0 || state.phase === 'feedback') {
+      questionHeading.current?.focus();
+    }
+  }, [state.index, state.phase]);
 
   useEffect(() => {
     if (quiz) {
@@ -54,7 +61,16 @@ const QuizPlayer = ({ conceptId, onClose, onAsk, onGuide, onLoaded, onFinished, 
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (!question || isTyping(event.target) || event.metaKey || event.ctrlKey || event.altKey) {
+      if (!question || isTyping(event.target) || event.metaKey || event.ctrlKey || event.altKey || event.repeat) {
+        return;
+      }
+      // Enter on a focused button (the X, "I don't know yet") must press that button, not check the quiz.
+      const { target } = event;
+      const isOnButton =
+        target instanceof HTMLElement &&
+        target.closest('button, a') !== null &&
+        target.getAttribute('role') !== 'radio';
+      if (event.key === 'Enter' && isOnButton) {
         return;
       }
       const action = keyToAction(event.key, state, question.options.length);
@@ -174,6 +190,8 @@ const QuizPlayer = ({ conceptId, onClose, onAsk, onGuide, onLoaded, onFinished, 
               </span>
             </div>
             <h1
+              ref={questionHeading}
+              tabIndex={-1}
               id='question'
               className='mt-5 font-display text-[24px] font-bold leading-[1.25] tracking-tight sm:text-[28px]'
             >

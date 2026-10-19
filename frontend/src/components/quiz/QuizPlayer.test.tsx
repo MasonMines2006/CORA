@@ -115,6 +115,15 @@ describe('QuizPlayer', () => {
     expect(props.onGuide).toHaveBeenCalledWith('period');
   });
 
+  it('leaves Enter to a focused button instead of checking the quiz', async () => {
+    renderPlayer();
+    await screen.findByRole('radiogroup');
+    fireEvent.keyDown(document, { key: '1' });
+    const close = screen.getByRole('button', { name: 'End quiz and return to your path' });
+    fireEvent.keyDown(close, { key: 'Enter' });
+    expect(screen.getByText('1 / 2')).toBeInTheDocument();
+  });
+
   it('routes "I don’t know yet" to Ask about the question', async () => {
     const props = renderPlayer();
     await screen.findByRole('radiogroup');
