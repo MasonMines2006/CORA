@@ -7,7 +7,6 @@ import os
 import time
 from datetime import datetime, timezone
 from typing import List, Optional
-from uuid import uuid4
 from pydantic import BaseModel
 
 import uvicorn
@@ -62,6 +61,7 @@ from src.learning.review_router import router as review_router
 from src.learning.review_store import ensure_review_tables
 from src.publication import router as publication_router
 from src import dev_auth
+from src.chat_sessions import clean_client_session_id, owned_session_id
 from src.publication import (
     can_read_unpublished,
     learner_chat_scope,
@@ -428,6 +428,21 @@ async def post_processing(credentials: Neo4jCredentials = Depends(get_neo4j_cred
     finally:
         gc.collect()
                 
+def chat_history_key(user: dict, client_session_id: str, graph) -> str:
+    """Where this caller's chat history for `client_session_id` is stored.
+
+    The key is owned by the verified learner (see src/chat_sessions.py), so one
+    person can never read or clear another's history by reusing their id. Learners
+    (students, TAs, guests) also get one history per published-corpus revision:
+    old turns can quote a source that has since been unpublished, and the LLM
+    reads them back as context.
+    """
+    key = owned_session_id(user["learner_id"], client_session_id)
+    if not can_read_unpublished(user["role"]):
+        key = published_session_id(key, publication_fingerprint(graph))
+    return key
+
+
 @app.post("/chat_bot")
 async def chat_bot(
     credentials: Neo4jCredentials = Depends(get_server_neo4j_credentials), user=Depends(get_chat_learner),
@@ -443,23 +458,20 @@ async def chat_bot(
     try:
         # Students, TAs and guests use the published-only vector retrieval path.
         # The upstream graph/community modes can traverse unpublished entities.
-        is_learner = not can_read_unpublished(user["role"])
         mode, document_names = learner_chat_scope(user["role"], mode, document_names)
         if mode == "graph":
             graph = Neo4jGraph(url=credentials.uri, username=credentials.userName, password=credentials.password, database=credentials.database, sanitize=True, refresh_schema=True)
         else:
             graph = create_graph_database_connection(credentials)
-        client_session_id = session_id or str(uuid4())
-        if is_learner:
-            # Old conversation summaries can mention a source that has since
-            # been unpublished. Keep each published-corpus revision separate.
-            session_id = published_session_id(client_session_id, publication_fingerprint(graph))
-        
+        # The browser's id is only a label; the real key is owned by this learner.
+        client_session_id = clean_client_session_id(session_id)
+        session_id = chat_history_key(user, client_session_id, graph)
+
         graphDb_data_Access = graphDBdataAccess(graph)
         write_access = graphDb_data_Access.check_account_access(database=credentials.database)
         result = await asyncio.to_thread(QA_RAG, graph=graph, model=model, question=question, document_names=document_names, session_id=session_id, mode=mode, write_access=write_access, email=credentials.email, uri=credentials.uri)
-        if is_learner:
-            result["session_id"] = client_session_id
+        # Hand back the browser's own id, never the internal storage key.
+        result["session_id"] = client_session_id
 
         total_call_time = time.time() - qa_rag_start_time
         logging.info(f"Total Response time is  {total_call_time:.2f} seconds")
@@ -563,9 +575,16 @@ async def clear_chat_bot(
 ):
     """Clear chat history for a given session."""
     try:
+        if not session_id:
+            return create_api_response("Failed", message="session_id is required")
         start = time.time()
         graph = create_graph_database_connection(credentials)
-        result = await asyncio.to_thread(clear_chat_history,graph=graph,session_id=session_id)
+        client_session_id = clean_client_session_id(session_id)
+        # Same key the chat route wrote to, so a learner clears exactly their own
+        # history and can never reach anyone else's.
+        history_key = chat_history_key(user, client_session_id, graph)
+        result = await asyncio.to_thread(clear_chat_history, graph=graph, session_id=history_key)
+        result = {**result, "session_id": client_session_id}
         end = time.time()
         elapsed_time = end - start
         json_obj = {'api_name':'clear_chat_bot', 'db_url':credentials.uri, 'userName':credentials.userName, 'database':credentials.database, 'session_id':session_id, 'logging_time': formatted_time(datetime.now(timezone.utc)), 'elapsed_api_time':f'{elapsed_time:.2f}','email':credentials.email}
