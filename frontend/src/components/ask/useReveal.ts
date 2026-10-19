@@ -22,7 +22,7 @@ export const useReveal = (text: string, animate: boolean) => {
   const [shown, setShown] = useState(animate && !prefersInstant() ? 0 : text.length);
 
   useEffect(() => {
-    if (!animate || prefersInstant()) {
+    if (!animate || prefersInstant() || text.length === 0) {
       setShown(text.length);
       return undefined;
     }
