@@ -26,7 +26,7 @@ from starlette.requests import Request
 
 import score
 from src import auth, dev_auth
-from src.auth import get_auth_settings
+from src.local_auth import store as local_auth_store
 
 ENABLED_ENV = {"DEV_AUTH_BYPASS": "true", "APP_ENV": "development"}
 DEV_ENV_KEYS = ("DEV_AUTH_BYPASS", "APP_ENV")
@@ -57,9 +57,6 @@ def fake_set_user_role(auth0_sub, email, role):
 class DevAuthHttpTests(unittest.TestCase):
     def setUp(self):
         self.app = score.app
-        # Auth0 settings are not needed for the dev path; stub them so the test
-        # does not depend on AUTH0_* values in backend/.env.
-        self.app.dependency_overrides[get_auth_settings] = lambda: object()
         self.addCleanup(self.app.dependency_overrides.clear)
         self.client = TestClient(self.app)
 
@@ -68,7 +65,8 @@ class DevAuthHttpTests(unittest.TestCase):
         self.addCleanup(upsert_patch.stop)
 
     def login_as(self, role: str):
-        return self.client.post("/auth/login", headers={"X-Dev-User": role})
+        # GET /auth/me answers "who am I?", so it shows which identity dev login gave us.
+        return self.client.get("/auth/me", headers={"X-Dev-User": role})
 
     def use_env(self, **env: str):
         env_patch = patch.dict(os.environ, env_without_dev_flags(**env), clear=True)
@@ -121,7 +119,7 @@ class DevAuthHttpTests(unittest.TestCase):
 
                 self.assertEqual(response.status_code, 200)
                 body = response.json()
-                self.assertEqual(body["data"]["role"], role)
+                self.assertEqual(body["role"], role)
                 self.upsert.assert_called_with(f"dev|{role}", f"{role}@dev.cora.local", role)
 
     def test_enabled_unknown_role_is_rejected(self):
@@ -132,15 +130,17 @@ class DevAuthHttpTests(unittest.TestCase):
                 self.assertEqual(self.login_as(role).status_code, 401)
 
     def test_enabled_roles_are_enforced_by_require_role(self):
-        # GET /users is TA-or-admin only. A dev student must still be refused.
+        # GET /admin/users is admin-only. Dev students and TAs must still be refused.
         self.use_env(**ENABLED_ENV)
 
-        with patch.object(score, "list_users", return_value=[]):
-            student = self.client.get("/users", headers={"X-Dev-User": "student"})
-            ta = self.client.get("/users", headers={"X-Dev-User": "ta"})
+        with patch.object(local_auth_store, "list_users", return_value=[]):
+            student = self.client.get("/admin/users", headers={"X-Dev-User": "student"})
+            ta = self.client.get("/admin/users", headers={"X-Dev-User": "ta"})
+            admin = self.client.get("/admin/users", headers={"X-Dev-User": "admin"})
 
         self.assertEqual(student.status_code, 403)
-        self.assertEqual(ta.status_code, 200)
+        self.assertEqual(ta.status_code, 403)
+        self.assertEqual(admin.status_code, 200)
 
 
 class DevAuthLearnerTests(unittest.TestCase):
@@ -153,7 +153,7 @@ class DevAuthLearnerTests(unittest.TestCase):
 
     def test_enabled_dev_user_becomes_learner(self):
         with patch.dict(os.environ, env_without_dev_flags(**ENABLED_ENV), clear=True):
-            learner = auth.get_learner(request_with_headers(**{"X-Dev-User": "student"}), settings=object())
+            learner = auth.get_learner(request_with_headers(**{"X-Dev-User": "student"}))
 
         self.assertEqual(learner["learner_id"], "dev|student")
         self.assertEqual(learner["role"], "student")
@@ -165,7 +165,7 @@ class DevAuthLearnerTests(unittest.TestCase):
         headers = {"X-Dev-User": "admin", "X-Guest-Id": str(uuid4())}
         with patch.dict(os.environ, env_without_dev_flags(), clear=True):
             with self.assertRaises(HTTPException) as raised:
-                auth.get_learner(request_with_headers(**headers), settings=object())
+                auth.get_learner(request_with_headers(**headers))
 
         self.assertEqual(raised.exception.status_code, 401)
 

@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, useCallback, useEffect } from 'react';
 import { Menu, Typography, IconButton, Avatar } from '@neo4j-ndl/react';
 import { ChevronDownIconOutline } from '@neo4j-ndl/react/icons';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSession } from '../../context/session';
 import { getTokenLimits, TokenLimitsResponse } from '../../services/TokenLimits';
 import { useCredentials } from '../../context/UserCredentials';
 import { isNeo4jUser } from '../../utils/Utils';
@@ -12,7 +12,7 @@ export default function Profile() {
   const [isLoadingTokens, setIsLoadingTokens] = useState<boolean>(false);
   const [tokenError, setTokenError] = useState<string | null>(null);
   const iconbtnRef = useRef<HTMLButtonElement | null>(null);
-  const { user, isAuthenticated, isLoading, logout } = useAuth0();
+  const { user, isAuthenticated, isLoading, signOut } = useSession();
   const { userCredentials, connectionStatus } = useCredentials();
 
   const fetchTokenLimits = useCallback(async () => {
@@ -109,11 +109,11 @@ export default function Profile() {
       {
         title: 'Logout',
         onClick: () => {
-          logout({ logoutParams: { returnTo: `${window.location.origin}/readonly` } });
+          signOut();
         },
       },
     ];
-  }, [tokenLimits, isLoadingTokens, tokenError, fetchTokenLimits, logout, user?.email]);
+  }, [tokenLimits, isLoadingTokens, tokenError, fetchTokenLimits, signOut, user?.email]);
 
   const handleClick = () => {
     setShowOpen(true);

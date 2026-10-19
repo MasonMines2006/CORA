@@ -1,101 +1,41 @@
+"""Who is making this request?
+
+Three kinds of caller:
+- A signed-in person, sending `Authorization: Bearer <CORA session token>`.
+  CORA issues these itself after an email + password sign-in (src/local_auth).
+- Local development, sending `X-Dev-User: student|ta|admin` (src/dev_auth.py,
+  off unless two switches are both on).
+- An anonymous guest, sending `X-Guest-Id: <uuid4>` (learning routes and Chat only).
+
+Every signed-in user dict carries `auth0_sub`: the person's stable id used as the
+learner id across CORA. The name is a leftover from Auth0; local accounts have
+ids like `cora|<uuid>`.
+"""
+
 import logging
-from functools import lru_cache
 from typing import Optional
 from uuid import UUID
 
-import requests
 from fastapi import Depends, HTTPException, Request, status
-from jose import jwt
-from src import dev_auth
-from src.shared.common_fn import get_value_from_env
-from src.user_store import (
-    consume_guest_chat_quota,
-    ensure_users_table,
-    get_user_role,
-    list_users,
-    set_role_by_email,
-    set_user_role,
-    upsert_user,
-)
 
-JWT_ALGORITHMS = ["RS256"]
+from src import dev_auth
+from src.local_auth.service import user_from_session_token
+from src.shared.common_fn import get_value_from_env
+from src.user_store import consume_guest_chat_quota, ensure_users_table  # noqa: F401  (re-exported for score.py)
 
 logger = logging.getLogger(__name__)
-
-
-class AuthSettings:
-    domain: str
-    audience: str
-    issuer: str
-
-    def __init__(self) -> None:
-        self.domain = get_value_from_env("AUTH0_DOMAIN", default_value=None, data_type=str)
-        self.audience = get_value_from_env("AUTH0_AUDIENCE", default_value=None, data_type=str)
-        self.issuer = get_value_from_env("AUTH0_ISSUER", default_value=None, data_type=str)
-        if not all([self.domain, self.audience, self.issuer]):
-            raise RuntimeError("Auth0 configuration is missing. Please set AUTH0_DOMAIN, AUTH0_AUDIENCE, AUTH0_ISSUER")
-
-
-def get_auth_settings() -> AuthSettings:
-    return AuthSettings()
-
-
-@lru_cache(maxsize=1)
-def _jwks_cache(issuer: str) -> dict:
-    jwks_url = f"{issuer}.well-known/jwks.json"
-    response = requests.get(jwks_url, timeout=5)
-    response.raise_for_status()
-    return response.json()
-
-
-def _find_signing_key(jwks: dict, kid: Optional[str]) -> Optional[dict]:
-    return next((k for k in jwks.get("keys", []) if k.get("kid") == kid), None)
-
-
-def verify_jwt_token(token: str, settings: AuthSettings) -> dict:
-    try:
-        unverified_header = jwt.get_unverified_header(token)
-        kid = unverified_header.get("kid")
-
-        key = _find_signing_key(_jwks_cache(settings.issuer), kid)
-        if not key:
-            # kid not found could mean Auth0 rotated its signing key since we
-            # cached the JWKS - refetch once before giving up, instead of
-            # 401-ing every request until the process restarts.
-            _jwks_cache.cache_clear()
-            key = _find_signing_key(_jwks_cache(settings.issuer), kid)
-        if not key:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token header")
-
-        payload = jwt.decode(
-            token,
-            key,
-            algorithms=JWT_ALGORITHMS,
-            audience=settings.audience,
-            issuer=settings.issuer,
-            options={"verify_at_hash": False},
-        )
-        return payload
-    except HTTPException:
-        raise
-    except Exception as exc:  # broad by design to return 401 on any failure
-        logger.error("JWT verification failed: %s", exc)
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token") from exc
 
 
 def get_bearer_token(request: Request) -> str:
     auth_header: Optional[str] = request.headers.get("Authorization")
     if not auth_header or not auth_header.lower().startswith("bearer "):
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Authorization header missing")
-    return auth_header.split(" ", 1)[1]
-
-
-# --- User directory (PostgreSQL) ---
+    return auth_header.split(" ", 1)[1].strip()
 
 
 # --- FastAPI dependencies ---
 
-def get_current_user(request: Request, settings: AuthSettings = Depends(get_auth_settings)) -> dict:
+def get_current_user(request: Request) -> dict:
     # Local-dev login shortcut. Returns None when the request has no X-Dev-User
     # header, and raises 401 when it has one but dev login is switched off.
     # See src/dev_auth.py for the two switches that must both be on.
@@ -103,24 +43,25 @@ def get_current_user(request: Request, settings: AuthSettings = Depends(get_auth
     if dev_user is not None:
         return dev_user
 
-    token = get_bearer_token(request)
-    payload = verify_jwt_token(token, settings)
-    auth0_sub = payload.get("sub")
-    email = payload.get("email")
-    if not auth0_sub:
-        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User id not found in token")
-    default_role = get_value_from_env("DEFAULT_ROLE", default_value="student", data_type=str)
-    role = upsert_user(auth0_sub, email, default_role)
-    return {"auth0_sub": auth0_sub, "email": email, "role": role, "token_payload": payload}
+    user = user_from_session_token(get_bearer_token(request))
+    if user is None:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired session")
+    return {
+        "auth0_sub": user["subject"],
+        "user_id": user["id"],
+        "email": user["email"],
+        "name": user["name"],
+        "role": user["role"],
+    }
 
 
-def get_learner(request: Request, settings: AuthSettings = Depends(get_auth_settings)) -> dict:
-    """Resolve either a verified Auth0 user or a scoped anonymous learner."""
+def get_learner(request: Request) -> dict:
+    """Resolve either a signed-in user or a scoped anonymous learner."""
     auth_header: Optional[str] = request.headers.get("Authorization")
     # A dev-login header is handled like a token: get_current_user accepts it or
     # rejects it with 401. It never falls through to guest mode.
     if auth_header or dev_auth.has_dev_header(request):
-        user = get_current_user(request, settings)
+        user = get_current_user(request)
         return {**user, "learner_id": user["auth0_sub"]}
 
     raw_guest_id = request.headers.get("X-Guest-Id", "").strip().lower()
@@ -141,9 +82,9 @@ def get_learner(request: Request, settings: AuthSettings = Depends(get_auth_sett
     return {"learner_id": f"guest:{guest_uuid}", "role": "guest", "email": None}
 
 
-def get_chat_learner(request: Request, settings: AuthSettings = Depends(get_auth_settings)) -> dict:
+def get_chat_learner(request: Request) -> dict:
     """Resolve a learner and enforce the public guest Chat cost boundary."""
-    learner = get_learner(request, settings)
+    learner = get_learner(request)
     if learner["role"] != "guest":
         return learner
 

@@ -66,7 +66,7 @@ import { showErrorToast, showNormalToast } from '../utils/Toasts';
 import { ThemeWrapperContext } from '../context/ThemeWrapper';
 import BreakDownPopOver from './BreakDownPopOver';
 import { InformationCircleIconOutline } from '@neo4j-ndl/react/icons';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSession } from '../context/session';
 import React from 'react';
 
 let onlyfortheFirstRender = true;
@@ -90,7 +90,7 @@ const FileTable: ForwardRefRenderFunction<ChildRef, FileTableProps> = (props, re
   const [copyRow, setCopyRow] = useState<boolean>(false);
   const islargeDesktop = useMediaQuery(`(min-width:1440px )`);
   const tableRef = useRef(null);
-  const { isAuthenticated } = useAuth0();
+  const { isAuthenticated } = useSession();
   const { updateStatusForLargeFiles } = useServerSideEvent(
     (inMinutes, time, fileName) => {
       showNormalToast(`${fileName} will take approx ${time} ${inMinutes ? 'Min' : 'Sec'}`);

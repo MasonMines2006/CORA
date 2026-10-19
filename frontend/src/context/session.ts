@@ -1,42 +1,50 @@
 /**
- * The one place student and landing screens find out who is signed in.
+ * The one place screens find out who is signed in.
  *
- * Why this file exists: CORA is moving off Auth0 to its own email + password
- * login (branch feat/in-house-auth) while the UI is being redesigned on another
- * branch at the same time. If every screen called Auth0's `useAuth0()` directly,
- * both pieces of work would have to edit the same screens. Instead, screens call
- * `useSession()` from here, and only the auth work changes what is inside it.
+ * Why this file exists: screens call `useSession()` instead of talking to the
+ * sign-in system directly, so the sign-in system can change without touching
+ * every screen. (It replaced Auth0 this way: only this file and
+ * components/Auth/SessionProvider.tsx had to change.)
  *
- * Today it simply wraps Auth0.
+ * The actual state lives in <SessionProvider>, mounted once in main.tsx.
  */
-import { useAuth0 } from '@auth0/auth0-react';
+import { createContext, useContext } from 'react';
+import type { SessionResponse } from '../API/authApi';
 
 export interface SessionUser {
+  id?: number;
   name?: string;
   email?: string;
+  role?: string;
 }
 
 export interface Session {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: SessionUser | undefined;
-  /** Send the visitor to sign in, then bring them back to `returnTo` (a path like "/student"). */
+  /** Go to the sign-in page, then come back to `returnTo` (a path like "/student"). */
   signIn: (returnTo?: string) => void;
-  /** Sign out and go back to the public landing page. */
+  /** Forget the session and go back to the public landing page. */
   signOut: () => void;
+  /** Called by the sign-in, join and reset screens after the server says yes. */
+  startSession: (response: SessionResponse, keepSignedIn: boolean) => void;
 }
 
+export const signInPath = (returnTo = '/student') => `/signin?returnTo=${encodeURIComponent(returnTo)}`;
+
+// Used when there is no <SessionProvider> above (some tests render screens
+// on their own): behave like a signed-out visitor instead of crashing.
+const SIGNED_OUT: Session = {
+  isAuthenticated: false,
+  isLoading: false,
+  user: undefined,
+  signIn: (returnTo) => window.location.assign(signInPath(returnTo)),
+  signOut: () => window.location.assign('/'),
+  startSession: () => undefined,
+};
+
+export const SessionContext = createContext<Session>(SIGNED_OUT);
+
 export function useSession(): Session {
-  const auth0 = useAuth0();
-  return {
-    isAuthenticated: auth0.isAuthenticated,
-    isLoading: auth0.isLoading,
-    user: auth0.user ? { name: auth0.user.name, email: auth0.user.email } : undefined,
-    signIn: (returnTo = '/student') => {
-      void auth0.loginWithRedirect({ appState: { returnTo } });
-    },
-    signOut: () => {
-      void auth0.logout({ logoutParams: { returnTo: window.location.origin } });
-    },
-  };
+  return useContext(SessionContext);
 }

@@ -23,7 +23,7 @@ import ChatModeToggle from '../ChatBot/ChatModeToggle';
 import { HeaderProp } from '../../types';
 import { downloadClickHandler, getIsLoading } from '../../utils/Utils';
 import Profile from '../User/Profile';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSession } from '../../context/session';
 
 const Header: React.FC<HeaderProp> = ({ chatOnly, deleteOnClick, setOpenConnection, showBackButton }) => {
   const { colorMode, toggleColorMode } = useContext(ThemeWrapperContext);
@@ -33,7 +33,7 @@ const Header: React.FC<HeaderProp> = ({ chatOnly, deleteOnClick, setOpenConnecti
     window.open(url, '_blank');
   }, []);
   const downloadLinkRef = useRef<HTMLAnchorElement>(null);
-  const { loginWithRedirect } = useAuth0();
+  const { signIn } = useSession();
   const firstTourTarget = useRef<HTMLDivElement>(null);
   const { connectionStatus } = useCredentials();
   const chatAnchor = useRef<HTMLDivElement>(null);
@@ -154,12 +154,12 @@ const Header: React.FC<HeaderProp> = ({ chatOnly, deleteOnClick, setOpenConnecti
                   {pathname === '/readonly' &&
                     (!connectionStatus ? (
                       <SpotlightTarget id='loginbutton' hasPulse={true} indicatorVariant='border' ref={firstTourTarget}>
-                        <Button type='button' fill='outlined' onClick={() => loginWithRedirect()}>
+                        <Button type='button' fill='outlined' onClick={() => signIn(window.location.pathname)}>
                           Login
                         </Button>
                       </SpotlightTarget>
                     ) : (
-                      <Button type='button' fill='outlined' onClick={() => loginWithRedirect()}>
+                      <Button type='button' fill='outlined' onClick={() => signIn(window.location.pathname)}>
                         Login
                       </Button>
                     ))}

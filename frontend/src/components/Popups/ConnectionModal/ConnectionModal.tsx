@@ -7,7 +7,7 @@ import { buttonCaptions } from '../../../utils/Constants';
 import { createVectorIndex } from '../../../services/VectorIndexCreation';
 import { ConnectionModalProps, Message, UserCredentials } from '../../../types';
 import VectorIndexMisMatchAlert from './VectorIndexMisMatchAlert';
-import { useAuth0 } from '@auth0/auth0-react';
+import { useSession } from '../../../context/session';
 import { createDefaultFormData } from '../../../API/Index';
 import { getNodeLabelsAndRelTypesFromText } from '../../../services/SchemaFromTextAPI';
 import { useFileContext } from '../../../context/UsersFiles';
@@ -45,7 +45,7 @@ export default function ConnectionModal({
   const [username, setUsername] = useState<string>(initialusername ?? 'neo4j');
   const [password, setPassword] = useState<string>('');
   const [connectionMessage, setMessage] = useState<Message | null>({ type: 'unknown', content: '' });
-  const { user } = useAuth0();
+  const { user } = useSession();
   const {
     setUserCredentials,
     userCredentials,
