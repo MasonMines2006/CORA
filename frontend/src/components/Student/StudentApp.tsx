@@ -138,7 +138,7 @@ const StudentLayout = () => {
         onLoaded={(name) => sessions.record('quiz', location.conceptId, name)}
         onFinished={(finished) => {
           setOutcome(finished);
-          reloadDashboard();
+          // No dashboard reload here: going on to the Path or Progress reloads it.
           // Replace, so Back from Results doesn't land on a quiz that is already graded.
           go({ view: 'results', conceptId: location.conceptId }, { replace: true });
         }}
@@ -203,7 +203,8 @@ const StudentLayout = () => {
       )}
 
       {location.view === 'review' && (
-        <div className='mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12'>
+        <div className='mx-auto max-w-[1120px] px-4 pb-10 pt-6 sm:px-8 lg:pt-10'>
+          <h1 className='mb-6 font-display text-[30px] font-bold tracking-tight sm:text-[36px]'>Review</h1>
           <ReviewSession showRail onFindCards={() => goToView('path')} />
         </div>
       )}
