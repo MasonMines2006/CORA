@@ -1,0 +1,163 @@
+# yaml-language-server: $schema=https://render.com/schema/render.yaml.json
+
+previews:
+  generation: off
+
+services:
+  - type: web
+    name: cora-web
+    runtime: static
+    rootDir: frontend
+    buildCommand: yarn install --frozen-lockfile && yarn build
+    staticPublishPath: ./dist
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - frontend/**
+        - render.yaml
+    envVars:
+      - key: VITE_BACKEND_API_URL
+        fromService:
+          name: cora-api
+          type: web
+          envVarKey: RENDER_EXTERNAL_URL
+      - key: VITE_ENV
+        value: PROD
+      - key: VITE_SKIP_AUTH
+        value: "false"
+      - key: VITE_REACT_APP_SOURCES
+        value: local,youtube,wiki,s3,web
+      - key: VITE_LLM_MODELS_PROD
+        value: openai_gpt_4.1_mini
+      # Temporary until the in-house auth branch replaces Auth0.
+      - key: VITE_AUTH0_DOMAIN
+        sync: false
+      - key: VITE_AUTH0_CLIENT_ID
+        sync: false
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /*
+        name: Permissions-Policy
+        value: camera=(), microphone=(), geolocation=()
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+
+  - type: web
+    name: cora-api
+    runtime: docker
+    region: virginia
+    plan: 1c-2g
+    dockerfilePath: ./deploy/render/backend.Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    maxShutdownDelaySeconds: 60
+    buildFilter:
+      paths:
+        - backend/**
+        - deploy/render/backend.Dockerfile
+        - deploy/render/start_backend.py
+        - render.yaml
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEV_AUTH_BYPASS
+        value: "false"
+      - key: WEB_CONCURRENCY
+        value: "1"
+      - key: DATABASE_URL
+        fromDatabase:
+          name: cora-postgres
+          property: connectionString
+      - key: NEO4J_HOST
+        fromService:
+          name: cora-neo4j
+          type: pserv
+          property: host
+      - key: NEO4J_PASSWORD
+        fromService:
+          name: cora-neo4j
+          type: pserv
+          envVarKey: NEO4J_PASSWORD
+      - key: NEO4J_USERNAME
+        value: neo4j
+      - key: NEO4J_DATABASE
+        value: neo4j
+      - key: OPENAI_MODEL
+        value: gpt-4.1-mini
+      - key: OPENAI_API_KEY
+        sync: false
+      # Temporary until the in-house auth branch replaces Auth0.
+      - key: AUTH0_DOMAIN
+        sync: false
+      - key: AUTH0_AUDIENCE
+        value: https://api.cora.com
+      - key: EMBEDDING_MODEL
+        value: sentence_transformer
+      - key: IS_EMBEDDING
+        value: "true"
+      - key: GCP_LOG_METRICS_ENABLED
+        value: "false"
+      - key: ENTITY_EMBEDDING
+        value: "false"
+      - key: GCS_FILE_CACHE
+        value: "false"
+      - key: TRACK_TOKEN_USAGE
+        value: "false"
+
+  - type: pserv
+    name: cora-neo4j
+    runtime: docker
+    region: virginia
+    plan: 1c-2g
+    dockerfilePath: ./deploy/render/neo4j.Dockerfile
+    dockerContext: .
+    autoDeployTrigger: commit
+    buildFilter:
+      paths:
+        - deploy/render/neo4j.Dockerfile
+        - deploy/render/neo4j-start.sh
+        - render.yaml
+    disk:
+      name: cora-neo4j-data
+      mountPath: /data
+      sizeGB: 2
+    envVars:
+      - key: NEO4J_PASSWORD
+        generateValue: true
+      - key: NEO4J_PLUGINS
+        value: '["apoc"]'
+      - key: NEO4J_apoc_export_file_enabled
+        value: "true"
+      - key: NEO4J_apoc_import_file_enabled
+        value: "true"
+      - key: NEO4J_server_http_listen__address
+        value: 0.0.0.0:10000
+      - key: NEO4J_server_bolt_listen__address
+        value: 0.0.0.0:7687
+      - key: NEO4J_server_memory_heap_initial__size
+        value: 256m
+      - key: NEO4J_server_memory_heap_max__size
+        value: 512m
+      - key: NEO4J_server_memory_pagecache_size
+        value: 512m
+
+databases:
+  - name: cora-postgres
+    region: virginia
+    plan: 0.1c-256mb
+    postgresMajorVersion: "16"
+    databaseName: cora_users
+    user: cora
+    diskSizeGB: 1
+    ipAllowList: []
