@@ -1,21 +1,21 @@
+import os
 import time
 from neo4j import GraphDatabase
 
-# Database configurations
-neo4j_configurations = [
-    {
-        'name': 'Neo4j Config 1',
-        'NEO4J_URI': 'neo4j+s://73b760b4.databases.neo4j.io',
-        'NEO4J_USERNAME': 'neo4j',
-        'NEO4J_PASSWORD': 'HqwAzfG83XwcEQ-mvEG4yNpcRTHMpsgZaYW3qIGJh2I'
-    },
-    # {
-    #     'name': 'Neo4j Config 2',
-    #     'uri': 'bolt://another-host:7687',
-    #     'user': 'neo4j',
-    #     'password': 'password2'
-    # }
-]
+
+def get_neo4j_configuration():
+    """Read credentials at runtime so secrets are never stored in source control."""
+    required = ("NEO4J_URI", "NEO4J_USERNAME", "NEO4J_PASSWORD")
+    missing = [name for name in required if not os.environ.get(name)]
+    if missing:
+        raise RuntimeError(f"Missing required environment variables: {', '.join(missing)}")
+
+    return {
+        "name": "Neo4j environment configuration",
+        "uri": os.environ["NEO4J_URI"],
+        "user": os.environ["NEO4J_USERNAME"],
+        "password": os.environ["NEO4J_PASSWORD"],
+    }
 
 # Function to create a Neo4j driver
 def create_driver(uri, user, password):
@@ -42,27 +42,25 @@ query = "CREATE (n:Person {id: $id, name: $name})"
 num_operations = 1000
 
 def dbtest_main():
+    # This utility deletes every node before measuring writes. Require an
+    # explicit opt-in so it cannot be run against production by accident.
+    if os.environ.get("ALLOW_DESTRUCTIVE_DBTEST", "").lower() != "true":
+        raise RuntimeError("Set ALLOW_DESTRUCTIVE_DBTEST=true to run this destructive benchmark")
+
     results = []
 
-    for config in neo4j_configurations:
-        print(f"Testing {config['name']}...")
-        
-        # Create driver
-        driver = create_driver(config['uri'], config['user'], config['password'])
-        
-        # Clear database before test
+    config = get_neo4j_configuration()
+    print(f"Testing {config['name']}...")
+
+    driver = create_driver(config['uri'], config['user'], config['password'])
+    try:
         clear_database(driver)
-        
-        # Run performance test
         elapsed_time = performance_test(driver, query, num_operations)
-        
-        # Store result
         results.append((config['name'], elapsed_time))
-        
-        # Close driver
+    finally:
         driver.close()
-        
-        print(f"{config['name']} completed in {elapsed_time:.4f} seconds")
+
+    print(f"{config['name']} completed in {elapsed_time:.4f} seconds")
 
     print("\nPerformance Test Results:")
     for name, time_taken in results:
