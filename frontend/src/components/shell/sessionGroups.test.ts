@@ -14,7 +14,10 @@ const session = (id: string, hoursAgo: number): SessionSummary => ({
 
 describe('groupSessions', () => {
   it('groups by calendar day, newest first, and skips empty groups', () => {
-    const groups = groupSessions([session('old', 24 * 30), session('a', 1), session('y', 20), session('w', 24 * 3)], NOW);
+    const groups = groupSessions(
+      [session('old', 24 * 30), session('a', 1), session('y', 20), session('w', 24 * 3)],
+      NOW
+    );
     expect(groups.map((group) => [group.label, group.items.map((item) => item.id)])).toEqual([
       ['Today', ['a']],
       ['Yesterday', ['y']],

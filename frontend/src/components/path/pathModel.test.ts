@@ -68,14 +68,14 @@ describe('buildPath', () => {
   });
 
   it('labels the unit after the current one as up next, and the rest as later', () => {
-    const path = buildPath(
-      dashboard([progress('a', 'One.pdf'), progress('b', 'Two.pdf'), progress('c', 'Three.pdf')])
-    );
+    const path = buildPath(dashboard([progress('a', 'One.pdf'), progress('b', 'Two.pdf'), progress('c', 'Three.pdf')]));
     expect(path.units.map((unit) => unit.status)).toEqual(['current', 'upcoming', 'later']);
   });
 
   it('gives each node its state, with the current concept marked', () => {
-    const path = buildPath(dashboard([progress('a', 'One.pdf', 4, 92), progress('b', 'One.pdf', 2, 40), progress('c', 'One.pdf')]));
+    const path = buildPath(
+      dashboard([progress('a', 'One.pdf', 4, 92), progress('b', 'One.pdf', 2, 40), progress('c', 'One.pdf')])
+    );
     expect(path.units[0].concepts.map((item) => item.nodeState)).toEqual(['mastered', 'current', 'notStarted']);
   });
 
@@ -86,7 +86,12 @@ describe('buildPath', () => {
 
 describe('weakestConcept', () => {
   it('picks the started, unmastered concept with the lowest score', () => {
-    const concepts = [progress('a', 'x', 4, 70), progress('b', 'x', 3, 33), progress('c', 'x'), progress('d', 'x', 5, 95)];
+    const concepts = [
+      progress('a', 'x', 4, 70),
+      progress('b', 'x', 3, 33),
+      progress('c', 'x'),
+      progress('d', 'x', 5, 95),
+    ];
     expect(weakestConcept(concepts)?.concept.id).toBe('b');
   });
 

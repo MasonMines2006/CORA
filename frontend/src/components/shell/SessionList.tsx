@@ -24,7 +24,9 @@ const SessionList = ({ sessions, activeId, onOpen }: SessionListProps) => {
     <>
       {groups.map((group) => (
         <div key={group.label}>
-          <h3 className='px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500'>{group.label}</h3>
+          <h3 className='px-3 pb-1 pt-4 text-[11px] font-semibold uppercase tracking-wider text-slate-500'>
+            {group.label}
+          </h3>
           <ul>
             {group.items.map((session) => (
               <li key={session.id}>
@@ -36,7 +38,9 @@ const SessionList = ({ sessions, activeId, onOpen }: SessionListProps) => {
                     session.id === activeId ? 'bg-slate-100 text-slate-900' : 'text-slate-700 hover:bg-slate-50'
                   }`}
                 >
-                  <span className={`w-11 flex-none font-code text-[10.5px] font-medium uppercase ${MODE_TAG[session.mode].className}`}>
+                  <span
+                    className={`w-11 flex-none font-code text-[10.5px] font-medium uppercase ${MODE_TAG[session.mode].className}`}
+                  >
                     {MODE_TAG[session.mode].label}
                   </span>
                   <span className='truncate'>{session.title}</span>

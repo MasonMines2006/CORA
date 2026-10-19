@@ -29,7 +29,17 @@ const SourceLine = ({ unit }: { unit: PathUnit }) => (
 );
 
 /** Completed unit: one emerald row, collapsed, with a way to look inside. */
-const CompleteUnit = ({ unit, number, expanded, onToggle }: { unit: PathUnit; number: number; expanded: boolean; onToggle: () => void }) => (
+const CompleteUnit = ({
+  unit,
+  number,
+  expanded,
+  onToggle,
+}: {
+  unit: PathUnit;
+  number: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) => (
   <div className='flex items-center gap-3 rounded-[16px] border border-emerald-300/60 bg-emerald-50 px-4 py-3'>
     <span className='grid h-9 w-9 flex-none place-items-center rounded-[12px] bg-emerald-600 text-white shadow-key-emerald'>
       <HiCheck className='h-5 w-5' aria-hidden='true' />
@@ -49,7 +59,15 @@ const CompleteUnit = ({ unit, number, expanded, onToggle }: { unit: PathUnit; nu
 );
 
 /** Up next: a red-50 band of concept chips. Nothing is locked, so each chip starts its lesson. */
-const UpcomingUnit = ({ unit, number, onGuide }: { unit: PathUnit; number: number; onGuide: ModeActions['onGuide'] }) => (
+const UpcomingUnit = ({
+  unit,
+  number,
+  onGuide,
+}: {
+  unit: PathUnit;
+  number: number;
+  onGuide: ModeActions['onGuide'];
+}) => (
   <div className='rounded-[20px] bg-red-50 px-5 py-5 sm:px-6'>
     <p className='eyebrow'>Unit {number} · Up next</p>
     <h2 className='mt-1 font-display text-[20px] font-bold tracking-tight'>{unit.title}</h2>
@@ -74,7 +92,17 @@ const UpcomingUnit = ({ unit, number, onGuide }: { unit: PathUnit; number: numbe
 );
 
 /** Later unit: a compact row you can expand. */
-const LaterUnit = ({ unit, number, expanded, onToggle }: { unit: PathUnit; number: number; expanded: boolean; onToggle: () => void }) => (
+const LaterUnit = ({
+  unit,
+  number,
+  expanded,
+  onToggle,
+}: {
+  unit: PathUnit;
+  number: number;
+  expanded: boolean;
+  onToggle: () => void;
+}) => (
   <button
     type='button'
     onClick={onToggle}
@@ -94,7 +122,13 @@ const LaterUnit = ({ unit, number, expanded, onToggle }: { unit: PathUnit; numbe
 const UnitBand = ({ unit, number, openId, onOpenChange, ...modes }: UnitBandProps) => {
   const [expanded, setExpanded] = useState(false);
   const nodes = (
-    <NodeList label={`Unit ${number} concepts`} concepts={unit.concepts} openId={openId} onOpenChange={onOpenChange} {...modes} />
+    <NodeList
+      label={`Unit ${number} concepts`}
+      concepts={unit.concepts}
+      openId={openId}
+      onOpenChange={onOpenChange}
+      {...modes}
+    />
   );
   const firstOpen = unit.concepts.find((item) => masteryState(item.mastery) !== 'mastered') ?? unit.concepts[0];
 

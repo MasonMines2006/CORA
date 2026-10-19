@@ -14,7 +14,13 @@ interface SegmentBarProps {
  */
 const SegmentBar = ({ count, current, label, className = '' }: SegmentBarProps) => {
   const a11y = label
-    ? { role: 'progressbar', 'aria-label': label, 'aria-valuemin': 1, 'aria-valuemax': count, 'aria-valuenow': current + 1 }
+    ? {
+        role: 'progressbar',
+        'aria-label': label,
+        'aria-valuemin': 1,
+        'aria-valuemax': count,
+        'aria-valuenow': current + 1,
+      }
     : { 'aria-hidden': true };
   return (
     <div className={`seg ${className}`} {...a11y}>

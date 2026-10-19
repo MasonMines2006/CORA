@@ -54,7 +54,10 @@ describe('PathView', () => {
   });
 
   it('says the path is being built when nothing is published', () => {
-    renderPath({ status: 'ready', data: { ...data, concepts: [], course: { documents: 0, passages: 0, concepts: 0 } } });
+    renderPath({
+      status: 'ready',
+      data: { ...data, concepts: [], course: { documents: 0, passages: 0, concepts: 0 } },
+    });
     expect(screen.getByRole('heading', { name: 'Your path is being built' })).toBeInTheDocument();
   });
 

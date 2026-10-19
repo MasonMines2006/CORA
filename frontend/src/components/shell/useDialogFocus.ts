@@ -7,11 +7,7 @@ import { RefObject, useEffect, useRef } from 'react';
  *
  * `firstFocus` is the element to focus on open (usually the close button).
  */
-export const useDialogFocus = (
-  isOpen: boolean,
-  onClose: () => void,
-  firstFocus: RefObject<HTMLElement>
-) => {
+export const useDialogFocus = (isOpen: boolean, onClose: () => void, firstFocus: RefObject<HTMLElement>) => {
   // Remember who had focus before we opened, so we can hand it back.
   const opener = useRef<HTMLElement | null>(null);
   // Keep the latest onClose without re-running the effect on every render.

@@ -75,7 +75,14 @@ const PathBody = ({ data, ...props }: PathViewProps & { data: LearningDashboard 
         />
       )}
       {path.units.map((unit, index) => (
-        <UnitBand key={unit.source ?? 'none'} unit={unit} number={index + 1} openId={openId} onOpenChange={setOpenId} {...props} />
+        <UnitBand
+          key={unit.source ?? 'none'}
+          unit={unit}
+          number={index + 1}
+          openId={openId}
+          onOpenChange={setOpenId}
+          {...props}
+        />
       ))}
       {isSample && (
         <p className='mt-6 text-[13px] text-slate-500'>
@@ -102,7 +109,8 @@ const PathView = (props: PathViewProps) => {
             {data && (
               <p className='text-[14px] text-slate-500'>
                 <span className='tabular'>{data.course.documents}</span> published document
-                {data.course.documents === 1 ? '' : 's'} · <span className='tabular'>{data.course.concepts}</span> concepts
+                {data.course.documents === 1 ? '' : 's'} · <span className='tabular'>{data.course.concepts}</span>{' '}
+                concepts
               </p>
             )}
             <h1 className='mt-1 font-display text-[30px] font-bold leading-tight tracking-tight sm:text-[36px]'>

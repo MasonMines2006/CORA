@@ -18,12 +18,24 @@ interface ContinueCardProps extends ModeActions {
 }
 
 /** "Pick up where you left off" with one big action, plus the other two ways in (DESIGN.md 5.3). */
-const ContinueCard = ({ conceptId, conceptName, item, lastLesson, reason, onGuide, onAsk, onQuiz }: ContinueCardProps) => {
+const ContinueCard = ({
+  conceptId,
+  conceptName,
+  item,
+  lastLesson,
+  reason,
+  onGuide,
+  onAsk,
+  onQuiz,
+}: ContinueCardProps) => {
   const isResume = Boolean(lastLesson && lastLesson.concept_id === conceptId && lastLesson.beat_count > 0);
   const step = isResume && lastLesson ? Math.min(lastLesson.beat_index, lastLesson.beat_count - 1) : 0;
   const state = masteryState(item?.mastery);
   return (
-    <section aria-labelledby='continue-h' className='mt-6 overflow-hidden rounded-[20px] border-2 border-red-100 bg-white'>
+    <section
+      aria-labelledby='continue-h'
+      className='mt-6 overflow-hidden rounded-[20px] border-2 border-red-100 bg-white'
+    >
       <div className='flex flex-col gap-5 p-5 sm:flex-row sm:items-center sm:p-6'>
         <div className='flex min-w-0 flex-1 items-center gap-4 sm:gap-5'>
           <MasteryRing percent={masteryPercent(item?.mastery)} state={state} label={masteryLabel(item?.mastery)} />
@@ -35,7 +47,8 @@ const ContinueCard = ({ conceptId, conceptName, item, lastLesson, reason, onGuid
             {isResume && lastLesson ? (
               <>
                 <p className='mt-1 text-[14px] text-slate-500'>
-                  Step <span className='tabular'>{step + 1}</span> of <span className='tabular'>{lastLesson.beat_count}</span>
+                  Step <span className='tabular'>{step + 1}</span> of{' '}
+                  <span className='tabular'>{lastLesson.beat_count}</span>
                 </p>
                 <SegmentBar count={lastLesson.beat_count} current={step} className='mt-3 max-w-[220px]' />
               </>

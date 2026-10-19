@@ -35,7 +35,9 @@ const AccountCard = ({ account }: { account: ShellAccount }) => (
       <span className='block truncate text-[13px] font-semibold'>
         {account.isAuthenticated ? account.name || account.email || 'Signed in' : 'Guest'}
       </span>
-      {!account.isAuthenticated && <span className='block text-[12px] text-slate-500'>Progress stays on this device</span>}
+      {!account.isAuthenticated && (
+        <span className='block text-[12px] text-slate-500'>Progress stays on this device</span>
+      )}
     </span>
     {account.isAuthenticated ? (
       <Button variant='ghost' size='sm' onClick={account.onSignOut} aria-label='Sign out'>
