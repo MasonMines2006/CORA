@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { ConceptSuggestion, getConceptSuggestions, getLearningDashboard, LearningDashboard } from '../../API/Index';
 import StudentHome from './StudentHomeArtboard';
@@ -52,6 +52,7 @@ const dashboard: LearningDashboard = {
   ],
   review: { due_count: 0, new_count: 0 },
   last_lesson: null,
+  course: { documents: 3, passages: 40, concepts: 3 },
 };
 
 const suggestion = (id: string, name: string, reason: string): ConceptSuggestion => ({
@@ -100,6 +101,24 @@ describe('StudentHome', () => {
 
     fireEvent.click(screen.getByRole('button', { name: /start review/i }));
     expect(onOpenReview).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows whole-course counts from the server, not totals guessed from the concept sample', async () => {
+    // The sample holds 2 concepts from 1 document with 20 passages between them;
+    // the course itself is far larger. The tiles must show the course.
+    vi.mocked(getLearningDashboard).mockResolvedValue({
+      ...dashboard,
+      total_concepts: 1231,
+      course: { documents: 17, passages: 282, concepts: 1231 },
+    });
+    renderHome();
+
+    const tile = (await screen.findByText('Course graph')).closest('section') as HTMLElement;
+    expect(within(tile).getByText('1231')).toBeInTheDocument();
+    expect(within(tile).getByText('17')).toBeInTheDocument();
+    expect(within(tile).getByText('282')).toBeInTheDocument();
+    // The third tile is progress, not a second copy of the concept count.
+    expect(within(tile).getByText('started')).toBeInTheDocument();
   });
 
   it('offers a retry when dashboard loading fails', async () => {
