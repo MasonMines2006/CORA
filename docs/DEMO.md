@@ -133,3 +133,59 @@ all user accounts.
 | 4 | Anthropic key `cora-test` expired 2026-10-17 (`ANTHROPIC_API_KEY`, and the `LLM_MODEL_CONFIG_anthropic_*` lines; it returns 401) | **None** as long as you only choose OpenAI models. `VITE_LLM_MODELS` limits the UI to `openai_gpt_4o_mini`, and `LEARNING_MODEL`, `INGESTION_MODEL` and `GRAPH_CLEANUP_MODEL` are all OpenAI | Leave it, or delete the `anthropic` lines so nobody selects them by mistake |
 | 5 | Local `app_users` table is empty | The first Auth0 login starts as a student | Promote yourself (section 3) |
 | 6 | Some font files return 404 | Cosmetic only. Text falls back to a system font | None needed |
+
+---
+
+## 7. End-to-end tests (Playwright)
+
+The e2e suite drives a real Chromium browser against the running dev stack. It covers sign-up
+with an invite link, open enrollment on and off, sign-in with a wrong password and the
+five-strike lockout, the admin flows (invite, reset link, deactivate, the enrollment switch,
+and publishing a document in Materials), and each learning mode: Path → Lesson → Quiz →
+Results, Ask with sources, and Review.
+
+**One-time setup** (from `frontend/`):
+
+```bash
+yarn install
+npx playwright install chromium     # downloads the browser build Playwright 1.63 expects (~150 MB)
+```
+
+**Run it** with the Docker stack up (section 2):
+
+```bash
+cd frontend
+yarn e2e                            # about 3 minutes, one test at a time
+npx playwright show-report          # open the HTML report afterwards
+```
+
+What to know:
+
+- **It uses your local stack, not a copy.** Tests run against http://localhost:8080 (override
+  with `E2E_BASE_URL`) and reach the backend through its `/api` proxy. Any `E2E_*` setting is
+  optional; defaults are in `frontend/e2e/support/env.ts`.
+- **Test accounts are made and deleted for you.** Each test account comes from the backend's
+  invite CLI (`docker exec backend-dev python -m src.local_auth.create_invite …`) on the
+  fake domain `@e2e.cora.local`. Before and after every run, those accounts and their quiz,
+  mastery, review and lesson-progress rows are deleted. Real accounts are never touched.
+- **Global switches are put back.** Tests that flip open enrollment, or publish a draft
+  document, restore the original state even when they fail.
+- **The model is mocked in almost every test.** Lessons, quizzes, chat answers and review
+  cards come from `frontend/e2e/support/llmMocks.ts`, so a run is free, quick and gives the
+  same result every time. Everything else (sign-in, the dashboard, lesson progress, admin
+  actions) uses the real backend. If the backend's response shapes in
+  `backend/src/learning/models.py` change, update the mocks to match.
+- **One real-model smoke test, off by default.** It asks one question (well under one US
+  cent). It needs a working `OPENAI_API_KEY` in `backend/.env`:
+
+  ```bash
+  E2E_REAL_LLM=1 yarn e2e real-llm-smoke
+  ```
+
+- **Chat is checked through the network response,** not the answer text on screen, because
+  the answer's typing animation pauses in background tabs (see `CLAUDE.md`).
+- **Don't run it during a live demo.** It creates accounts, briefly opens enrollment and
+  briefly publishes a draft document (often an answer key) on the same stack.
+- Test files end in `.e2e.ts` so `yarn test` (Vitest) never picks them up. Failure traces
+  and screenshots land in `frontend/test-results/` (gitignored). A trace can include API
+  responses, so don't share one without reading it first.

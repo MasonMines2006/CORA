@@ -8,6 +8,7 @@
     "build": "tsc && vite build",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
+    "e2e": "playwright test",
     "format": "prettier --write \"**/*.{ts,tsx}\"",
     "lint": "eslint --ext .ts --ext .tsx . --report-unused-disable-directives --max-warnings 0",
     "preview": "vite preview",
@@ -42,6 +43,7 @@
     "uuid": "^11.1.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.63.0",
     "@tailwindcss/postcss": "^4.0.12",
     "@testing-library/dom": "9.3.4",
     "@testing-library/jest-dom": "6.4.8",
