@@ -131,3 +131,7 @@ dist
 package-lock.json
 
 docs/build
+# Playwright e2e output
+/test-results/
+/playwright-report/
+/playwright/.cache/
