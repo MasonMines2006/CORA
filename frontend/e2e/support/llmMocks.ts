@@ -128,7 +128,8 @@ export async function mockQuiz(page: Page): Promise<{ gradedAnswers: () => numbe
           concept_id: conceptId,
           attempts: results.length,
           correct,
-          score: correct / results.length,
+          // Mastery scores are percentages (0-100), like service.mastery_from_row.
+          score: Math.round((correct / results.length) * 1000) / 10,
           difficulty: 'medium',
         },
       },
