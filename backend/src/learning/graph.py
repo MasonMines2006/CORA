@@ -477,7 +477,11 @@ WHERE entity <> centre
 """ + _LABEL_FILTER_CLAUSE + """
 // Keep every relationship between the pair; pick_relationship() chooses one.
 WITH centre, entity,
-     collect(DISTINCT {type: 'RELATED_TO', direction: 'out'}) AS links
+     // The REAL type and direction of each link (e.g. CALCULATED_FROM, out).
+     // Hard-coding RELATED_TO here once made every link on the concept hub look
+     // generic; tests/test_learning_neighbourhood_live.py pins this.
+     collect(DISTINCT {type: type(relationship),
+              direction: CASE WHEN startNode(relationship) = centre THEN 'out' ELSE 'in' END}) AS links
 // The concept list's coverage rule: a neighbour with no published passage
 // drops out here. `shared_passages` counts the passages
 // that mention BOTH concepts -- the strength of the link.
@@ -523,7 +527,11 @@ WHERE NOT coalesce(toString(entity.id), toString(entity.name), elementId(entity)
   }
 """ + _LABEL_FILTER_CLAUSE + """
 WITH anchor, anchor_id, entity,
-     collect(DISTINCT {type: 'RELATED_TO', direction: 'out'}) AS links
+     // The REAL type and direction of each link (e.g. CALCULATED_FROM, out).
+     // Hard-coding RELATED_TO here once made every link on the concept hub look
+     // generic; tests/test_learning_neighbourhood_live.py pins this.
+     collect(DISTINCT {type: type(relationship),
+              direction: CASE WHEN startNode(relationship) = anchor THEN 'out' ELSE 'in' END}) AS links
 // Same coverage rule and link strength as the neighbourhood query above.
 MATCH (entity)<-[:HAS_ENTITY]-(chunk:Chunk)-[:PART_OF]->(document:Document)
 WHERE """ + published_document("document") + """
