@@ -15,7 +15,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
 
 from src.auth import get_current_user, require_role
-from src.local_auth import service, store
+from src.local_auth import passwords, service, store
 from src.local_auth.rate_limit import SlidingWindowLimiter
 
 logger = logging.getLogger(__name__)
@@ -28,9 +28,15 @@ GENERIC_LOGIN_ERROR = "Email or password is incorrect"
 LINK_ERROR = "This link is invalid, already used, or expired. Ask an admin for a new one."
 TOO_MANY = "Too many attempts. Wait a few minutes and try again."
 
-# Generous per-address budgets; the per-account lockout is the main defence.
-_login_limiter = SlidingWindowLimiter(max_events=30, window_seconds=15 * 60)
+# Per-address budgets. The per-account lockout is the main defence against
+# password guessing; these stop one address hammering many accounts. They are
+# generous because a whole class can share one campus address (NAT/proxy).
+_login_limiter = SlidingWindowLimiter(max_events=300, window_seconds=15 * 60)
+# Open-enrollment sign-ups: nobody vouched for these, so keep it tighter.
 _signup_limiter = SlidingWindowLimiter(max_events=20, window_seconds=60 * 60)
+# Invite and reset links: an admin already vouched for each one, and a class may
+# accept its invites together, so allow far more.
+_link_limiter = SlidingWindowLimiter(max_events=500, window_seconds=60 * 60)
 
 # Deliberately simple: real validation is "can they receive the invite?".
 EmailField = Field(min_length=3, max_length=254, pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$")
@@ -55,7 +61,9 @@ def _weak(problems: list[str]) -> HTTPException:
 
 class LoginRequest(BaseModel):
     email: str = EmailField
-    password: str = PasswordField
+    # No real password is longer than the rules allow, and refusing early means we
+    # never spend an expensive argon2 hash on a huge made-up one.
+    password: str = Field(min_length=1, max_length=passwords.MAX_LENGTH)
     keep_signed_in: bool = False
 
 
@@ -148,7 +156,7 @@ def preview_invite(token: str):
 
 @router.post("/invites/{token}/accept")
 def accept_invite(token: str, body: AcceptInviteRequest, request: Request):
-    _limit(_signup_limiter, request)
+    _limit(_link_limiter, request)
     try:
         user = service.accept_invite(token, body.name, body.password)
     except service.LinkInvalid:
@@ -171,7 +179,7 @@ def preview_reset(token: str):
 
 @router.post("/reset/{token}", status_code=status.HTTP_204_NO_CONTENT)
 def complete_reset(token: str, body: SetPasswordRequest, request: Request):
-    _limit(_signup_limiter, request)
+    _limit(_link_limiter, request)
     try:
         service.complete_reset(token, body.password)
     except service.LinkInvalid:
@@ -225,15 +233,22 @@ def admin_update_user(user_id: int, body: UpdateUserRequest, admin=Depends(requi
         raise HTTPException(status_code=400, detail="You can't change your own role or deactivate your own account.")
     if user is None:
         raise HTTPException(status_code=404, detail="User not found")
+    # Audit trail: who changed whom. Never logs passwords or link tokens.
+    logger.warning(
+        "Admin %s updated user %s: role=%s is_active=%s", admin.get("auth0_sub"), user_id, body.role, body.is_active
+    )
     return _admin_view(user)
 
 
 @admin_router.post("/users/{user_id}/reset-link")
 def admin_reset_link(user_id: int, admin=Depends(require_role(ADMIN_ROLES))):
     try:
-        return service.issue_reset_link(user_id, admin)
+        link = service.issue_reset_link(user_id, admin)
     except service.LinkInvalid:
         raise HTTPException(status_code=404, detail="No CORA password account with that id")
+    # Audit trail: a reset link can take over an account, so record who made it.
+    logger.warning("Admin %s issued a password reset link for user %s", admin.get("auth0_sub"), user_id)
+    return link
 
 
 @admin_router.get("/invites")

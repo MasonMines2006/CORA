@@ -211,6 +211,12 @@ def create_link(kind: str, email: str, role: Optional[str], user_id: Optional[in
     """Store a new single-use link and return its raw token (shown once, never stored)."""
     raw, token_hash = new_link_token()
     with get_pool().connection() as conn:
+        if kind == "reset" and user_id is not None:
+            # Only the newest reset link for a person works; cancel older ones.
+            conn.execute(
+                "UPDATE auth_links SET used_at = NOW() WHERE kind = 'reset' AND user_id = %s AND used_at IS NULL;",
+                (user_id,),
+            )
         conn.execute(
             """
             INSERT INTO auth_links (token_hash, kind, email, role, user_id, created_by, expires_at)

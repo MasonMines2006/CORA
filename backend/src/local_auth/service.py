@@ -157,7 +157,12 @@ def complete_reset(raw: str, password: str) -> None:
 
 def change_password(user_id: int, current_password: str, new_password: str) -> dict:
     user = store.get_user(user_id)
-    if user is None or not passwords.verify_password(user["password_hash"], current_password):
+    if user is None or _is_locked(user):
+        raise WrongCurrentPassword()
+    if not passwords.verify_password(user["password_hash"], current_password):
+        # Count it like a failed sign-in, so a stolen session token can't be
+        # used to guess the password forever.
+        store.record_failed_login(user_id, MAX_FAILED_LOGINS, LOCK_MINUTES)
         raise WrongCurrentPassword()
     _check_password(new_password, user["email"])
     return store.set_password(user_id, passwords.hash_password(new_password))
