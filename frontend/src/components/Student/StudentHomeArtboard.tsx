@@ -142,15 +142,6 @@ const StudentHome: React.FC<StudentHomeProps> = ({ onOpenConcept, onOpenExplore,
     };
   }, []);
 
-  const sourceCount = useMemo(
-    () => new Set(dashboard?.concepts.flatMap(({ concept }) => concept.sources) ?? []).size,
-    [dashboard]
-  );
-  const passageCount = useMemo(
-    () => dashboard?.concepts.reduce((total, { concept }) => total + concept.chunk_count, 0) ?? 0,
-    [dashboard]
-  );
-
   const askCora = (event: React.FormEvent) => {
     event.preventDefault();
     const prompt = question.trim();
@@ -397,16 +388,16 @@ const StudentHome: React.FC<StudentHomeProps> = ({ onOpenConcept, onOpenExplore,
           </div>
           <div className='mt-5 grid grid-cols-3 gap-3 border-t border-slate-800 pt-5'>
             <div>
-              <strong className='block text-lg'>{sourceCount}</strong>
+              <strong className='block text-lg'>{dashboard.course.documents}</strong>
               <span className='text-xs text-slate-400'>documents</span>
             </div>
             <div>
-              <strong className='block text-lg'>{passageCount}</strong>
+              <strong className='block text-lg'>{dashboard.course.passages}</strong>
               <span className='text-xs text-slate-400'>passages</span>
             </div>
             <div>
-              <strong className='block text-lg'>{dashboard.total_concepts}</strong>
-              <span className='text-xs text-slate-400'>concepts</span>
+              <strong className='block text-lg'>{dashboard.started_concepts}</strong>
+              <span className='text-xs text-slate-400'>started</span>
             </div>
           </div>
           <button

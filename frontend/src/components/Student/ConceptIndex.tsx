@@ -14,12 +14,23 @@ const errorMessage = (error: unknown) =>
   'CORA could not load the course concepts. Please try again.';
 
 /**
+ * The line under the heading. The list is the dashboard's top concepts, so when
+ * the course has more, say so instead of implying the list is everything.
+ */
+const describeList = (listed: number, total: number) =>
+  (total > listed
+    ? `Showing the ${listed} most-connected of ${total.toLocaleString('en-US')} concepts. Open one to learn, practise or review it.`
+    : `${listed} concepts from your course materials. Open one to learn, practise or review it.`);
+
+/**
  * Every concept the course offers, with where the student stands on each.
  * The entry point to the concept pages; the list comes from the same dashboard
  * request as Home, so the two can never disagree about how many concepts exist.
  */
 const ConceptIndex = ({ onOpenConcept }: ConceptIndexProps) => {
   const [items, setItems] = useState<LearningConceptProgress[] | null>(null);
+  // How many concepts the whole course has. `items` is only the top of that list.
+  const [courseTotal, setCourseTotal] = useState(0);
   const [error, setError] = useState('');
   const [query, setQuery] = useState('');
   const [stateFilter, setStateFilter] = useState<MasteryState | 'all'>('all');
@@ -29,7 +40,10 @@ const ConceptIndex = ({ onOpenConcept }: ConceptIndexProps) => {
     const controller = new AbortController();
     setError('');
     getLearningDashboard(controller.signal)
-      .then((dashboard) => setItems(dashboard.concepts))
+      .then((dashboard) => {
+        setItems(dashboard.concepts);
+        setCourseTotal(dashboard.total_concepts);
+      })
       .catch((requestError) => {
         if ((requestError as { name?: string }).name !== 'CanceledError') {
           setError(errorMessage(requestError));
@@ -60,11 +74,7 @@ const ConceptIndex = ({ onOpenConcept }: ConceptIndexProps) => {
       <div className='flex flex-wrap items-end justify-between gap-4'>
         <div>
           <h1 className='font-display text-3xl font-bold tracking-tight text-slate-900'>Concepts</h1>
-          <p className='mt-1 text-sm text-slate-500'>
-            {items
-              ? `${items.length} concepts from your course materials. Open one to learn, practise or review it.`
-              : ' '}
-          </p>
+          <p className='mt-1 text-sm text-slate-500'>{items ? describeList(items.length, courseTotal) : ' '}</p>
         </div>
         <label className='flex w-full items-center gap-2 rounded-full border border-stone-200 bg-white px-4 py-2.5 sm:w-72'>
           <HiOutlineMagnifyingGlass className='h-4 w-4 shrink-0 text-slate-400' aria-hidden='true' />

@@ -189,6 +189,18 @@ export interface LearningDashboard {
   review?: { due_count: number; new_count: number };
   /** The lesson the learner most recently moved through, for "Pick up where you left off". */
   last_lesson?: LearningLastLesson | null;
+  /**
+   * Whole-course counts over published material, counted by the server.
+   * `concepts` only ever holds a ranked sample, so never total it up yourself.
+   */
+  course: LearningCourseStats;
+}
+
+export interface LearningCourseStats {
+  documents: number;
+  /** Distinct passages: one that mentions three concepts counts once. */
+  passages: number;
+  concepts: number;
 }
 
 export interface LearningSourcePassage {
