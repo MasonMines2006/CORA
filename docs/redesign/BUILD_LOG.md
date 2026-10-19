@@ -19,3 +19,18 @@ Scope: DESIGN.md §10 Phases 0, 1 (Path only), 2, 3, and from Phase 4 the Progre
 - StudentApp renders inside the new shell and uses `useSession()`; StudentChat uses `useSession()` too.
 - Commits: `96f235b` style tokens, `c2840ed` ui-kit, `3dc76f3` URL model, `f940b1f` shell.
 - Results: `yarn test` 18 files / 121 tests green; `yarn build` passes; eslint clean on changed files.
+
+## Phase 1: Path (done; auth screens are the other agent's)
+
+- `path/pathModel.ts` (tested): units by `concept.sources[0]`, named from the filename (`NE235_L07_Kinetics.pdf` → "NE235 L07 Kinetics"); unit status complete / current / upcoming / later; current concept = last lesson → server recommendation → first unmastered; weak spot; node abbreviations; greeting.
+- `path/`: PathView, ContinueCard (resume at the saved step, or "Suggested next" with the server's reason), UnitBand (four looks), NodeList + ConceptNode (zig-zag via `.path-offset`), ConceptPopover (Guide me / Ask / Quiz me; Escape closes and focus returns to the node), TodayRail (cards due, weak spot, quick Ask; no streak/goal).
+- `path/useDashboard.ts`: one `/learning/dashboard` load for the whole app, reloaded when you come back to Path or Progress.
+- Retired: `StudentHomeArtboard.tsx`, `ConceptIndex.tsx` and their tests.
+- Checked in a browser against real data at 1440 and 375 (guest): renders, popover works.
+- Commits: `255b3bc`, `7c44b95`, `0680783`.
+- Results: `yarn test` 18 files / 125 tests green; `yarn build` passes; eslint clean.
+- Decisions:
+  - **The path shows the dashboard's top 50 concepts**, not all of them (the API caps at 50). When the course has more, a line says so and links to the course graph. Why: no fake completeness; no backend change.
+  - **Popovers open on click only**, not automatically for the current node as in the prototype. Why: auto-opening would steal keyboard focus on page load.
+  - **Provenance line** says "Built from N published passages in M documents" (from the concept), not "5 linked concepts", which would need a neighbourhood request per node.
+- Known issue: the unit split is only as good as `sources[0]`; with real data some units have one concept.
