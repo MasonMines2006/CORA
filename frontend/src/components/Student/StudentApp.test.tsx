@@ -32,12 +32,17 @@ vi.mock('../path/PathView', () => ({
     </div>
   ),
 }));
-vi.mock('./ConceptHub', () => ({
-  default: ({ conceptId, mode }: { conceptId: string; mode: string }) => (
+vi.mock('../lesson/LessonPlayer', () => ({
+  default: ({ conceptId, initialBeat, onClose }: { conceptId: string; initialBeat?: number; onClose: () => void }) => (
     <div>
-      Hub for {conceptId} in {mode}
+      Lesson for {conceptId}
+      {initialBeat !== undefined && <span> at step {initialBeat}</span>}
+      <button onClick={onClose}>Close lesson</button>
     </div>
   ),
+}));
+vi.mock('../quiz/QuizPlayer', () => ({
+  default: ({ conceptId }: { conceptId: string }) => <div>Quiz for {conceptId}</div>,
 }));
 vi.mock('./StudentExplore', () => ({ default: () => <div>Graph screen</div> }));
 vi.mock('../ask/AskView', () => ({
@@ -73,13 +78,27 @@ describe('StudentApp navigation', () => {
 
   it('keeps old concept links working', () => {
     renderAt('/student?view=concepts&concept=Reactivity&mode=practice');
-    expect(screen.getByText('Hub for Reactivity in practice')).toBeInTheDocument();
+    expect(screen.getByText('Quiz for Reactivity')).toBeInTheDocument();
   });
 
-  it('opens a concept from the Path', () => {
+  it('opens a lesson in focus mode from the Path, and its X goes back there', () => {
     renderAt();
     fireEvent.click(screen.getByRole('button', { name: 'Open Reactivity' }));
-    expect(screen.getByText('Hub for Reactivity in learn')).toBeInTheDocument();
+    expect(screen.getByText('Lesson for Reactivity')).toBeInTheDocument();
+    expect(screen.queryByRole('navigation', { name: 'Primary' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: 'Close lesson' }));
+    expect(screen.getByText('Home screen')).toBeInTheDocument();
+  });
+
+  it('opens a lesson at the step in the link', () => {
+    renderAt('/student?view=lesson&concept=Keff&beat=2');
+    expect(screen.getByText('at step 2', { exact: false })).toBeInTheDocument();
+  });
+
+  it('explains instead of going blank when results are opened after a refresh', () => {
+    renderAt('/student?view=results&concept=Keff');
+    expect(screen.getByRole('heading', { name: 'These results are no longer on screen' })).toBeInTheDocument();
   });
 
   it('sends a question from the Path to Ask', () => {
@@ -100,7 +119,7 @@ describe('StudentApp navigation', () => {
     );
     renderAt();
     fireEvent.click(screen.getAllByRole('button', { name: /guide keff/i })[0]);
-    expect(screen.getByText('Hub for Keff in learn')).toBeInTheDocument();
+    expect(screen.getByText('Lesson for Keff')).toBeInTheDocument();
     window.localStorage.clear();
   });
 

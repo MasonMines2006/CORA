@@ -9,11 +9,14 @@ import AppShell from '../shell/AppShell';
 import { SessionSummary } from '../shell/types';
 import PathView from '../path/PathView';
 import { useDashboard } from '../path/useDashboard';
+import Button from '../ui-kit/Button';
 import EmptyState from '../ui-kit/EmptyState';
-import ConceptHub from './ConceptHub';
+import LessonPlayer from '../lesson/LessonPlayer';
+import QuizPlayer, { QuizOutcome } from '../quiz/QuizPlayer';
+import QuizResults from '../quiz/QuizResults';
 import ReviewSession from './ReviewSession';
 import StudentExplore from './StudentExplore';
-import { StudentLocation, StudentView, parseLocation, toSearchParams } from './studentLocation';
+import { isFocusView, StudentLocation, StudentView, parseLocation, toSearchParams } from './studentLocation';
 
 /**
  * The student app: one URL-driven view at a time inside the shell
@@ -30,13 +33,22 @@ const StudentLayout = () => {
   const [askPrompt, setAskPrompt] = useState('');
   // The course graph's force layout is expensive, so once opened it stays mounted (hidden).
   const [hasOpenedGraph, setHasOpenedGraph] = useState(location.view === 'graph');
+  // Where the X in a lesson or quiz goes back to: the screen you opened it from.
+  const [returnTo, setReturnTo] = useState<StudentLocation | null>(null);
+  // The finished quiz, for the Results screen. Kept in memory only; a refresh shows a fallback.
+  const [outcome, setOutcome] = useState<QuizOutcome | null>(null);
 
-  const go = (next: StudentLocation) => {
+  const go = (next: StudentLocation, options: { replace?: boolean } = {}) => {
     if (next.view === 'graph') {
       setHasOpenedGraph(true);
     }
-    setParams(toSearchParams(next));
+    if (isFocusView(next.view) && !isFocusView(location.view)) {
+      setReturnTo(location);
+    }
+    setParams(toSearchParams(next), { replace: options.replace });
   };
+  const leaveFocus = () => go(returnTo ?? { view: 'path', conceptId: '' });
+  const signInHere = () => session.signIn(`/student?${params.toString()}`);
   const goToView = (view: StudentView) => go({ view, conceptId: '' });
   const concepts = dashboard.status === 'ready' ? dashboard.data.concepts.map((item) => item.concept) : [];
   const conceptName = (id: string) => concepts.find((concept) => concept.id === id)?.name ?? id;
@@ -86,9 +98,59 @@ const StudentLayout = () => {
     session.signOut();
   };
 
+  // A lesson or quiz link with no concept has nothing to show, so it falls back to the Path.
+  const needsConcept = location.view === 'lesson' || location.view === 'quiz';
+  const shellView: StudentView = needsConcept && !location.conceptId ? 'path' : location.view;
+
+  // Lessons, quizzes and results take the whole screen (FocusLayout), outside the shell.
+  if (location.view === 'lesson' && location.conceptId) {
+    return (
+      <LessonPlayer
+        key={location.conceptId}
+        conceptId={location.conceptId}
+        initialBeat={location.beat}
+        onClose={leaveFocus}
+        onAsk={modes.onAsk}
+        onQuiz={(conceptId) => go({ view: 'quiz', conceptId }, { replace: true })}
+        onLoaded={(name) => sessions.record('guide', location.conceptId, name)}
+        onSignIn={signInHere}
+      />
+    );
+  }
+  if (location.view === 'quiz' && location.conceptId) {
+    return (
+      <QuizPlayer
+        key={location.conceptId}
+        conceptId={location.conceptId}
+        onClose={leaveFocus}
+        onAsk={modes.onAsk}
+        onGuide={(conceptId) => go({ view: 'lesson', conceptId }, { replace: true })}
+        onLoaded={(name) => sessions.record('quiz', location.conceptId, name)}
+        onFinished={(finished) => {
+          setOutcome(finished);
+          reloadDashboard();
+          // Replace, so Back from Results doesn't land on a quiz that is already graded.
+          go({ view: 'results', conceptId: location.conceptId }, { replace: true });
+        }}
+        onSignIn={signInHere}
+      />
+    );
+  }
+  if (location.view === 'results' && outcome) {
+    return (
+      <QuizResults
+        outcome={outcome}
+        onClose={() => goToView('path')}
+        onProgress={() => goToView('progress')}
+        onAsk={modes.onAsk}
+        onGuide={modes.onGuide}
+      />
+    );
+  }
+
   return (
     <AppShell
-      active={location.view}
+      active={shellView}
       onNavigate={goToView}
       fullHeight={location.view === 'ask'}
       dueCount={dashboard.status === 'ready' ? dashboard.data.review?.due_count : undefined}
@@ -104,7 +166,7 @@ const StudentLayout = () => {
         onSignOut: signOut,
       }}
     >
-      {location.view === 'path' && (
+      {shellView === 'path' && (
         <PathView
           dashboard={dashboard}
           onRetry={reloadDashboard}
@@ -136,23 +198,20 @@ const StudentLayout = () => {
         />
       )}
 
-      {(location.view === 'lesson' || location.view === 'quiz') && location.conceptId && (
-        <ConceptHub
-          key={location.conceptId}
-          conceptId={location.conceptId}
-          mode={location.view === 'quiz' ? 'practice' : 'learn'}
-          initialBeat={location.beat}
-          onModeChange={(mode) => go({ view: mode === 'practice' ? 'quiz' : 'lesson', conceptId: location.conceptId })}
-          onOpenConcept={(conceptId) => modes.onGuide(conceptId)}
-          onAllConcepts={() => goToView('path')}
-          onAsk={(prompt) => modes.onAsk(prompt, location.conceptId)}
-        />
-      )}
-
       {location.view === 'review' && (
         <div className='mx-auto max-w-[1440px] px-5 py-8 sm:px-8 lg:px-12'>
           <ReviewSession showRail onFindCards={() => goToView('path')} />
         </div>
+      )}
+
+      {location.view === 'results' && (
+        <EmptyState
+          icon={<HiOutlineChartBar className='h-6 w-6' />}
+          title='These results are no longer on screen'
+          actions={<Button onClick={() => goToView('progress')}>See progress</Button>}
+        >
+          Results are shown once, right after a quiz. Your mastery was saved and is on the Progress page.
+        </EmptyState>
       )}
 
       {location.view === 'progress' && (
