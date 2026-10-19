@@ -67,6 +67,8 @@ from src.user_store import close_pool, ensure_learning_tables
 load_dotenv()
 
 logger = CustomLogger()
+ALLOWED_ADMIN_ROLES = ["admin", "test_full"]
+ALLOWED_MANAGER_ROLES = ["admin", "ta", "test_full"]
 CHUNK_DIR = os.path.join(os.path.dirname(__file__), "chunks")
 MERGED_DIR = os.path.join(os.path.dirname(__file__), "merged_files")
 
@@ -991,6 +993,9 @@ async def retry_processing(
 
 @app.post('/metric')
 async def calculate_metric(
+    # Admin-only: every call runs paid LLM evaluations (RAGAS). Without this,
+    # anyone who could reach the API could spend the project's LLM credits.
+    user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
     question: str = Form(),
     context: str = Form(),
     answer: str = Form(),
@@ -1036,7 +1041,10 @@ async def calculate_metric(
        
 
 @app.post('/additional_metrics')
-async def calculate_additional_metrics(question: str = Form(),
+async def calculate_additional_metrics(
+                                        # Admin-only for the same reason as /metric: paid LLM calls.
+                                        user=Depends(require_role(ALLOWED_ADMIN_ROLES)),
+                                        question: str = Form(),
                                         context: str = Form(),
                                         answer: str = Form(),
                                         reference: str = Form(),
@@ -1173,10 +1181,6 @@ async def get_schema_visualization(credentials: Neo4jCredentials = Depends(get_n
 class SetUserRoleRequest(BaseModel):
     email: str
     role: str
-
-
-ALLOWED_ADMIN_ROLES = ["admin", "test_full"]
-ALLOWED_MANAGER_ROLES = ["admin", "ta", "test_full"]
 
 
 @app.get("/auth/me")
